@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from . import analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, public_rules, provenance, react, segment
+from . import run_progress, analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, public_rules, provenance, react, segment
 
 DEFAULT_SAMPLE = 200
 MAX_SAMPLE = panel_provider.MAX_N
@@ -113,6 +113,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
     validate(policy_text, sample, seed, i_confirm_public)
     credentials = credentials or Credentials.from_env()
     credentials.require()
+    run_progress.report("preparing")
     title = policy_text.strip().splitlines()[0][:120]
     # Explicit DBs take precedence. Otherwise use the portable, attributed 20k bundle.
     db = config.persona_db()
@@ -153,6 +154,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         p["family_persona"] = lines[9] if len(lines) > 9 else ""
         p["cultural_background"] = lines[10] if len(lines) > 10 else ""
     segments = segment.split_segments(policy_text)
+    run_progress.report("reactions")
     with llm.use_transport(_api_transport(credentials), system_rules=public_rules.SYSTEM_RULES,
                             provider_name="anthropic", model=MODEL), jev.use_key(credentials.typesafe):
         # Existing reaction code is resumable on disk; its private temporary output is deleted on exit.
@@ -166,6 +168,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         mismatches = react.verify_quotes(reactions, policy_text, segments)
         by_uuid = {p["uuid"]: p for p in people}
         # Keep issue order tied to source clauses, never member counts or stance.
+        run_progress.report("questions")
         raw_issues = analyze_llm.cluster_issues(reactions, title)
         by_rid = {r["rid"]: r for r in reactions}
         clause_order = {s["id"]: i for i, s in enumerate(segments)}
@@ -191,6 +194,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
                 raise
             except Exception:
                 clarity = {"available": False, "reason": "Jev 호출 실패: 키·잔액·연결을 확인하세요"}
+    run_progress.report("finalizing")
     reaction_segments = {r["rid"]: r.get("segment_id") for r in reactions}
     issue_segments = {it["id"]: {reaction_segments[rid] for rid in it["member_ids"]} for it in issues}
     clause_issues = [{**s, "issues": [it["id"] for it in issues if s["id"] in issue_segments[it["id"]]]}

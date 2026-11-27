@@ -295,12 +295,12 @@ def test_mcp_real_stdio_estimate_start_poll(fake_process_script):
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 tools = await session.list_tools()
-                assert {t.name for t in tools.tools} == {"estimate", "start_run", "get_run"}
+                assert {t.name for t in tools.tools} == {"estimate", "start_run", "get_run", "save_review"}
                 # API keys must never be accepted in tool arguments/transcripts.
                 assert all("api_key" not in json.dumps(t.inputSchema) for t in tools.tools)
                 assert all(t.inputSchema["additionalProperties"] is False for t in tools.tools)
                 for name, arguments, extra in [
-                    ("estimate", {"policy_text": POLICY}, "seed"),
+                    ("estimate", {"policy_text": POLICY}, "unexpected"),
                     ("start_run", {"policy_text": POLICY}, "unexpected"),
                     ("get_run", {"id": "missing"}, "sample"),
                     ("estimate", {"policy_text": POLICY}, "api_key"),
@@ -331,6 +331,9 @@ def test_mcp_real_stdio_estimate_start_poll(fake_process_script):
                             break
                         await asyncio.sleep(.01)
                 assert state["status"] == "completed", state
-                assert_result(state["result"])
+                assert len(response.content[0].text) <= 3000
+                assert "summary" in state and "result" not in state
+                full = await session.call_tool("get_run", {"id": run_id, "view": "full"})
+                assert_result(full.structuredContent["result"])
 
     asyncio.run(scenario())

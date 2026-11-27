@@ -35,7 +35,7 @@ def test_http_and_mcp_keep_all_upgrade_evidence(fake_models):
     try:
         started = asyncio.run(server.call_tool("start_run", {"policy_text": POLICY, "sample": 12}))
         state = wait_job(jobs.get, started.structuredContent["id"])
-        got = asyncio.run(server.call_tool("get_run", {"id": state["id"]}))
+        got = asyncio.run(server.call_tool("get_run", {"id": state["id"], "view": "full"}))
         evidence(got.structuredContent["result"])
     finally:
         jobs.close()
