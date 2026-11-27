@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import StrictBool, StrictInt
 
-from . import public_rules, service, mcp_setup, mcp_notices
+from . import mcp_copy, mcp_guide, public_rules, service, mcp_setup, mcp_notices
 from .jobs import Jobs
 
 
@@ -21,25 +21,27 @@ class PublicMCP(FastMCP):
         tools = await super().list_tools()
         for tool in tools:
             tool.inputSchema = {**tool.inputSchema, "additionalProperties": False}
-        return tools
+        return mcp_guide.dress_tools(tools)
 
     async def call_tool(self, name, arguments):
+        tool = None
         try:
             tool = next((tool for tool in await self.list_tools() if tool.name == name), None)
-            if tool is not None and arguments.keys() - tool.inputSchema.get("properties", {}).keys():
+            if tool is None:
+                return tool_result({"error": mcp_copy.error("unknown_tool")}, error=True)
+            if arguments.keys() - tool.inputSchema.get("properties", {}).keys():
                 # Never echo extra names or values: either may contain credentials.
-                return tool_result(mcp_setup.error_payload(service.RequestError(
-                    "정의되지 않은 추가 인자는 사용할 수 없습니다. 키는 환경변수로 설정합니다(BYOK).")), error=True)
+                return tool_result({"error": mcp_copy.error("extra_argument")}, error=True)
             return await super().call_tool(name, arguments)
         except Exception:
-            # SDK validation/unknown-tool errors must also retain notice and never echo arguments.
-            return tool_result(mcp_setup.error_payload(service.RequestError(
-                "도구 호출 실패: 도구 이름과 입력 형식을 확인하세요.")), error=True)
+            # SDK validation errors must also retain notice and never echo arguments.
+            return tool_result({"error": mcp_copy.error("invalid_value" if tool else "unknown_tool")}, error=True)
 
 
 def create_server(jobs: Jobs | None = None) -> FastMCP:
     jobs = jobs or Jobs()
-    server = PublicMCP("policy-preview")
+    server = PublicMCP(mcp_copy.SERVER_NAME, instructions=mcp_copy.INSTRUCTIONS)
+    mcp_guide.register(server)
 
     def guarded(call):
         try:

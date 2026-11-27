@@ -67,23 +67,76 @@ curl -s http://127.0.0.1:8765/runs -H 'Content-Type: application/json' \
 JSON 본문의 키와 정의되지 않은 인자는 거절하며 제출값을 오류에 되비추지 않습니다.
 서버는 **localhost 전용**입니다. 공개 호스팅·인증 서버로 사용하지 마세요.
 
-### MCP로 쓰기
+### MCP로 쓰기 (Claude Code·Claude 데스크톱)
 
-위 설치를 마친 뒤, 키 환경변수를 설정한 터미널에서 Claude Code에 등록합니다.
-아래 실행 파일 경로는 실제 설치한 절대 경로로 바꾸세요.
+AI 비서에게 말로 묻는 방법입니다. 도구 이름은 몰라도 되고, 돈이 드는 단계 전에는 AI가 예상 금액을 보여 주고 먼저 묻습니다.
+
+**1단계. 설치(한 번)**: Python 3.12 이상(`python3 --version`으로 확인)이 필요합니다.
 
 ```sh
-claude mcp add --transport stdio policy-preview -- /absolute/path/policy-preview-engine/.venv/bin/pp mcp
-claude
-# estimate → start_run → get_run(id) 순서로 호출
+git clone "$REPO_URL" policy-preview-engine && cd policy-preview-engine
+python3 -m venv .venv
+.venv/bin/pip install -r engine/requirements-mcp.txt -e .
 ```
 
-도구는 `estimate`·`start_run`·`get_run` 세 개입니다. **비용 미리보기 estimate를 먼저 호출**하고
-같은 `sample`·`limits`로 `start_run`을 호출하세요. 키는 클라이언트가 물려받는 환경변수로만
-설정합니다(BYOK). `api_key` 등 추가 인자는 모든 도구에서 거절하며, 키를 설정 파일이나 도구 인자에 적지 않습니다.
-MCP는 stdio로만 통신하고 HTTP API는 localhost만 사용합니다.
-API·MCP는 한 프로세스에서 작업을 순서대로 실행하고 **재시작하면 작업 id와 결과가 사라집니다**.
-완료 전 클라이언트를 끄지 말고, 필요한 결과는 별도로 저장하세요.
+**2단계. 연결**: 같은 폴더에서 실행합니다. `$(pwd)`가 내 컴퓨터의 실제 경로를 채워 줍니다.
+
+```sh
+claude mcp add --transport stdio policy-preview -- "$(pwd)/.venv/bin/pp" mcp
+```
+
+Claude 데스크톱은 설정 → 개발자 → 설정 편집으로 `claude_desktop_config.json`을 열어 아래를 넣고 앱을 다시 켭니다.
+`/절대/경로/...` 자리에는 저장소 폴더에서 `echo "$(pwd)/.venv/bin/pp"`가 보여 주는 값을 넣습니다. 키는 이 파일에 적지 않습니다.
+
+```json
+{"mcpServers": {"policy-preview": {"command": "/절대/경로/policy-preview-engine/.venv/bin/pp", "args": ["mcp"]}}}
+```
+
+**3단계. "무료 예시 보여 줘"라고 말하기**: 키와 비용 없이 예시 문안, 결과 요약의 모양, 실제로 돌릴 때의 예상 비용을 보여 줍니다.
+안내 메뉴에서 **무료 예시 보기**를 골라도 됩니다(Claude Code에서는 `/mcp__policy-preview__free_example`).
+
+첫 대화는 이렇게 흘러갑니다. 금액은 이 예시 문안의 비용 미리 보기 값이며 청구액을 보장하지 않습니다.
+
+> **나**: 무료 예시 보여 줘
+>
+> **Claude**: AI가 상상한 반응입니다. 사람 응답은 0명입니다. 여론도 통계도 아닙니다. 누구에게 무엇을 물을지 정하는 데만 쓰세요.
+> 예시 「도시철도 무임승차 기준 연령 단계적 상향」(가상 정책안)으로 결과 요약이 어떤 모양인지 보여 드릴게요. 사람이 미리 써 둔 예시입니다.
+> 먼저 만날 사람(문안 조항 순서): ① 2027년 뒤에 66~69세가 되는 도시철도 이용자 ② 65세 이상 기초연금 수급자 ③ 도시철도가 없는 지역에 사는 어르신. 사람마다 근거 조항과 물어볼 질문이 붙습니다.
+> 직접 만나야 할 사람: 만 19세 미만, 외국인 주민, 운영기관·노인단체 같은 단체의 의견.
+> 이 문안을 실제로 돌리면 합성 인물 200명(사람 수 아님) 기준 약 $0.62~$2.48, 4~12분으로 예상됩니다.
+> 다음 단계: 내 문안으로 해 보려면 '내 문안 비용부터 보기'를 고르고 문안을 붙여 넣으세요.
+>
+> **나**: (문안 붙여 넣기) 이 문안 비용부터 알려 줘
+>
+> **Claude**: 합성 인물 30명과 200명, 두 가지 규모의 예상 비용과 시간을 표로 정리했습니다. 어느 규모로, 비용 상한은 얼마로 할까요? 진행하자고 하시기 전에는 실행하지 않습니다.
+
+연결하면 아래 안내 메뉴(MCP prompts)와 읽을거리(MCP resources)가 함께 보입니다.
+
+| 안내 메뉴 | 하는 일 | 비용 |
+|---|---|---|
+| 무료 예시 보기 | 예시 정책으로 이 도구가 무엇을 만들어 주는지 봅니다 | 없음 |
+| 내 문안 비용부터 보기 | 붙여 넣은 문안의 예상 비용·시간을 두 가지 규모로 보고, 동의하면 실행합니다 | 미리 보기는 없음, 실행은 유료 |
+| 결과 읽고 누구부터 만날지 정리 | 실행 번호를 넣으면 먼저 만날 집단·질문·직접 만날 사람을 한 장으로 정리합니다 | 없음 |
+| 현장에서 들은 결과 기록하기 | 현장 메모를 [현장 확인 기록표](docs/baseline-contrast-and-field-log.md) 형식으로 정리합니다 | 없음 |
+
+읽을거리는 `pp://guide/start`(처음 쓰는 법 한 장), `pp://examples/subway-free-ride`·`rural-basic-income`·`life-safety-decree`(예시 문안),
+`pp://examples/result-summary`(사람이 미리 써 둔 예시 결과 요약)입니다. 도구·안내·오류 문구는 모두 `engine/pp/mcp_copy.py` 한 파일에 모여 있습니다.
+
+**유료 실행(내 문안으로 AI 반응 만들기)에 필요한 것**
+
+- Anthropic API 키: Claude 구독과 별도이며 console.anthropic.com에서 만듭니다. 위 BYOK 안내대로 숨김 입력해 환경변수로만 두고,
+  그 터미널에서 `claude`를 켭니다. 키를 설정 파일이나 대화, 도구 인자에 적지 마세요. Claude 데스크톱은 터미널의 환경변수를 물려받지 않으므로
+  데스크톱에서는 무료 예시·비용 미리 보기까지 쓰고, 유료 실행은 키를 넣은 터미널의 Claude Code에서 하세요.
+- 합성 인물 자료: 아래 **4-3. 합성 인물 패널 만들기**(약 2GB, 한 번만)를 따릅니다.
+
+**더 알아 둘 것**
+
+- 기본 도구는 `estimate`(비용 미리 보기) → `start_run`(유료 실행) → `get_run(id)`(진행·결과) 순서입니다.
+  같은 `sample`·`limits`로 `estimate`와 `start_run`을 부릅니다.
+- `api_key` 등 정의되지 않은 추가 인자는 모든 도구에서 거절하고, 넣은 이름과 값을 오류에 되비추지 않습니다.
+- MCP는 stdio로만 통신하고 HTTP API는 localhost만 사용합니다.
+- API·MCP는 한 프로세스에서 작업을 순서대로 실행하고 **재시작하면 작업 id와 결과가 사라집니다**.
+  완료 전 클라이언트를 끄지 말고, 필요한 결과는 "파일로 저장해 줘"라고 말해 따로 저장하세요.
 
 ### 결과에 함께 남는 실행 기록
 
