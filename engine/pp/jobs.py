@@ -64,6 +64,8 @@ class Jobs(RunExperience):
             raise service.RequestError("view는 summary 또는 full이어야 합니다.")
         with self._lock:
             if run_id not in self._runs:
+                if run_id in self._plans.items:
+                    raise mcp_setup.SetupError("plan_id_as_run_id")
                 raise KeyError("작업을 찾을 수 없습니다. ID가 다르거나 서버 재시작으로 사라졌을 수 있습니다. 저장본을 확인하거나 다시 견적을 내세요.")
             state = deepcopy(self._runs[run_id])
             started_at = self._started_at.get(run_id)

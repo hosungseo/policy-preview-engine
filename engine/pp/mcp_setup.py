@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from . import attribution, budget, bundle_db, config, llm, personas, public_rules, provenance
 
 TRIAL_LABEL = "체험(모의) 결과"
-TRIAL_NOTICE = "구조만 보여 주는 0원 체험입니다. 숫자·문장은 가짜이며, 실제 결과에는 API 키와 합성 인물 자료가 필요합니다."
+TRIAL_NOTICE = "실제 여론이 아닙니다. 구조만 보여 주는 0원 체험입니다. 숫자·문장은 가짜이며, 실제 결과에는 API 키와 합성 인물 자료가 필요합니다."
 FREE_ALTERNATIVE = "try_example으로 키·패널 없이 무료 예시를 볼 수 있습니다."
 _trial = ContextVar("pp_trial", default=False)
 _panel = ContextVar("pp_trial_panel", default=None)
@@ -21,7 +21,8 @@ GUIDANCE = {
     "panel_not_ready": ("실제 실행에 필요한 합성 인물 자료가 없습니다.", "python engine/scripts/build_panel_from_nemotron.py로 패널을 준비하세요."),
     "input_rejected": ("입력 문안 또는 형식이 실행 규칙에 맞지 않습니다.", "표시된 낱말이나 입력 항목을 고쳐 다시 비용을 확인하세요."),
     "budget_exceeded": ("설정한 비용 또는 호출 한도에 닿아 멈췄습니다.", "합성 프로필 수(sample)를 줄여 새 비용을 확인하세요."),
-    "run_not_found": ("이 서버에서 해당 작업을 찾지 못했습니다.", "작업 id를 확인하고 없으면 새 비용 확인부터 시작하세요."),
+    "run_not_found": ("이 서버에서 해당 실행 번호(run id)를 찾지 못했습니다.", "estimate의 plan_id(견적 번호)가 아니라 start_run이 돌려준 id(실행 번호)를 넣으세요. 서버를 재시작했다면 새 견적부터 시작하세요."),
+    "plan_id_as_run_id": ("이 번호는 견적 번호입니다. start_run에 쓰세요.", "start_run(plan_id=견적 번호)으로 실행한 뒤, 돌려받은 id(실행 번호)로 get_run을 부르세요."),
     "model_call_failed": ("모델 응답을 받지 못했습니다.", "check_setup으로 실행 준비 상태를 확인하세요."),
     "lawmaking_unavailable": ("국민참여입법센터의 자료를 지금 읽지 못했습니다.", "잠시 뒤 find_notice로 다시 찾아보세요."),
     "notice_not_found": ("고른 입법예고의 이유·주요내용 원문을 찾지 못했습니다.", "find_notice로 예고를 다시 고르세요."),

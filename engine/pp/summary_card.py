@@ -4,6 +4,7 @@ from __future__ import annotations
 from . import attribution, public_rules
 
 MAX_CHARS = 3000
+NO_CONTACT = '해당 집단의 찾아갈 곳 자료 없음'
 SAVE_NOTICE = ('서버를 재시작하면 작업 ID와 결과가 사라집니다. 저장하려면 '
                'save_review(id)를 호출하세요(홈의 Documents/백번미리묻다에 저장). '
                '전체 결과·영수증·실행 기록은 get_run(id, view="full")로 조회하세요.')
@@ -32,7 +33,9 @@ def build(result: dict, run_id: str) -> dict:
                       'source_quote': (clauses[0].get('text') or '')[:160] if clauses else None,
                       'why_ask': clip(issues.get(iid, {}).get('summary') or row.get('basis'), 120),
                       'questions': [clip(q, 150) for q in row.get('questions', [])[:2]],
-                      'contact_hints': [clip(v, 100) for v in row.get('venues', [])[:3]] or [clip(o.get('where') or o.get('method'), 100) for o in contacts],
+                      'contact_hints': [clip(v, 100) for v in row.get('venues', [])[:3] if v] or
+                          [clip(' · '.join(filter(None, (o.get('where'), o.get('method')))), 100) for o in contacts if o.get('where') or o.get('method')] or [NO_CONTACT],
+                      **({'reaction_quotes': row['reaction_quotes'][:1], 'question_basis': row['question_basis']} if row.get('reaction_quotes') else {}),
                       'panel_scope': row.get('panel_scope')})
     missing = [{'group': clip(m.get('group') or m.get('segment_id') or m.get('kind'), 60),
                 'reason': clip(m.get('reason'), 100), 'route': clip(m.get('route'), 100)} for m in result.get('missing_perspectives', [])[:4]]
@@ -62,8 +65,9 @@ def build(result: dict, run_id: str) -> dict:
         if card['source_quote']:
             lines.append('  문안 근거(일부): ' + card['source_quote'])
         lines.append('  확인할 이유: ' + card['why_ask'])
-        lines += ['  질문: ' + q for q in card['questions']]
-        lines += ['  접점 제안(협조 여부 미확인): ' + c for c in card['contact_hints']]
+        lines += ['  먼저 물을 질문' + ('(편집 초안)' if card.get('reaction_quotes') else '') + ': ' + q for q in card['questions']]
+        lines += ['  보관 결과 인용: ' + q for q in card.get('reaction_quotes', [])]
+        lines += [('  찾아갈 곳: ' if c == NO_CONTACT else '  찾아갈 곳·방식(협조 여부 미확인): ') + c for c in card['contact_hints']]
     if not cards:
         lines.append('연결된 질문이 없습니다. 전체 결과의 쟁점과 조항을 확인하세요.')
     lines.append('명단 밖 사람 · 빠진 관점')

@@ -24,7 +24,7 @@ INSTRUCTIONS = "\n".join([
     "사용자는 \"무료 예시 보여 줘\", \"이 문안 비용부터 알려 줘\", \"결과 읽고 누구부터 만날지 정리해 줘\"처럼 말하면 됩니다. "
     "처음 묻는 사람에게는 `check_setup`으로 현재 모드를 한 줄로 알려 주세요. 처음 쓰는 사람에게는 '무료 예시 보기'부터 권하세요(사용법 한 장: `pp://guide/start`).",
     "돈이 드는 `start_run` 전에는 `estimate`로 예상 비용을 보여 주고 동의를 받으세요. "
-    "반응 결과에만 고지 한 줄을 붙이고, 0원 체험은 구조·가짜 숫자와 문장·키 필요 안내를 첫 줄에 쓰세요. 결과에서 비율·순위·\"대부분\" 같은 말은 쓰지 마세요.",
+    "반응 결과에만 고지 한 줄을 붙이고, 0원 체험은 도구 결과의 `assistant_guidance`에 있는 문장을 그대로 답변 첫 줄에 쓰세요. 실제 여론이 아니라는 고지를 생략하거나 끝으로 미루지 마세요. 결과에서 비율·순위·\"대부분\" 같은 말은 쓰지 마세요.",
 ])
 
 
@@ -71,12 +71,12 @@ TOOLS: dict[str, ToolCopy] = {
         title="진행 상황·결과 보기",
         description=(
             "실행 상황(대기 `queued`·진행 중 `running`·완료 `completed`·실패 `failed`)을 알려 주고, 끝나면 결과를 돌려줍니다. "
-            "반응 결과는 고지 한 줄, 0원 체험은 구조만 보이며 숫자·문장은 가짜이고 실제 결과에는 키가 필요하다는 안내를 먼저 쓰고, `who_to_ask`(누구에게 무엇을 물을지)와 "
+            "반응 결과는 고지 한 줄, 0원 체험은 `assistant_guidance`의 문장(실제 여론 아님·구조만 보는 체험·가짜 숫자와 문장·키 필요)을 그대로 첫 줄에 쓰세요. `who_to_ask`(누구에게 무엇을 물을지)와 "
             "`missing_perspectives`(명단에 없는 사람)부터 정리하세요. 프로그램을 다시 켜면 결과가 사라집니다."),
         when_arg=(("view", (
             "실행 상황(대기 `queued`·진행 중 `running`·완료 `completed`·실패 `failed`)을 알려 주고, 끝나면 한 장 요약을 돌려줍니다. "
-            "기본은 요약이며, 사용자가 자세한 기록을 원할 때만 `view=\"full\"`을 쓰세요. "
-            "반응 결과는 고지 한 줄, 0원 체험은 구조만 보여 주며 숫자·문장은 가짜이고 실제 결과에는 키가 필요하다는 안내를 먼저 쓰세요. "
+            "`id`는 `start_run`이 돌려준 실행 번호입니다. `estimate`의 `plan_id`는 견적 번호이며 여기에 넣지 마세요. 기본은 요약이며, 사용자가 자세한 기록을 원할 때만 `view=\"full\"`을 쓰세요. "
+            "반응 결과는 고지 한 줄, 0원 체험은 `assistant_guidance`의 문장(실제 여론 아님·구조만 보는 체험·가짜 숫자와 문장·키 필요)을 그대로 첫 줄에 쓰세요. "
             "완료 결과를 처음 보여 준 뒤 파일로 저장할지 한 번만 물어보세요. 프로그램을 다시 켜면 결과가 사라지므로 `save_review`로 저장하세요.")),),
     ),
     # Prepared for the free-trial work package; applied when a tool with this name is registered.
@@ -84,7 +84,7 @@ TOOLS: dict[str, ToolCopy] = {
         title="무료 예시 해 보기",
         description=(
             "미리 넣어 둔 예시 정책 문안으로 키 없이, 돈 들지 않게 한 번 해 봅니다. "
-            "이미 실행해 둔 공개 예시의 보관 결과를 보여 줍니다. 새 분석이 아니며 출처와 보관 결과 표시를 유지하세요. "
+            "이미 실행해 둔 공개 예시의 보관 결과를 보여 줍니다. 새 분석이 아니며 출처와 보관 결과 표시를 유지하세요. 요약 카드의 `questions`는 편집한 담당자용 현장 질문입니다. `reaction_quotes`와 전체 결과의 `result.questions`는 보관 원문 인용입니다. 인용을 먼저 물을 질문으로 바꾸어 표시하지 마세요. "
             "사용자가 \"무료 예시 보여 줘\"라고 하면 부르고, 체험 뒤에도 동의 없이 유료 실행으로 넘어가지 마세요."),
     ),
     "check_setup": ToolCopy(
@@ -107,7 +107,7 @@ ARGS: dict[str, ArgCopy] = {
     "seq": ArgCopy("입법예고 번호", "`find_notice`가 돌려준 `seq`를 그대로 넣으세요."),
     "mapping_lbic_id": ArgCopy("연결 번호", "목록의 `mapping_lbic_id`가 있으면 그대로 넣으세요."),
     "announce_type": ArgCopy("예고 구분", "목록의 `announce_type`이 있으면 그대로 넣으세요."),
-    "plan_id": ArgCopy("견적 계획 번호", "고른 `estimate`의 `plan_id`입니다. 조건이 바뀌면 다시 견적을 내세요."),
+    "plan_id": ArgCopy("견적 계획 번호", "`estimate`의 견적 번호입니다. `start_run`에만 쓰고 `get_run`의 `id`로 넣지 마세요. 조건이 바뀌면 다시 견적을 내세요."),
     "conditions": ArgCopy("확인한 문안 조건", "문안에서 확인한 나이·지역·자격 조건입니다. `name`과 `age_min`·`age_max`·`provinces`·`eligibility` 등을 넣습니다. 자격은 현장에서 다시 확인하세요."),
     "path": ArgCopy("저장할 파일", "생략하면 홈의 `Documents/백번미리묻다` 폴더에 저장합니다. 상대 경로는 홈 기준입니다. 예: `result.json`. 절대 경로도 되며 기존 파일은 덮어쓰지 않습니다."),
     "policy_text": ArgCopy("정책 문안", (
@@ -124,7 +124,7 @@ ARGS: dict[str, ArgCopy] = {
     "limits": ArgCopy("비용 상한", (
         "이번 실행의 안전장치입니다. 보통은 `{\"max_cost_usd\": 2}`처럼 달러 상한만 넣습니다(기본 10달러). "
         "그 밖에 `max_calls`·`max_output_tokens`·`max_retries`·`max_concurrency`를 쓸 수 있습니다.")),
-    "id": ArgCopy("실행 번호", "`start_run`이 돌려준 `id`입니다. 프로그램을 다시 켜면 이 번호로 찾을 수 없습니다."),
+    "id": ArgCopy("실행 번호", "`start_run` 또는 `try_example`이 돌려준 실행 번호(`run id`) `id`입니다. `estimate`의 `plan_id`는 견적 번호(`plan id`)이므로 넣지 마세요. 프로그램을 다시 켜면 이 번호로 찾을 수 없습니다."),
     # Prepared for the summary/full result view and the free-trial work packages.
     "view": ArgCopy("보기 방식", (
         "`summary`(기본: 누구에게 무엇을 물을지 한 장 요약) 또는 `full`(감사·재현용 전체 기록)입니다. "
@@ -209,7 +209,7 @@ ERRORS: dict[str, ErrorCopy] = {
         "지금까지 쓴 비용 기록은 결과에서 무료로 볼 수 있습니다."),
     "run_not_found": ErrorCopy(
         "이 실행 번호로 결과를 찾지 못했습니다.",
-        "`start_run`이 돌려준 번호가 맞는지 확인하세요(프로그램을 다시 켜면 결과가 지워집니다).",
+        "`estimate`의 `plan_id`(견적 번호)가 아니라 `start_run`의 `id`(실행 번호)를 넣으세요(프로그램을 다시 켜면 결과가 지워집니다).",
         "다시 실행하기 전에 비용 미리 보기는 무료로 할 수 있습니다."),
     "model_call_failed": ErrorCopy(
         "AI 모델에서 응답을 받지 못했습니다.",
@@ -503,7 +503,8 @@ def result_summary_markdown() -> str:
              "", "## 찾아갈 곳 · 먼저 물을 질문"]
     for card in summary['cards']:
         lines += ["", "### " + ' · '.join(card['groups']), "문안 근거: " + (card['source_quote'] or ''), card['why_ask']]
-        lines += ['- 질문: ' + q for q in card['questions']]
+        lines += ['- 먼저 물을 질문(편집 초안): ' + q for q in card['questions']]
+        lines += ['- 보관 결과 인용: ' + q for q in card.get('reaction_quotes', [])]
         lines += ['- 만날 곳: ' + v for v in card['contact_hints']]
     lines += ["", "## 명단 밖 사람"]
     lines += ['- ' + m['group'] + ': ' + m['route'] for m in summary['missing_perspectives']]

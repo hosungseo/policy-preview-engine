@@ -190,6 +190,11 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 assert not detail.isError and "개정이유" in detail.structuredContent["policy_text"]
                 trial = await session.call_tool("try_example", {})
                 assert not trial.isError and trial.structuredContent["mode"] == "archived"
+                cards = trial.structuredContent["summary"]["cards"]
+                assert all(c["contact_hints"] for c in cards)
+                assert all(c["questions"] and c["reaction_quotes"] for c in cards)
+                assert "보관 결과 인용:" in trial.content[0].text
+                assert trial.content[0].text.count("찾아갈 곳: 해당 집단의 찾아갈 곳 자료 없음") == 2
                 trial_id = trial.structuredContent["id"]
                 trial_full = await session.call_tool("get_run", {"id": trial_id, "view": "full"})
                 trial_saved = await session.call_tool("save_review", {"id": trial_id, "path": str(tmp_path / "trial.json")})
@@ -197,6 +202,9 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 assert json.loads((tmp_path / "trial.json").read_text()) == trial_full.structuredContent["result"]
                 estimated = await session.call_tool("estimate", {"policy_text": "교통비 지원 정책안", "sample": 12})
                 assert estimated.structuredContent["estimated_cost_usd"] == {"low": 0, "high": 0}
+                wrong_id = await session.call_tool("get_run", {"id": estimated.structuredContent["plan_id"]})
+                assert wrong_id.isError and wrong_id.structuredContent["code"] == "plan_id_as_run_id"
+                assert wrong_id.structuredContent["message"] == "이 번호는 견적 번호입니다. start_run에 쓰세요."
                 started = await session.call_tool("start_run", {"plan_id": estimated.structuredContent["plan_id"]})
                 assert not started.isError
                 async with asyncio.timeout(30):
@@ -209,7 +217,10 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 assert state.structuredContent["status"] == "completed", state
                 summary = state.structuredContent
                 assert summary["mode"] == "mock" and summary["result_label"] == "체험(모의) 결과"
-                assert summary["trial_notice"] in state.content[0].text
+                assert summary["trial_notice"] == state.content[0].text.splitlines()[0]
+                assert "실제 여론이 아닙니다" in state.content[0].text.splitlines()[0]
+                assert state.content[1].text == summary["assistant_guidance"]
+                assert summary["assistant_guidance"].endswith(summary["trial_notice"])
                 full = await session.call_tool("get_run", {"id": started.structuredContent["id"], "view": "full"})
                 assert full.structuredContent["result"]["budget"]["cost_usd"] == 0
                 saved = await session.call_tool("save_review", {"id": started.structuredContent["id"], "path": str(tmp_path / "review.json")})
