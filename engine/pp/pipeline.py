@@ -4,10 +4,11 @@ from __future__ import annotations
 import json
 import random
 import time
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import (analyze_jev, analyze_llm, analyze_stats, config, export, hearing, jev, jev_panel, llm, panel, personas,
+from . import (analyze_jev, analyze_llm, analyze_stats, budget, config, export, hearing, jev, jev_panel, llm, panel, personas,
                plan_doc, prompts, react, segment, semantic)
 
 STAGES = ("segment", "clarity", "panel", "react", "issues", "jev", "alternatives", "review", "analyze", "hearing",
@@ -37,7 +38,8 @@ def _now() -> str:
 class Run:
     def __init__(self, policy_path: Path, *, n_rep: int = 300, n_aff: int = 100, n_jev: int = 5000, n_alt: int = 1500,
                  workers: int = 8, seed: int = 42, allow_mock: bool = False, run_dir: Path | None = None,
-                 pool_uuids: list[str] | None = None, on_stage=None, data_meta: dict | None = None):
+                 pool_uuids: list[str] | None = None, on_stage=None, data_meta: dict | None = None,
+                 limits: budget.Limits | None = None):
         """`run_dir` replaces runs/<id>/. `pool_uuids` limits the representative and the quantitative panel to those
         people (the respondents of an earlier survey); the affected panel is still searched in the whole source.
         `on_stage(name)` is called as each stage starts."""
@@ -47,21 +49,38 @@ class Run:
                 raise ValueError(f"policy file missing {key!r}")
         self.dir = Path(run_dir) if run_dir else config.runs_dir() / self.policy["id"]
         self.pool_uuids, self.on_stage = pool_uuids, on_stage
-        self.dir.mkdir(parents=True, exist_ok=True)
         self.n_rep, self.n_aff, self.workers, self.seed, self.allow_mock = n_rep, n_aff, workers, seed, allow_mock
         self.n_jev, self.n_alt, self.n_qa = n_jev, n_alt, 600
         from . import provenance
+        limits = limits or budget.Limits()
+        source = data_meta if data_meta is not None else provenance.engine_source()
+        inputs = provenance.execution_inputs(self.policy, source,
+            {"n_rep": n_rep, "n_aff": n_aff, "n_jev": n_jev, "n_alt": n_alt, "seed": seed,
+             "pool_uuids": sorted(pool_uuids) if pool_uuids is not None else None}, asdict(limits))
+        fingerprint = provenance.input_hash(inputs)
         meta_path = self.dir / "meta.json"
         self.meta = _read(meta_path) if meta_path.exists() else {
             "provider": llm.provider(),
             "models": {"react": llm.model_label(config.REACT_MODEL), "synth": llm.model_label(config.SYNTH_MODEL)},
             "created_at": _now(), "stages": [], "counts": {}, "fallbacks": [],
             "panel_request": {"n_rep": n_rep, "n_aff": n_aff, "seed": seed},
-            **(data_meta if data_meta is not None else provenance.engine_source()),
+            **source,
         }
-        if self.meta["provider"] != llm.provider():
-            raise RuntimeError(f"run {self.policy['id']} used provider {self.meta['provider']}, now {llm.provider()}; "
-                               "delete the run directory to start over")
+        if meta_path.exists() and self.meta.get("input_hash") != fingerprint:
+            old = self.meta.get("execution_inputs", {})
+            changed = [k for k in inputs if old.get(k) != inputs[k]]
+            raise provenance.InputMismatch(f"run inputs changed ({', '.join(changed)}); use a new run directory; "
+                                           "legacy runs without input_hash cannot resume")
+        people_path = self.dir / "personas.json"
+        if meta_path.exists() and people_path.exists() and self.meta.get("personas_hash") != provenance.input_hash(_read(people_path)):
+            raise provenance.InputMismatch("stored persona profiles changed; use a new run directory")
+        existing_outputs = [p for p in OUTPUTS.values() if p] + ["personas.json", "reactions.json", "bundle.json"]
+        if not meta_path.exists() and self.dir.exists() and (any(self.dir.glob("*.jsonl")) or
+                any((self.dir / p).exists() for p in existing_outputs)):
+            raise provenance.InputMismatch("legacy results without input_hash; use a new run directory")
+        self.meta.update(input_hash=fingerprint, execution_inputs=inputs)
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self.budget = budget.Budget(limits, self.dir / "budget.json")
         _write(self.dir / "policy.json", self.policy)
         self.save_meta()
 
@@ -80,6 +99,14 @@ class Run:
         return {key: kept for key, ids in strata.items() if (kept := [i for i in ids if i in keep])}
 
     def run(self, force: tuple[str, ...] = (), only: tuple[str, ...] = (), skip: tuple[str, ...] = ()) -> Path | None:
+        with self.budget.scope():
+            try:
+                return self._run(force, only, skip)
+            finally:
+                self.meta["budget"] = self.budget.snapshot()
+                self.save_meta()
+
+    def _run(self, force, only, skip):
         dest = None
         for name in STAGES:
             if (only and name not in only) or name in skip:
@@ -93,6 +120,7 @@ class Run:
                 self.on_stage(name)
             started, t0 = _now(), time.time()
             result = getattr(self, f"stage_{name}")()
+            self.meta["budget"] = self.budget.snapshot()
             seconds = round(time.time() - t0, 1)
             if name == "export":
                 dest = result
@@ -176,11 +204,14 @@ class Run:
                    "occupation_major": majors[r["occupation"]],
                    "similar": similar.get(r["uuid"], [])} for r in rows]
         _write(self.path("personas.json"), people)
+        from . import provenance
+        self.meta["personas_hash"] = provenance.input_hash(people)
         _write(self.path("panel.json"), {
             "representative": {"n": len(rep_ids), "strata": ["province", "age_band", "sex"], "seed": self.seed},
             "affected": {"n": len(affected), "spec": spec, "channels": channel_counts, "semantic_note": semantic_note},
         })
         self._jev_usage("panel")
+        self.save_meta()
 
     def stage_react(self) -> None:
         people = _read(self.path("personas.json"))

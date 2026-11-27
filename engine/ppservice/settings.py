@@ -62,6 +62,11 @@ class Settings:
     # 시연 모드: a request without a session is served as one shared demo account, so a reviewer who runs the
     # container locally needs no access code. Never turn this on for a server other people can reach.
     demo_login: bool = False
+    max_calls: int = 100_000
+    max_output_tokens: int = 16_384
+    max_retries: int = 2
+    max_concurrency: int = 8
+    max_cost_usd: float = 10.0
 
     @property
     def db_path(self) -> Path:
@@ -100,4 +105,9 @@ def load() -> Settings:
         daily_deeps=_int("PP_DAILY_DEEPS", 3),
         design_pilot_n=_int("PP_DESIGN_PILOT_N", 40),
         demo_login=_env("PP_DEMO_LOGIN", "0") == "1",
+        max_calls=_int("PP_MAX_CALLS", 100_000),
+        max_output_tokens=_int("PP_MAX_OUTPUT_TOKENS", 16_384),
+        max_retries=_int("PP_MAX_RETRIES", 2),
+        max_concurrency=_int("PP_MAX_CONCURRENCY", 8),
+        max_cost_usd=_float("PP_MAX_COST_USD", 10.0),
     )

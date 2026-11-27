@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from pp.filelock_util import lock_file, unlock_file
+from pp import budget, provenance, jev
 
 from . import deep
 from .db import Database, now, today
@@ -26,6 +27,7 @@ _visit_cache: dict[str, dict] = {}
 _visit_lock = threading.Lock()
 
 ERROR_MESSAGES = {
+    "input_changed": "입력이 바뀌어 이전 결과를 이어 쓸 수 없습니다. 새 실행을 만들어 주세요.",
     "model_unavailable": "응답 모델(Jev)에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
     "too_many_failures": "응답을 받지 못한 합성 인물이 너무 많아 결과를 만들지 않았습니다. 다시 시도해 주세요.",
     "model_config": "응답 모델 설정에 문제가 있습니다. 운영자에게 알려 주세요.",
@@ -245,6 +247,10 @@ class Runner:
         self.db, self.settings, self.run_id, self.attempt, self.user_id, self.stop = db, settings, run_id, attempt, user_id, stop
         self.started = time.monotonic()
         self._lock = threading.Lock()
+        ledger_dir = settings.data_dir / "run-limits"
+        ledger_dir.mkdir(parents=True, exist_ok=True)
+        self.budget = budget.Budget(budget.Limits(settings.max_calls, settings.max_output_tokens,
+            settings.max_retries, settings.max_concurrency, settings.max_cost_usd), ledger_dir / f"{run_id}.json")
 
     def _fenced(self, sql: str, args: tuple) -> int:
         with self.db.tx() as con:
@@ -401,20 +407,34 @@ class JobRunner:
             people_all, version = panel.load(addons=panel.addons_setting(panel.spec_text(spec)) or "off")
             people = panel.sample(people_all, spec["n"], spec["seed"])
             runner._fenced("UPDATE runs SET panel_version=? WHERE id=? AND attempt=?", (version,))
-            if row["retry_of"]:
-                self._reuse(row["retry_of"], run_id, row["spec_hash"])
             extra, future_meta = {}, None
             if spec.get("future"):
                 base_people, future_people, future_meta = panel.future_pair(people)
                 extra = dict(zip(FUTURE_ARMS, (base_people, future_people)))
                 runner._fenced("UPDATE runs SET total=? WHERE id=? AND attempt=?",
                                (len(ARMS) * len(people) + 2 * len(future_people),))
-            outcome = execute(runner, spec, people, self.evaluate, self.settings.threads, extra=extra)
+            identity = provenance.input_hash({"spec": spec, "people": people, "extra": extra,
+                "panel_version": version, "model": jev.model(), "provider": self.settings.jev_provider,
+                "endpoint": provenance.input_hash(jev.api_url()), "code": provenance.code_version()})
+            identity_path = self.settings.data_dir / "run-limits" / f"{run_id}.inputs.json"
+            if identity_path.exists():
+                if json.loads(identity_path.read_text())["input_hash"] != identity:
+                    raise RunFailed("input_changed")
+            elif runner.done_keys():
+                raise RunFailed("input_changed", "legacy partial answers have no input identity")
+            identity_path.write_text(json.dumps({"input_hash": identity}), encoding="utf-8")
+            if row["retry_of"]:
+                old_path = identity_path.with_name(f"{row['retry_of']}.inputs.json")
+                if old_path.exists() and json.loads(old_path.read_text()).get("input_hash") == identity:
+                    self._reuse(row["retry_of"], run_id, row["spec_hash"])
+            with runner.budget.scope():
+                outcome = execute(runner, spec, people, self.evaluate, self.settings.threads, extra=extra)
             answers: dict[str, dict[str, list[float]]] = {}
             for a in self.db.all("SELECT arm, uuid, probs FROM answers WHERE run_id=?", (run_id,)):
                 answers.setdefault(a["arm"], {})[a["uuid"]] = json.loads(a["probs"])
             result = aggregate.summarize(spec, people, answers, json.loads(row["lint"]),
                                          panel_version=version, model_version=outcome["model"], future=future_meta)
+            result.update(input_hash=identity, budget=runner.budget.snapshot())
         except Cancelled:
             log.info("run=%s attempt=%s cancelled", run_id, attempt)
             return
