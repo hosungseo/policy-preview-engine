@@ -16,6 +16,13 @@ def tool_result(data: dict, *, error: bool = False) -> CallToolResult:
                           structuredContent=data, isError=error)
 
 
+def protocol_error(code):
+    message = mcp_copy.error(code)
+    data = mcp_setup.error_payload(service.RequestError(message))
+    data.update(error=message, message=message)
+    return tool_result(data, error=True)
+
+
 class PublicMCP(FastMCP):
     async def list_tools(self):
         tools = await super().list_tools()
@@ -28,14 +35,14 @@ class PublicMCP(FastMCP):
         try:
             tool = next((tool for tool in await self.list_tools() if tool.name == name), None)
             if tool is None:
-                return tool_result({"error": mcp_copy.error("unknown_tool")}, error=True)
+                return protocol_error("unknown_tool")
             if arguments.keys() - tool.inputSchema.get("properties", {}).keys():
                 # Never echo extra names or values: either may contain credentials.
-                return tool_result({"error": mcp_copy.error("extra_argument")}, error=True)
+                return protocol_error("extra_argument")
             return await super().call_tool(name, arguments)
         except Exception:
             # SDK validation errors must also retain notice and never echo arguments.
-            return tool_result({"error": mcp_copy.error("invalid_value" if tool else "unknown_tool")}, error=True)
+            return protocol_error("invalid_value" if tool else "unknown_tool")
 
 
 def create_server(jobs: Jobs | None = None) -> FastMCP:
@@ -58,7 +65,7 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
     @server.tool()
     def try_example(example: str = "subway-free-ride") -> CallToolResult:
         """키·패널 없이 내장 정책 예시를 무료로 끝까지 체험합니다. 모의 응답이며 외부 전송과 요금은 없습니다."""
-        return guarded(lambda: mcp_setup.try_example(example))
+        return guarded(lambda: jobs.try_example(example))
 
     @server.tool()
     def find_notice(query: str = "", page: StrictInt = 1) -> CallToolResult:

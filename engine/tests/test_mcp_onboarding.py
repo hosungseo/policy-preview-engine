@@ -41,7 +41,7 @@ def test_all_engine_examples_pass_rules(name):
 
 @pytest.mark.parametrize("text", [
     "보건복지부장관이 정한다.", "기재부장관이 정하는 사항", "○○부장관이 정한다.",
-    "전통시장·노동시장 지원", "청년 주택시장 안정 대책", "정보공개 청구 시 비공개 대상 정보를 줄인다.",
+    "전통시장·노동시장 지원", "사람의 반응을 모아 현장 질문을 만든다.", "주민의 입장과 시민의 반응을 확인한다.", "청년 주택시장 안정 대책", "정보공개 청구 시 비공개 대상 정보를 줄인다.",
     "선거관리위원회 사무 지원 예산", "중앙선거관리위원회 조직 개편",
 ])
 def test_legal_terms_are_not_individuals(text):
@@ -161,11 +161,19 @@ def test_errors_never_echo_secret_values(offline, monkeypatch):
 
 def test_genuine_stdio_without_transport_stub(tmp_path):
     """Start the shipped server; a Python audit hook rejects all socket connects."""
+    from test_lawmaking import LIST_HTML, NOTICE_HTML
+    notice_stub = (
+        "from pp import lawmaking, mcp_notices\nfrom datetime import date\n"
+        "class Today(date):\n    @classmethod\n    def today(cls): return cls(2026, 11, 27)\n"
+        "mcp_notices.date = Today\n"
+        f"pages = [('/gcom/ogLmPp/89312', {NOTICE_HTML!r}), ('/gcom/ogLmPp', {LIST_HTML!r})]\n"
+        "lawmaking._get = lambda url, params=None: next(body for part, body in pages if part in url)\n"
+    )
     script = tmp_path / "offline_server.py"
     script.write_text("import sys\n"
                       "def audit(event, args):\n"
                       "    if event == 'socket.connect': raise RuntimeError('network forbidden')\n"
-                      "sys.addaudithook(audit)\nfrom pp.mcp import main\nmain()\n")
+                      "sys.addaudithook(audit)\n" + notice_stub + "from pp.mcp import main\nmain()\n")
     env = {k: v for k, v in os.environ.items() if not any(part in k for part in ("KEY", "TOKEN", "SECRET", "PASSWORD"))}
     env.update(PP_LLM_PROVIDER="mock", PP_JEV_PROVIDER="mock", PP_PERSONA_SOURCE="bundle",
                PP_PANEL_BUNDLE=str(tmp_path / "missing.gz"), PP_PERSONA_DB=str(tmp_path / "missing.db"))
@@ -177,18 +185,36 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 assert not (await session.call_tool("check_setup", {})).isError
-                assert not (await session.call_tool("try_example", {})).isError
+                notices = await session.call_tool("find_notice", {})
+                assert not notices.isError and notices.structuredContent["items"]
+                detail = await session.call_tool("get_notice", {"seq": notices.structuredContent["items"][0]["seq"]})
+                assert not detail.isError and "개정이유" in detail.structuredContent["policy_text"]
+                trial = await session.call_tool("try_example", {})
+                assert not trial.isError and trial.structuredContent["mode"] == "mock"
+                trial_id = trial.structuredContent["id"]
+                trial_full = await session.call_tool("get_run", {"id": trial_id, "view": "full"})
+                trial_saved = await session.call_tool("save_review", {"id": trial_id, "path": str(tmp_path / "trial.json")})
+                assert not trial_full.isError and not trial_saved.isError
+                assert json.loads((tmp_path / "trial.json").read_text()) == trial_full.structuredContent["result"]
                 estimated = await session.call_tool("estimate", {"policy_text": "교통비 지원 정책안", "sample": 12})
                 assert estimated.structuredContent["estimated_cost_usd"] == {"low": 0, "high": 0}
-                started = await session.call_tool("start_run", {"policy_text": "교통비 지원 정책안", "sample": 12})
+                started = await session.call_tool("start_run", {"plan_id": estimated.structuredContent["plan_id"]})
                 assert not started.isError
                 async with asyncio.timeout(30):
                     while True:
                         state = await session.call_tool("get_run", {"id": started.structuredContent["id"]})
+                        assert not state.isError, state
                         if state.structuredContent["status"] in {"completed", "failed"}:
                             break
                         await asyncio.sleep(.01)
                 assert state.structuredContent["status"] == "completed", state
-                assert state.structuredContent["result"]["budget"]["cost_usd"] == 0
+                summary = state.structuredContent
+                assert summary["mode"] == "mock" and summary["result_label"] == "체험(모의) 결과"
+                assert summary["trial_notice"] in state.content[0].text
+                full = await session.call_tool("get_run", {"id": started.structuredContent["id"], "view": "full"})
+                assert full.structuredContent["result"]["budget"]["cost_usd"] == 0
+                saved = await session.call_tool("save_review", {"id": started.structuredContent["id"], "path": str(tmp_path / "review.json")})
+                assert not saved.isError and saved.structuredContent["format"] == "pp.run/3"
+                assert json.loads((tmp_path / "review.json").read_text()) == full.structuredContent["result"]
 
     asyncio.run(scenario())

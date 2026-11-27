@@ -29,9 +29,10 @@ def build(result: dict, run_id: str) -> dict:
                       'source_quote': (clauses[0].get('text') or '')[:160] if clauses else None,
                       'why_ask': clip(issues.get(iid, {}).get('summary') or row.get('basis'), 120),
                       'questions': [clip(q, 150) for q in row.get('questions', [])[:2]],
-                      'contact_hints': [clip(o.get('where') or o.get('method'), 100) for o in contacts]})
+                      'contact_hints': [clip(v, 100) for v in row.get('venues', [])[:3]] or [clip(o.get('where') or o.get('method'), 100) for o in contacts],
+                      'panel_scope': row.get('panel_scope')})
     missing = [{'group': clip(m.get('group') or m.get('segment_id') or m.get('kind'), 60),
-                'reason': clip(m.get('reason'), 100)} for m in result.get('missing_perspectives', [])[:4]]
+                'reason': clip(m.get('reason'), 100), 'route': clip(m.get('route'), 100)} for m in result.get('missing_perspectives', [])[:4]]
     # Apply the same prose rules as the full public output; source_quote is already public text.
     source_text = '\n'.join(c.get('text', '') for c in result.get('clauses', []))
     # Recheck excerpts as source text, so legal ages and other policy numbers survive.
@@ -45,8 +46,9 @@ def build(result: dict, run_id: str) -> dict:
     conditions = result.get('conditions', {})
     quality = '일부 생성 실패 또는 인용 미검증: 전체 결과에서 확인하세요.' if (
         conditions.get('reaction_failures') or conditions.get('unverified_quotes')) else '현장 확인이 필요한 AI 초안'
-    credit = attribution.short(result['attribution']) if result.get('attribution') else '출처·이용 조건은 전체 결과에서 확인하세요.'
-    lines = [public_rules.NOTICE, '현장에서 확인할 질문 초안', quality, '찾아갈 곳 · 먼저 물을 질문']
+    credit = (result['attribution']['notice'] if result.get('mode') == 'mock' else attribution.short(result['attribution'])) if result.get('attribution') else '출처·이용 조건은 전체 결과에서 확인하세요.'
+    trial = {k: result[k] for k in ('mode', 'result_label', 'trial_notice') if k in result}
+    lines = [public_rules.NOTICE, *[str(trial[k]) for k in ('result_label', 'trial_notice') if k in trial], '현장에서 확인할 질문 초안', quality, '찾아갈 곳 · 먼저 물을 질문']
     for card in cards:
         lines.append('• ' + (' · '.join(card['groups']) or '확인할 집단 정보 없음'))
         if card['source_quote']:
@@ -57,14 +59,14 @@ def build(result: dict, run_id: str) -> dict:
     if not cards:
         lines.append('연결된 질문이 없습니다. 전체 결과의 쟁점과 조항을 확인하세요.')
     lines.append('명단 밖 사람 · 빠진 관점')
-    lines += ['• ' + m['group'] + ': ' + m['reason'] for m in missing]
+    lines += ['• ' + m['group'] + ': ' + m['reason'] + (' · ' + m['route'] if m['route'] else '') for m in missing]
     lines.append('집단 순서는 의견의 강도나 인원 순위가 아닙니다. 접점이 없는 집단은 현장에서 연결 경로를 확인하세요.')
     footer = '\n'.join([clip(w, 160) for w in warnings[:2]] + [credit, SAVE_NOTICE])
     body = '\n'.join(lines)
     available = MAX_CHARS - len(footer) - 2
     text = body[:available] + ('…' if len(body) > available else '') + '\n' + footer
     return {'schema': 'pp.summary/1', 'run_id': run_id, 'cards': cards,
-            'missing_perspectives': missing, 'result_quality': quality,
+            'missing_perspectives': missing, 'grouping': result.get('grouping', {}), **trial, 'result_quality': quality,
             'truncated': len(result.get('who_to_ask', [])) > 3 or len(result.get('missing_perspectives', [])) > 4 or len(body) > available,
             'text': text, 'attribution_summary': credit, 'full_result_available': True,
             'save_notice': SAVE_NOTICE}
@@ -73,8 +75,9 @@ def build(result: dict, run_id: str) -> dict:
 def response(state: dict) -> dict:
     """Do not leak large receipts into the default MCP response."""
     data = {k: state[k] for k in ('notice', 'id', 'status', 'stage', 'stage_label', 'progress', 'estimated_remaining_seconds',
-                                  'poll_after_ms', 'error') if k in state}
+                                  'poll_after_ms', 'cost_usd', 'example', 'error', 'code', 'error_code', 'message', 'next_action', 'free_alternative', 'retryable') if k in state}
     if state.get('status') == 'completed':
         data['summary'] = build(state['result'], state['id'])
+        data.update({k: state['result'][k] for k in ('mode', 'result_label', 'trial_notice') if k in state['result']})
         data['save_notice'] = SAVE_NOTICE
     return data

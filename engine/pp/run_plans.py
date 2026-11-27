@@ -19,13 +19,13 @@ class Plans:
     def __init__(self):
         self.items = {}
 
-    def estimate(self, policy_text, sample, seed, i_confirm_public, limits):
+    def estimate(self, policy_text, sample, seed, i_confirm_public, limits, conditions=None):
         service.validate(policy_text, sample, seed, i_confirm_public)
         normalized = asdict(service.normalize_limits(limits))
-        quote = service.estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=normalized)
+        quote = service.estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=normalized, conditions=deepcopy(conditions))
         plan_id = uuid4().hex
         settings = dict(policy_text=policy_text, sample=sample, seed=seed,
-                        i_confirm_public=i_confirm_public, limits=normalized)
+                        i_confirm_public=i_confirm_public, limits=normalized, conditions=deepcopy(conditions))
         self.items[plan_id] = {'settings': settings, 'environment': environment(service.Credentials.from_env()), 'run_id': None}
         return {**quote, 'plan_id': plan_id, 'seed': seed, 'recommended_sample': RECOMMENDATION,
                 'plan_notice': '이 계획은 서버 재시작 때 사라집니다. 조건이 바뀌면 다시 estimate하세요. plan_id는 사용자의 유료 실행 승인 자체가 아닙니다.'}
@@ -37,8 +37,9 @@ class Plans:
         settings = deepcopy(plan['settings'])
         for key, value in overrides.items():
             if value is not None:
-                value = asdict(service.normalize_limits(value)) if key == 'limits' else value
-                if value != settings[key]:
+                value = asdict(service.normalize_limits(value)) if key == 'limits' else service.normalize_conditions(value) if key == 'conditions' else value
+                expected = service.normalize_conditions(settings[key]) if key == 'conditions' else settings[key]
+                if value != expected:
                     raise service.RequestError('확인한 견적과 실행 조건이 다릅니다. 바뀐 조건으로 estimate를 다시 호출하세요.')
         if environment(credentials) != plan['environment']:
             raise service.RequestError('모델·체험 모드·패널 또는 명료성 점검 설정이 바뀌었습니다. estimate를 다시 호출하세요.')

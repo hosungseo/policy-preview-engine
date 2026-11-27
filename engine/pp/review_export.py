@@ -17,5 +17,5 @@ def save(state: dict, path: str) -> dict:
     except (OSError, ValueError, TypeError):
         raise service.RequestError('저장하지 못했습니다. 서버 컴퓨터의 쓰기 가능한 폴더와 새 파일 이름을 지정하세요. 기존 파일은 덮어쓰지 않습니다.') from None
     return {'id': state['id'], 'saved': True, 'path': str(target.absolute()),
-            'format': 'pp.run/2', 'notice': state['result'].get('notice'),
+            'format': state['result']['schema'], 'notice': state['result'].get('notice'),
             'message': '고지·출처·영수증·실행 기록을 포함한 전체 결과를 저장했습니다.'}

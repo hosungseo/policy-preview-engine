@@ -275,7 +275,7 @@ def test_conditions_work_across_mcp_http_and_cli_and_update_input_hash(fake_mode
             started = await server.call_tool("start_run", {"policy_text": POLICY, "sample": 12, "conditions": conds})
             assert not started.isError
             done = wait_job(jobs.get, started.structuredContent["id"])
-            got = await server.call_tool("get_run", {"id": done["id"]})
+            got = await server.call_tool("get_run", {"id": done["id"], "view": "full"})
             assert not got.isError
             res = got.structuredContent["result"]
             assert res["schema"] == "pp.run/3"

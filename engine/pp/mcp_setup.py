@@ -137,7 +137,8 @@ def check_setup() -> dict:
     mock = mock_mode()
     key = bool((os.environ.get("ANTHROPIC_API_KEY") or "").strip())
     panel = panel_ready()
-    examples = all((config.REPO_ROOT / "engine" / "policies" / f"{name}.json").is_file() for name in EXAMPLES)
+    from . import mcp_copy
+    examples = all(name in mcp_copy.EXAMPLES for name in EXAMPLES)
     problems = []
     if not mock and not key:
         problems.append(error_payload(SetupError("missing_model_key")))
@@ -162,10 +163,11 @@ def try_example(example: str = "subway-free-ride") -> dict:
 
     if example not in EXAMPLES:
         raise SetupError("input_rejected", "내장 예시 이름을 찾지 못했습니다. 가능한 예시: " + ", ".join(EXAMPLES))
-    policy = json.loads((config.REPO_ROOT / "engine" / "policies" / f"{example}.json").read_text(encoding="utf-8"))
+    from . import mcp_copy
+    policy = mcp_copy.EXAMPLES[example]
     token = _trial.set(True)
     try:
-        result = service.run_policy(policy["title"] + "\n" + policy["text"], sample=12,
+        result = service.run_policy(policy.title + "\n" + policy.text, sample=12,
                                     credentials=service.Credentials(), limits={"max_cost_usd": 0})
         return public_rules.envelope({"status": "completed", "mode": "mock", "result_label": TRIAL_LABEL,
                                       "example": example, "cost_usd": 0, "result": result})

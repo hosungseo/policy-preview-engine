@@ -137,7 +137,7 @@ def test_protocol_carries_instructions_titles_and_argument_copy(server):
         return init.instructions, tools
     instructions, tools = session_run(server, scenario)
     assert instructions == mcp_copy.INSTRUCTIONS
-    assert {t.name for t in tools} == {"estimate", "start_run", "get_run"}
+    assert {t.name for t in tools} == set(mcp_copy.TOOLS)
     for tool in tools:
         copy = mcp_copy.TOOLS[tool.name]  # every registered tool needs copy, including later ones
         properties = tool.inputSchema["properties"]
@@ -195,7 +195,7 @@ def test_prompts_list_boxes_and_render_with_next_step(server):
         return listed, rendered
     listed, rendered = session_run(server, scenario)
     assert [p.name for p in listed] == list(mcp_copy.PROMPTS)
-    available = {"estimate", "start_run", "get_run"}
+    available = set(mcp_copy.TOOLS)
     for prompt in listed:
         copy = mcp_copy.PROMPTS[prompt.name]
         assert prompt.title == copy.title and prompt.description == copy.description
@@ -209,8 +209,7 @@ def test_prompts_list_boxes_and_render_with_next_step(server):
         assert mentioned_tools(text) <= available, prompt.name
         assert "{" not in CODE.sub("", text.split("```")[0]), prompt.name
     free = rendered["free_example"].messages
-    assert [str(m.content.resource.uri) for m in free[1:]] == ["pp://examples/subway-free-ride",
-                                                            "pp://examples/result-summary"]
+    assert [str(m.content.resource.uri) for m in free[1:]] == ["pp://examples/subway-free-ride"]
     assert free[1].content.resource.text == mcp_copy.example_markdown("subway-free-ride")
     cost = rendered["cost_first"].messages[0].content.text
     assert policy.strip() in cost and mcp_copy.PASTED_POLICY in cost and "2달러로 정했으니" in cost
@@ -243,11 +242,12 @@ def test_resources_list_and_read(server):
         copy = mcp_copy.RESOURCES[str(resource.uri)]
         assert resource.title == copy.title and resource.mimeType == "text/markdown"
         assert bodies[str(resource.uri)] == mcp_guide.resource_text(str(resource.uri))
-    assert len([u for u in bodies if u.startswith("pp://examples/") and u != "pp://examples/result-summary"]) == 3
+    assert len([u for u in bodies if u.startswith("pp://examples/") and u != "pp://examples/result-summary"]) == len(mcp_copy.EXAMPLES)
 
 
 @pytest.mark.parametrize("key", sorted(mcp_copy.EXAMPLES))
-def test_example_policies_match_engine_files_and_pass_input_rules(key):
+def test_example_policies_match_engine_files_and_pass_input_rules(key, monkeypatch):
+    monkeypatch.setenv("PP_LLM_PROVIDER", "api")
     example = mcp_copy.EXAMPLES[key]
     source = json.loads((ROOT / "engine" / "policies" / f"{key}.json").read_text())
     assert example.text == source["text"] and example.title == source["title"] and example.kind == source["kind"]
