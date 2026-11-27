@@ -440,14 +440,16 @@ def test_future_pair_adds_two_arms_and_a_cohort_view(env):
 
 @pytest.mark.needs_panel
 def test_summarize_unchanged_by_compare_groups():
-    """Snapshot taken before compare_groups() was extracted from summarize(): the output must stay byte-identical."""
+    """Snapshot taken before compare_groups() was extracted from summarize(): the output must stay byte-identical.
+    The attribution block added later is left out of the digest; tests/test_attribution_labels.py checks it."""
     import hashlib
     import json
     people = panel.sample(panel.load()[0], 3000, 1)
     spec = {"options": OPTIONS}
     big = lambda p: [0.8, 0.1, 0.1] if p["age_band"] == "70세 이상" else [0.4, 0.3, 0.3]  # noqa: E731
     small = lambda p: [0.52, 0.24, 0.24] if p["sex"] == "남자" else [0.50, 0.25, 0.25]  # noqa: E731
-    digest = lambda r: hashlib.sha256(json.dumps(r, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]  # noqa: E731
+    digest = lambda r: hashlib.sha256(json.dumps({k: v for k, v in r.items() if k != "attribution"},  # noqa: E731
+                                                 ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
     assert digest(aggregate.summarize(spec, people, _answers(people, big), [])) == "d6b5db04a856d4b6"
     assert digest(aggregate.summarize(spec, people, _answers(people, small), [])) == "37ac8c9677556ee1"
     c = aggregate.compare_groups([p["uuid"] for p in people[:500]], [p["uuid"] for p in people[500:1000]],

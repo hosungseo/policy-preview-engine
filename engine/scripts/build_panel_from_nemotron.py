@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pp import config, prompts, provenance  # noqa: E402
+from pp import attribution, config, prompts, provenance  # noqa: E402
 from pp.panel import allocate  # noqa: E402
 
 REPO_ID = "nvidia/Nemotron-Personas-Korea"
@@ -169,11 +169,14 @@ def main(argv: list[str] | None = None) -> int:
     report["seed"] = args.seed
     report.update(source_repo=REPO_ID, source_revision=revision,
                   revision_status="user_supplied" if args.parquet_dir and revision else "resolved" if revision else "unknown")
-    provenance.write_metadata(args.out, report)
+    # The sidecar travels with the file: CC BY 4.0 credit, the revision, and what was changed.
+    provenance.write_metadata(args.out, {**report, "attribution": attribution.build(
+        report, changes=("sampled", "profile"), model_output=False)})
     if args.persona_db:
         report["persona_db"] = str(args.persona_db)
         report["persona_db_rows"] = write_persona_db(files, args.persona_db)
-        provenance.write_metadata(args.persona_db, report)
+        provenance.write_metadata(args.persona_db, {**report, "attribution": attribution.build(
+            report, changes=("db",), model_output=False)})
     print(json.dumps(report, ensure_ascii=False))
     return 0
 

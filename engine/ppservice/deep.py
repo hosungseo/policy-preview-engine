@@ -174,6 +174,8 @@ def _who(p: dict) -> dict:
 def summarize(b: dict, spec: dict, main_answers: dict[str, list[float]]) -> dict:
     """The part of the pipeline bundle the result page shows, with every voice tied to the survey answer the same
     synthetic person gave. Reasons and suggestions are verbatim model output; nothing here is rewritten."""
+    from pp import attribution
+
     people = {p["uuid"]: p for p in b["personas"]}
     analysis, options = b["analysis"], spec["options"]
     groups: list[list[dict]] = [[] for _ in options]
@@ -221,7 +223,9 @@ def summarize(b: dict, spec: dict, main_answers: dict[str, list[float]]) -> dict
                    "checked": (analysis.get("jev") or {}).get("n", 0)},
         "overall": analysis["overall"], "overall_aff": analysis.get("overall_aff"),
         "panel_caution": "영향권: 전체 비율로 읽지 않음", "panel_version": meta.get("panel_version"),
-        "source_revision": meta.get("source_revision"), "by_option": by_option, "issues": issues, "outreach": outreach,
+        "source_revision": meta.get("source_revision"),
+        "attribution": b.get("attribution") or attribution.build(meta),
+        "by_option": by_option, "issues": issues, "outreach": outreach,
         "alternatives": alternatives, "insights": analysis.get("insights", []),
         "hearing": {"agenda": b["hearing"]["agenda"], "summary": b["hearing"]["summary"],
                     "turns": len(b["hearing"]["turns"]), "participants": len(b["hearing"]["participants"])},

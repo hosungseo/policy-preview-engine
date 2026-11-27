@@ -14,13 +14,21 @@ def test_family_bucket():
     cases = {
         "혼자 거주": "1인 가구", "혼자 거주 (배우자 별거)": "1인 가구", "배우자와 거주": "부부",
         "배우자·자녀와 거주": "부부+자녀", "배우자·자녀·어머니와 거주": "부부+자녀",
-        "배우자·편부모와 거주": "기타", "자녀와 거주 (한부모)": "한부모·자녀",
-        "자녀·어머니와 거주": "한부모·자녀", "부모와 동거": "부모 등과 동거",
+        "배우자·편부모와 거주": "기타", "자녀와 거주 (한부모)": "배우자 없이 자녀와 거주",
+        "자녀와 거주 (배우자 별거)": "배우자 없이 자녀와 거주",
+        "자녀·어머니와 거주": "배우자 없이 자녀와 거주", "부모와 동거": "부모 등과 동거",
         "어머니와 동거": "부모 등과 동거", "조부 또는 조모와 동거": "부모 등과 동거",
         "손자녀와 거주": "기타", "형제 부부 가구에 동거": "기타", "기타2세대": "기타",
     }
     for raw, bucket in cases.items():
         assert config.family_bucket(raw) == bucket, raw
+
+
+def test_family_buckets_name_composition_not_eligibility():
+    # A household bucket must not read as a benefit group such as 한부모가족; old saved labels map to the new name.
+    assert all("한부모" not in b for b in config.FAMILY_BUCKETS)
+    assert set(config.LEGACY_FAMILY_LABELS.values()) <= set(config.FAMILY_BUCKETS)
+    assert "가구 구성" in config.FAMILY_NOTE and "지원 대상" in config.FAMILY_NOTE
 
 
 def test_to_raw_province():

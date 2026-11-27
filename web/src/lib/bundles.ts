@@ -24,10 +24,25 @@ export function listRuns(): RunSummary[] {
   return [...seen.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
+// Runs saved before the household rename call this group "한부모·자녀". It is the same group (living with children,
+// no spouse in the household), renamed so it reads as household composition rather than 한부모가족 eligibility.
+const LEGACY_FAMILY: Record<string, string> = { "한부모·자녀": "배우자 없이 자녀와 거주" };
+
+function renameFamily(b: Bundle): Bundle {
+  const rename = (label: string) => LEGACY_FAMILY[label] ?? label;
+  for (const p of b.personas) p.family = rename(p.family);
+  const family = (b.population as { family?: Record<string, number> }).family;
+  if (family) (b.population as { family?: Record<string, number> }).family =
+    Object.fromEntries(Object.entries(family).map(([k, v]) => [rename(k), v]));
+  for (const row of b.analysis.by_group?.family ?? []) row.group = rename(row.group);
+  for (const row of b.analysis.jev?.by_group?.family ?? []) row.group = rename(row.group);
+  return b;
+}
+
 export function getRun(id: string): Bundle {
   for (const dir of DIRS) {
     const file = join(dir, `${id}.json`);
-    if (existsSync(file)) return readJson<Bundle>(file);
+    if (existsSync(file)) return renameFamily(readJson<Bundle>(file));
   }
   throw new Error(`bundle not found: ${id}`);
 }

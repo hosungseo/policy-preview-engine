@@ -4,13 +4,19 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from . import attribution, config
+
 KST = ZoneInfo("Asia/Seoul")
 
 LIMITS = [
     "대표 패널과 영향권 패널은 따로 집계합니다. 영향권: 전체 비율로 읽지 않음.",
     "이 계획서는 합성 인물(AI)의 반응을 바탕으로 만든 초안이며, 실제 여론조사 결과가 아닙니다.",
     "AI 반응은 합의를 부풀리고 중도로 몰리는 경향이 있어 찬반 비율은 방향 참고용으로만 씁니다.",
-    "기본 합성 인물(Nemotron-Personas-Korea)은 19세 이상이며 소득 정보가 없습니다. 애드온의 가구 소득은 통계로 배정한 가정입니다.",
+    "기본 합성 인물(Nemotron-Personas-Korea)은 19세 이상이며 소득 정보가 없습니다. 애드온의 가구 소득은 통계로 배정한 구간(가정)이라 "
+    "지원 금액·수급 자격·상환 능력을 계산하는 데 쓰지 않습니다. 구간의 가운데 값을 그 사람의 금액으로 쓰지 않습니다.",
+    config.FAMILY_NOTE,
+    "몇 명뿐인 교차 칸(예: 시군구 × 직업)의 차이는 집단 차이로 단정하지 않습니다. 시도·연령대·성별 합계가 맞아도 다른 속성의 조합까지 "
+    "현실과 같다고 보지 않습니다.",
     "‘찾아가 들어야 할 집단’의 침묵 비율은 AI가 추정한 의견 제출 의향에 기반하므로 현장 확인이 필요합니다.",
     "수정안 비교와 참여 방식 확률은 합성 인물에 대한 Jev의 추정이며, 효과가 날짜·나이 계산에 달린 수정안은 잘못 읽을 수 있습니다.",
 ]
@@ -73,4 +79,4 @@ def build_plan(policy: dict, analysis: dict, segments: list[dict], qa: list[dict
     }
     return {"overview": overview, "issues": issues, "outreach": outreach, "qa": qa,
             "suggestions": suggestions, "alternatives": alternatives, "explain": explain,
-            "clarity": _clarity_items(clarity, labels), "limits": LIMITS}
+            "clarity": _clarity_items(clarity, labels), "limits": LIMITS, "attribution": attribution.build(meta)}

@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from pp import export
+from pp import attribution, export
 
 POLICY_TEXT = "가. 무임승차 기준 연령을 단계적으로 70세까지 올린다.\n"
 
@@ -29,6 +29,7 @@ def bundle(provider="cli"):
         "plan": {"issues": [{"title": "t", "quote": "부담돼요."}], "suggestions": [{"example": "천천히요."}]},
         "meta": {"provider": provider, "created_at": "2026-09-24T00:00:00+00:00",
                  "stages": [{"name": "react", "seconds": 10.0}]},
+        "attribution": attribution.build({"source_revision": "a" * 40, "revision_status": "resolved"}),
     }
 
 
@@ -48,6 +49,10 @@ def test_valid_bundle_passes():
      "amendment source"),
     (lambda b: b["reactions"][0].update(lenses=["no_such_lens"]), "unknown lens"),
     (lambda b: b["hearing"].update(reads=[{"index": 0, "speaker": "사회자"}]), "hearing read"),
+    (lambda b: b.pop("attribution"), "attribution missing"),
+    (lambda b: b["attribution"]["sources"][0].update(license="Apache-2.0"), "persona license"),
+    (lambda b: b["attribution"]["sources"][0].update(changes=[]), "how the personas were changed"),
+    (lambda b: b["attribution"].update(notice="출처 없음"), "persona credit"),
 ])
 def test_validator_catches_defects(mutate, needle):
     b = copy.deepcopy(bundle())
@@ -112,3 +117,20 @@ def test_assemble_adds_clarity_lenses_and_hearing_reads(tmp_path):
     assert b["clarity"]["clauses"][0]["segment_id"] == "s1"
     assert b["reactions"][0]["lenses"] == ["welcome"] and b["reactions"][1]["lenses"] == ["cost", "trust"]
     assert b["hearing"]["reads"][0]["index"] == 1 and b["hearing"]["trajectories"]["participants"][0]["uuid"] == "u1"
+
+
+def test_assemble_carries_attribution_with_recorded_revision(tmp_path):
+    rev = "ada0f5b53a38bb5a30cce09358adde883c1ab63a"
+    files = {
+        "policy.json": {"id": "d", "title": "t", "kind": "k", "text": POLICY_TEXT},
+        "segments.json": [], "panel.json": {}, "personas.json": [], "reactions.json": [], "analysis.json": {},
+        "hearing.json": {}, "plan.json": {}, "meta.json": {"source_revision": rev, "revision_status": "resolved"},
+    }
+    for name, data in files.items():
+        (tmp_path / name).write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    b = export.assemble(tmp_path)
+    assert attribution.validate(b["attribution"]) == []
+    persona = b["attribution"]["sources"][0]
+    assert persona["source_revision"] == rev and persona["license"] == "CC BY 4.0" and persona["modified"] is True
+    assert "ada0f5b" in b["attribution"]["notice"] and "가공" in b["attribution"]["notice"]
+    assert "지원 대상" in b["field_notes"]["family"]

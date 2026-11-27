@@ -69,6 +69,12 @@ def test_build_writes_dots_panel_people_and_meta(setup):
     assert [x["short"] for x in meta["measures"]] == ["1·1", "2·2"]
     assert meta["n_dots"] == 170 and meta["sizes"]["dots.bin"] == 680
     assert sum(x["n"] for x in meta["districts"]) == 170
+    # The map's files travel with their credit: personas (CC BY 4.0, changed), boundaries (KOGL type 1), model output.
+    from pp import attribution
+    assert attribution.validate(meta["attribution"]) == []
+    roles = [s["role"] for s in meta["attribution"]["sources"]]
+    assert roles == ["synthetic_personas", "boundaries", "generated"]
+    assert "공공누리 제1유형" in meta["attribution"]["notice"] and "지원 대상" in meta["field_notes"]["family"]
 
 
 def test_build_refuses_a_bundle_from_another_run(setup):

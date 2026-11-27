@@ -5,6 +5,7 @@
 - 합성 인물이 들어 있는 파일은 NVIDIA **Nemotron-Personas-Korea**(CC BY 4.0, https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea)에서 왔습니다. 인물 이름과 서술은 실존 인물이 아닙니다.
 - 공공 통계는 KOSIS(국가통계포털) 등에 공개된 표를 출처 표기 조건으로 씁니다. 표 ID는 각 파일 안(`source`, `sources`, `sources_detail`)에 적어 두었습니다.
 - "이 프로젝트 생성"은 이 저장소의 코드로 만든 값입니다. 판단 모델(TypeSafe Jev)과 문장 모델(Claude)의 출력이 들어 있으며, 실제 여론이 아닙니다.
+- 엔진이 새로 만드는 결과 JSON(실행 묶음, 계획서, 조사 결과, 찾아갈 곳 카드, 100만 명 지도 `meta.json`, 패널 묶음의 `.meta.json`)에는 이 표의 요약인 `attribution` 항목이 함께 들어갑니다. 합성 인물의 CC BY 4.0 표시, 원본 revision, 가공 내용, 그 결과에 쓴 공공 통계 이름이 담기므로 파일 하나만 옮겨도 출처가 따라갑니다(`engine/pp/attribution.py`).
 - 저장소 루트의 `data/` 폴더에는 이 파일만 git에 올립니다. 합성 인물 원본 내려받기(`data/nemotron-personas-korea/`)와 캐시는 올리지 않습니다.
 
 ## 표

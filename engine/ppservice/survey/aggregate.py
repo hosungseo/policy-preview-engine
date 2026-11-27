@@ -22,6 +22,13 @@ AXES = [("연령대", "age_band", ["19–29세", "30대", "40대", "50대", "60�
         ("지역", "region", ["수도권", "비수도권"])]
 BASELINE = Path(__file__).resolve().parents[1] / "data" / "baseline.json"
 UNSURE = re.compile(r"모르|판단하기 어렵|유보|무응답")
+# Add-ons whose values are bands or flags drawn from statistics: never a person's amount, eligibility or ability to
+# repay.
+MONEY_ADDONS = {"finance", "assets", "welfare"}
+MONEY_LIMIT = ("소득·자산 구간과 수급 표시는 통계로 배정한 가정이라 지원 금액·수급 자격·상환 능력을 계산하거나 판정하는 데 "
+               "쓰지 않습니다.")
+DIGITAL_LIMIT = ("디지털 항목은 ‘인터넷·스마트폰으로 필요한 정보를 찾을 수 있는지’ 설문의 대리값이며, 서류 제출·앱 신청 같은 "
+                 "절차를 해낼 수 있는지를 뜻하지 않습니다.")
 
 
 def mean_shares(rows: list[list[float]], k: int) -> list[float]:
@@ -122,10 +129,13 @@ def summarize(spec: dict, people: list[dict], answers: dict[str, dict[str, list[
                         '현재 문항의 유보 편향 추정치가 아닙니다.'] if values else cautions
     addons = addons_view(panel_version)
     if addons:
+        names = {a["name"] for a in addons}
         cautions.append(f"생활 여건 애드온 {len(addons)}종({', '.join(a['title'] for a in addons)})을 붙인 패널입니다. "
                         "공공통계에서 뽑은 가정이며 개인의 실제 정보가 아닙니다."
                         + (" 소득·자산 정보가 붙으면 소득에 따른 응답 차이가 실측보다 크게 나올 수 있습니다."
-                           if any(a["name"] in ("finance", "assets") for a in addons) else ""))
+                           if names & {"finance", "assets"} else "")
+                        + (" " + MONEY_LIMIT if names & MONEY_ADDONS else "")
+                        + (" " + DIGITAL_LIMIT if "digital" in names else ""))
     future_result = future_view(people, answers, k, top, future, max(placebo_shift, reversal_shift)) if future else None
     if future_result:
         cautions.append(f"‘5년 뒤 보기’는 같은 합성 인물 {future_result['n']:,}명을 {future_result['year']}년의 상태"
@@ -143,7 +153,21 @@ def summarize(spec: dict, people: list[dict], answers: dict[str, dict[str, list[
         "splits": splits, "axes": axes, "baseline": None, "accuracy": accuracy, "next_action": next_action,
         "lint_warnings": len(warnings), "summary_text": summary_text, "cautions": cautions, "addons": addons,
         "future": future_result,
+        "attribution": result_attribution(panel_version, [a["name"] for a in addons],
+                                          ["통계청 「2024 사회조사」(과거 진단 비교 기준)"]
+                                          if historical and historical['panel_version'] == panel_version else []),
     }
+
+
+def result_attribution(panel_version: str | None, addons: list[str], extra_stats: list[str] = ()) -> dict:
+    """Source and terms of a service result: the 20k panel's recorded (or verified) revision, the add-ons' tables."""
+    from pp import attribution
+
+    from . import panel
+
+    meta = {**attribution.recorded(panel.BUNDLE), "panel_version": panel_version}
+    changes = attribution.DEFAULT_CHANGES + (("addons",) if addons else ())
+    return attribution.build(meta, changes=changes, stats=[*attribution.addon_statistics(addons), *extra_stats])
 
 
 def group_top(ids: list[str], main: dict, placebo: dict, rev: dict, k: int, top: int) -> dict:
