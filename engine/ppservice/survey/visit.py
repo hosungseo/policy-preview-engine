@@ -30,6 +30,13 @@ ROSTER = panel.BUNDLE.parent / "roster-1m.json.gz"  # per-district counts over t
 ROSTER_DISTRICT_MIN, ROSTER_TIMES = 300, 1.3
 QUIET_GAP_PP = 5        # a group's "never spoke up" share is shown only when it differs this much from everyone's
 YOUNG_CHILD = re.compile(r"영유아|어린이집|갓난|신생아|유치원")
+CHILD_NEGATION = re.compile(r"(?:자녀|아이|영유아|신생아).{0,12}(?:없|아니)|(?:키우|양육|돌보).{0,5}(?:않|못)|비양육")
+CHILD_OTHER_CONTEXT = re.compile(r"교사|원장|근무|보육교직원|간호사|실습|봉사|조카|손주|어린 시절|"
+                                 r"(?:어린이집|유치원).{0,8}(?:근처|인근|주변|옆|앞|맞은편)")
+CHILD_PARENT_CONTEXT = re.compile(r"(?:영유아|갓난(?:아기|아이)?|신생아).{0,18}(?:키우|키웁|양육)|"
+                                  r"(?:어린이집|유치원).{0,8}(?:다니는|등원하는).{0,8}(?:자녀|아이|아들|딸)|"
+                                  r"(?:자녀|아이|아들|딸).{0,12}(?:어린이집|유치원).{0,8}(?:보내|등원)|"
+                                  r"(?:어린이집|유치원).{0,4}학부모")
 DEFAULT_VENUES = ["행정복지센터", "주민자치회"]
 PROVINCE = {"경상남": "경남", "경상북": "경북", "전라남": "전남", "충청남": "충남", "충청북": "충북"}
 
@@ -68,6 +75,16 @@ def load_context() -> dict[str, dict]:
     return {r["uuid"]: r for r in (json.loads(x) for x in raw.splitlines() if x.strip())}
 
 
+def young_child_candidate(profile: str) -> bool:
+    """A textual clue for review, never proof of household composition or eligibility."""
+    for sentence in re.split(r"[.!?。\n]+", profile):
+        if not YOUNG_CHILD.search(sentence) or CHILD_NEGATION.search(sentence):
+            continue
+        if not CHILD_OTHER_CONTEXT.search(sentence) or CHILD_PARENT_CONTEXT.search(sentence):
+            return True
+    return False
+
+
 def _base_groups(p: dict, h: dict) -> list[tuple[str, str, list[str]]]:
     """(attribute, label, venue kinds) for every base-persona group this person belongs to."""
     out = [("연령대", p["age_band"], {
@@ -98,8 +115,8 @@ def _base_groups(p: dict, h: dict) -> list[tuple[str, str, list[str]]]:
         out.append(("가구", "혼자 사는 사람", ["1인가구 지원센터", "행정복지센터"]))
     elif "한부모" in household:
         out.append(("가구", "한부모 가구", ["가족센터", "한부모가족 지원기관"]))
-    if YOUNG_CHILD.search(p["profile"]):
-        out.append(("영유아", "영유아를 키우는 가구", ["어린이집·유치원 학부모 모임", "육아종합지원센터"]))
+    if young_child_candidate(p["profile"]):
+        out.append(("영유아", "영유아·보육 관련 언급 인물(확인 후보)", ["어린이집·유치원 학부모 모임", "육아종합지원센터"]))
     housing = h.get("주거", "")
     if housing == "아파트":
         out.append(("주택", "아파트에 사는 사람", ["입주자대표회의", "관리사무소 게시판"]))

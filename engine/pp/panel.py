@@ -33,32 +33,24 @@ def sample_representative(strata: dict, n: int, seed: int = 42) -> list[int]:
 
 
 def normalize_spec(raw: dict) -> dict:
-    """Validate an LLM targeting spec; unknown keys and provinces are dropped."""
+    """Normalize aliases, but never silently remove a requested targeting condition."""
     if not isinstance(raw, dict):
         raise ValueError("spec must be an object")
-    filters = []
-    for group in raw.get("filters") or []:
-        if not isinstance(group, dict):
-            continue
-        g = {k: v for k, v in group.items() if k in personas.FILTER_KEYS and v not in (None, "", [])}
-        for key in ("occupation_like", "family_type_like", "housing_type_in", "education_in", "province_in"):
-            if key in g and not isinstance(g[key], list):
-                g[key] = [g[key]]
-            if key in g:
-                g[key] = [str(x) for x in g[key]]
-        if "province_in" in g:
-            provinces = [config.to_raw_province(p) for p in g["province_in"]]
-            g["province_in"] = [p for p in provinces if p]
-            if not g["province_in"]:
-                del g["province_in"]
-        if g:
-            filters.append(g)
+    unknown = set(raw) - {"filters", "keywords", "semantic_query", "rationale"}
+    if unknown:
+        raise ValueError(f"unknown targeting keys: {sorted(unknown)}")
+    groups = raw.get("filters", [])
+    if not isinstance(groups, list) or len(groups) > 4:
+        raise ValueError("filters must be a list of at most four groups")
+    filters = [personas.normalize_filter(group) for group in groups]
+    if not isinstance(raw.get("keywords", []), list):
+        raise ValueError("keywords must be a list")
     keywords = [str(k).strip() for k in (raw.get("keywords") or []) if str(k).strip()][:12]
     query = str(raw.get("semantic_query") or "").strip()
     if not filters and not personas.usable_keywords(keywords) and not query:
         raise ValueError("targeting spec has no usable channel")
     return {
-        "filters": filters[:4],
+        "filters": filters,
         "keywords": keywords,
         "semantic_query": query,
         "rationale": str(raw.get("rationale") or "").strip(),
@@ -114,9 +106,16 @@ def interleave(lists: list[list[int]]) -> list[int]:
 
 
 def build_affected(conn, spec: dict, exclude: set[int], k: int = 100,
-                   semantic_ids: list[int] | None = None, seed: int = 42) -> tuple[list[dict], dict]:
+                   semantic_ids: list[int] | None = None, seed: int = 42, *,
+                   receipt: dict | None = None) -> tuple[list[dict], dict]:
     """Union of three channels minus the representative panel, then diversified."""
-    filter_hits = interleave([personas.filter_ids(conn, group, limit=300, seed=seed) for group in spec["filters"]])
+    spec = normalize_spec(spec)
+    filter_receipts, lists = [], []
+    for group in spec["filters"]:
+        audit = {}
+        lists.append(personas.filter_ids(conn, group, limit=300, seed=seed, receipt=audit))
+        filter_receipts.append(audit)
+    filter_hits = interleave(lists)
     channels = {
         "filter": filter_hits[:300],
         "fts": personas.fts_ids(conn, spec["keywords"], limit=300),
@@ -134,4 +133,14 @@ def build_affected(conn, spec: dict, exclude: set[int], k: int = 100,
     cands = [{"id": r["id"], "province": r["province"], "age": r["age"], "occupation": r["occupation"],
               "found_by": found_by[r["id"]]} for r in rows]
     picked = diversify(cands, k, seed=seed)
+    if receipt is not None:
+        receipt.update({"filter_groups": filter_receipts, "filter_merge": "round_robin_deduplicated_limit_300",
+                        "fts": {"requested_keywords": spec["keywords"],
+                                "usable_keywords": personas.usable_keywords(spec["keywords"]),
+                                "order": "bm25 ASC, rowid ASC", "limit": 300},
+                        "candidate_count": len(cands), "requested_count": k, "selected_count": len(picked),
+                        "excluded_representative_count": len(set().union(*map(set, channels.values())) & exclude),
+                        "selection": "region_age_round_robin_then_channel_count_desc_with_seeded_ties",
+                        "occupation_cap": 5, "occupation_cap_increment": 5, "seed": seed,
+                        "status": "candidate_not_eligibility"})
     return picked, {name: len(ids) for name, ids in channels.items()}

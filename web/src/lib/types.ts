@@ -106,6 +106,7 @@ export interface Analysis {
 export interface Turn { round: number; speaker: string; text: string }
 export interface HearingRead { index: number; round: number; speaker: string; stance: number; marks: Record<string, number> }
 export interface Hearing {
+  policy_truncated?: boolean; shown_chars?: number; total_chars?: number; context_note?: string;
   participants: string[]; agenda: string[]; turns: Turn[];
   summary: { agreements: string[]; disagreements: string[]; missing: string[] };
   reads?: HearingRead[];

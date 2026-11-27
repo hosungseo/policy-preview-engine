@@ -101,24 +101,68 @@ def fetch(conn: sqlite3.Connection, ids: list[int]) -> list[dict]:
     return [found[i] for i in ids if i in found]
 
 
-def ids_for_uuids(conn: sqlite3.Connection, uuids: list[str]) -> list[int]:
+def ids_for_uuids(conn: sqlite3.Connection, uuids: list[str], *, strict: bool = False,
+                  missing: list[str] | None = None) -> list[int]:
     found: dict[str, int] = {}
     for start in range(0, len(uuids), 500):
         chunk = uuids[start:start + 500]
         for row in conn.execute(UUID_SQL, (json.dumps(chunk, ensure_ascii=False),)):
             found[row[1]] = row[0]
+    absent = [u for u in uuids if u not in found]
+    if missing is not None:
+        missing.extend(absent)
+    if strict and absent:
+        raise ValueError(f"persona UUIDs not found: {absent}")
     return [found[u] for u in uuids if u in found]
+
+
+def normalize_filter(group: dict) -> dict:
+    """Reject unsupported conditions instead of broadening a requested AND-group."""
+    if not isinstance(group, dict) or not group:
+        raise ValueError("filter group must be a non-empty object")
+    unknown = set(group) - FILTER_KEYS
+    if unknown:
+        raise ValueError(f"unknown filter keys: {sorted(unknown)}")
+    out = {}
+    list_keys = {"occupation_like", "family_type_like", "housing_type_in", "education_in", "province_in"}
+    for key, value in group.items():
+        if key in list_keys:
+            values = value if isinstance(value, list) else [value]
+            if not values or any(not isinstance(v, str) or not v.strip() for v in values):
+                raise ValueError(f"{key} must contain non-empty strings")
+            values = [v.strip() for v in values]
+            allowed = {"housing_type_in": config.HOUSING_ORDER, "education_in": config.EDUCATION_ORDER}.get(key)
+            if key == "province_in":
+                invalid = [v for v in values if config.to_raw_province(v) is None]
+                if invalid:
+                    raise ValueError(f"unknown provinces: {invalid}")
+                values = [config.to_raw_province(v) for v in values]
+            elif allowed is not None and set(values) - set(allowed):
+                raise ValueError(f"unknown {key} values: {sorted(set(values) - set(allowed))}")
+            out[key] = values
+        elif key in ("age_min", "age_max"):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"{key} must be a non-negative integer")
+            out[key] = value
+        else:
+            if value not in ("남자", "여자"):
+                raise ValueError("sex must be 남자 or 여자")
+            out[key] = value
+    if out.get("age_min", 0) > out.get("age_max", float("inf")):
+        raise ValueError("age_min must not exceed age_max")
+    return out
 
 
 def _like(values: list[str]) -> list[str]:
     return [v if "%" in v else f"%{v}%" for v in values]
 
 
-def filter_ids(conn: sqlite3.Connection, group: dict, limit: int = 300, seed: int = 42) -> list[int]:
+def filter_ids(conn: sqlite3.Connection, group: dict, limit: int = 300, seed: int = 42, *,
+               receipt: dict | None = None) -> list[int]:
     """One AND-group of attribute conditions -> matching ids (random sample of `limit`)."""
-    unknown = set(group) - FILTER_KEYS
-    if unknown:
-        raise ValueError(f"unknown filter keys: {sorted(unknown)}")
+    if not isinstance(group, dict):
+        raise ValueError("filter group must be an object")
+    group = normalize_filter(group) if group else {}
     def listed(values) -> str | None:
         values = [str(v) for v in values or []]
         return json.dumps(values, ensure_ascii=False) if values else None
@@ -138,11 +182,15 @@ def filter_ids(conn: sqlite3.Connection, group: dict, limit: int = 300, seed: in
         params["occ_like"] = listed(_like([v for v in values if v not in exact]))
         if params["occ_exact"] is None and params["occ_like"] is None:
             return []
-    if all(v is None for v in params.values()):
-        return []
-    ids = [r[0] for r in conn.execute(FILTER_SQL, params)]
+    ids = [r[0] for r in conn.execute(FILTER_SQL, params)] if group else []
+    total = len(ids)
     if len(ids) > limit:
         ids = sorted(random.Random(seed).sample(ids, limit))
+    if receipt is not None:
+        receipt.update({"conditions": group, "sql_template": "persona-filter-v1", "parameters": params,
+                        "matching_count": total, "returned_count": len(ids), "limit": limit,
+                        "sampled": total > limit, "seed": seed if total > limit else None,
+                        "order": "id ASC", "sampling": "seeded_random_without_replacement" if total > limit else "none"})
     return ids
 
 
@@ -169,7 +217,7 @@ def fts_ids(conn: sqlite3.Connection, keywords: list[str], limit: int = 300) -> 
         return []
     query = " OR ".join(f'"{w}"' for w in words)
     rows = conn.execute(
-        "SELECT rowid FROM persona_fts WHERE persona_fts MATCH ? ORDER BY bm25(persona_fts) LIMIT ?",
+        "SELECT rowid FROM persona_fts WHERE persona_fts MATCH ? ORDER BY bm25(persona_fts), rowid LIMIT ?",
         (query, limit),
     ).fetchall()
     return [r[0] for r in rows]

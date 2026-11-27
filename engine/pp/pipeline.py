@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 import random
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from . import (analyze_jev, analyze_llm, analyze_stats, config, export, hearing, jev, jev_panel, llm, panel, personas,
-               plan_doc, prompts, react, segment, semantic)
+               plan_doc, prompts, react, segment, semantic, selection)
 
 STAGES = ("segment", "clarity", "panel", "react", "issues", "jev", "alternatives", "review", "analyze", "hearing",
           "debrief", "plan", "export")
@@ -76,7 +77,7 @@ class Run:
         strata = personas.PersonaIndex.load(conn).strata()
         if self.pool_uuids is None:
             return strata
-        keep = set(personas.ids_for_uuids(conn, list(self.pool_uuids)))
+        keep = set(personas.ids_for_uuids(conn, list(self.pool_uuids), strict=True))
         return {key: kept for key, ids in strata.items() if (kept := [i for i in ids if i in keep])}
 
     def run(self, force: tuple[str, ...] = (), only: tuple[str, ...] = (), skip: tuple[str, ...] = ()) -> Path | None:
@@ -140,11 +141,21 @@ class Run:
     def stage_panel(self) -> None:
         jev.reset_usage()
         conn = personas.connect()
-        rep_ids = panel.sample_representative(self._strata(conn), self.n_rep, seed=self.seed)
+        strata = self._strata(conn)
+        rep_ids = panel.sample_representative(strata, self.n_rep, seed=self.seed)
+        requested_spec = {}
+
+        def validate_spec(raw):
+            normalized = panel.normalize_spec(raw)
+            requested_spec.clear()
+            requested_spec.update(deepcopy(raw))
+            return normalized
+
         spec = llm.complete_json("target", prompts.TARGET_SYSTEM,
                                  prompts.target_prompt(self.policy["text"], personas.occupation_names(conn)),
-                                 model=config.SYNTH_MODEL, validate=panel.normalize_spec)
+                                 model=config.SYNTH_MODEL, validate=validate_spec)
         semantic_ids: list[int] = []
+        missing_semantic_uuids: list[str] = []
         semantic_note = ""
         if not semantic.available():
             self._fallback("의미 검색 경로 생략: 임베딩 파일 없음")
@@ -152,14 +163,17 @@ class Run:
             try:
                 query = semantic.embed_query(spec["semantic_query"])
                 hits = semantic.index().search(query, 1000)
-                candidates = personas.fetch(conn, personas.ids_for_uuids(conn, [u for u, _ in hits]))
+                candidates = personas.fetch(conn, personas.ids_for_uuids(conn, [u for u, _ in hits],
+                                                                        missing=missing_semantic_uuids))
                 semantic_ids = [pid for pid, _ in semantic.rerank_without_names(candidates, query, 300)]
                 semantic_note = (f"공개 임베딩으로 상위 {len(candidates)}명을 찾은 뒤, 이름 편향을 줄이려고 "
                                  f"이름을 지운 서술로 다시 임베딩해 {len(semantic_ids)}명을 골랐습니다.")
             except Exception as e:  # noqa: BLE001  model download / MPS errors fall back to two channels
                 self._fallback(f"의미 검색 경로 생략: {type(e).__name__}: {str(e)[:120]}")
+        affected_receipt = {}
         affected, channel_counts = panel.build_affected(conn, spec, set(rep_ids), k=self.n_aff,
-                                                        semantic_ids=semantic_ids, seed=self.seed)
+                                                        semantic_ids=semantic_ids, seed=self.seed,
+                                                        receipt=affected_receipt)
         found_by = {c["id"]: c["found_by"] for c in affected}
         rows = personas.fetch(conn, rep_ids + [c["id"] for c in affected])
         occupations = [r["occupation"] for r in rows]
@@ -175,6 +189,13 @@ class Run:
                    "found_by": found_by.get(r["id"], []),
                    "occupation_major": majors[r["occupation"]],
                    "similar": similar.get(r["uuid"], [])} for r in rows]
+        from . import provenance
+        _write(self.path("selection.json"), selection.receipt(
+            source=provenance.engine_source(), requested_spec=requested_spec, spec=spec,
+            strata=strata, rep_ids=rep_ids, affected=affected, rows=rows,
+            n_rep=self.n_rep, seed=self.seed, pool_uuids=self.pool_uuids,
+            affected_receipt=affected_receipt, channel_counts=channel_counts,
+            missing_semantic_uuids=missing_semantic_uuids, semantic_note=semantic_note))
         _write(self.path("personas.json"), people)
         _write(self.path("panel.json"), {
             "representative": {"n": len(rep_ids), "strata": ["province", "age_band", "sex"], "seed": self.seed},
@@ -429,6 +450,8 @@ class Run:
                                      {r["uuid"]: r for r in reactions}, [it["title"] for it in issues[:3]],
                                      workers=self.workers)
         _write(self.path("hearing.json"), result)
+        self.meta["hearing_context"] = {k: result[k] for k in prompts.hearing_policy_context(self.policy["text"])}
+        self.save_meta()
 
     def stage_debrief(self) -> None:
         """Jev reads every speech in the virtual hearing: stance, rebuttal, new point, concession, proposal."""

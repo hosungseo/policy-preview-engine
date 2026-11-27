@@ -23,9 +23,7 @@ def test_sample_representative_is_deterministic(persona_db):
 def test_normalize_spec_cleans_and_maps_provinces():
     spec = panel.normalize_spec({
         "filters": [
-            {"occupation_like": "택시", "province_in": ["경북", "전라북도", "화성시"], "income": 3},
-            {"bogus": 1},
-            "not a dict",
+            {"occupation_like": "택시", "province_in": ["경북", "전라북도"]},
         ],
         "keywords": ["지하철로", "", "택시"],
         "semantic_query": " 지하철로 출퇴근하는 노인 ",
@@ -35,6 +33,31 @@ def test_normalize_spec_cleans_and_maps_provinces():
     assert spec["semantic_query"] == "지하철로 출퇴근하는 노인"
     with pytest.raises(ValueError):
         panel.normalize_spec({"filters": [], "keywords": ["택시"], "semantic_query": ""})
+
+
+@pytest.mark.parametrize("group, message", [
+    ({"age_min": 65, "has_smartphone": "없음"}, "unknown filter keys"),
+    ({"age_min": 65, "province_in": ["존재하지않는지역"]}, "unknown provinces"),
+    ({"age_min": 65, "province_in": ["서울", "화성시"]}, "unknown provinces"),
+    ({"age_min": 65, "sex": "모름"}, "sex must"),
+    ({"age_min": 65, "province_in": []}, "non-empty strings"),
+    ({"age_min": 65, "occupation_like": None}, "non-empty strings"),
+    ({"age_min": "65"}, "integer"),
+    ({"age_min": 65, "age_max": 20}, "must not exceed"),
+    ({}, "non-empty object"),
+    ("not a dict", "non-empty object"),
+])
+def test_normalize_spec_never_discards_requested_conditions(group, message):
+    # The first two are the two zero-cost reproductions in the public code review.
+    with pytest.raises(ValueError, match=message):
+        panel.normalize_spec({"filters": [group], "keywords": ["지하철로"], "semantic_query": "노인"})
+
+
+def test_normalize_spec_rejects_excess_groups_and_top_level_conditions():
+    with pytest.raises(ValueError, match="four groups"):
+        panel.normalize_spec({"filters": [{"age_min": 65}] * 5})
+    with pytest.raises(ValueError, match="unknown targeting keys"):
+        panel.normalize_spec({"filters": [{"age_min": 65}], "has_smartphone": False})
 
 
 def test_diversify_caps_occupation():
@@ -116,3 +139,14 @@ def test_build_affected(persona_db):
     assert all(c["id"] not in {1, 11} for c in picked)
     assert stats == {"filter": 17, "fts": 57, "semantic": 0}
     assert all(set(c["found_by"]) <= {"filter", "fts", "semantic"} and c["found_by"] for c in picked)
+
+
+def test_build_affected_revalidates_and_records_zero_matches(persona_db):
+    conn = personas.connect()
+    with pytest.raises(ValueError, match="unknown provinces"):
+        panel.build_affected(conn, {"filters": [{"age_min": 65, "province_in": ["없는곳"]}]}, set())
+    receipt = {}
+    picked, counts = panel.build_affected(conn, {"filters": [{"age_min": 999}]}, set(), receipt=receipt)
+    assert picked == [] and counts == {"filter": 0, "fts": 0, "semantic": 0}
+    assert receipt["filter_groups"][0]["matching_count"] == 0
+    assert receipt["selected_count"] == receipt["candidate_count"] == 0

@@ -73,6 +73,34 @@ def test_listed_occupation_names_match_exactly(persona_db):
 def test_ids_for_uuids(persona_db):
     conn = personas.connect()
     assert personas.ids_for_uuids(conn, ["u00003", "u00001", "missing"]) == [3, 1]
+    absent = []
+    assert personas.ids_for_uuids(conn, ["u00003", "missing"], missing=absent) == [3]
+    assert absent == ["missing"]
+    with pytest.raises(ValueError, match="missing"):
+        personas.ids_for_uuids(conn, ["u00003", "missing"], strict=True)
+
+
+def test_filter_receipt_distinguishes_sorted_results_from_seeded_sample(persona_db):
+    conn = personas.connect()
+    full, sampled, repeated = {}, {}, {}
+    all_ids = personas.filter_ids(conn, {"age_min": 19}, limit=200, receipt=full)
+    ids = personas.filter_ids(conn, {"age_min": 19}, limit=12, seed=7, receipt=sampled)
+    assert ids == personas.filter_ids(conn, {"age_min": 19}, limit=12, seed=7, receipt=repeated)
+    assert sampled == repeated and sampled["matching_count"] == full["matching_count"] == 170
+    assert all_ids == sorted(all_ids) and ids == sorted(ids)
+    assert full["sampling"] == "none" and full["sampled"] is False and full["seed"] is None
+    assert sampled["sampling"] == "seeded_random_without_replacement" and sampled["seed"] == 7
+    assert sampled["parameters"]["age_min"] == 19 and sampled["returned_count"] == 12
+
+
+@pytest.mark.parametrize("group", [
+    {"age_min": 65, "has_smartphone": "없음"},
+    {"age_min": 65, "province_in": ["존재하지않는지역"]},
+    {"age_min": 65, "sex": None}, [],
+])
+def test_direct_filter_never_weakens_conditions(persona_db, group):
+    with pytest.raises(ValueError):
+        personas.filter_ids(personas.connect(), group)
 
 
 def test_population(persona_db):
