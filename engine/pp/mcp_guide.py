@@ -2,7 +2,7 @@
 
 Connection points in mcp.py: ``dress_tools`` in ``list_tools`` and ``register`` in ``create_server``.
 Prompts read the live tool list, so a step that needs a tool another package adds (try_example,
-check_setup, get_run's summary view) appears once that tool is registered, with no edit here.
+check_setup, get_run's summary view, slice_run) appears once that tool is registered, with no edit here.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def dress_tools(tools):
     """Overlay Korean titles and descriptions onto listed tools and their argument schemas."""
     for tool in tools:
         properties = tool.inputSchema.get("properties", {})
-        copy = mcp_copy.TOOLS.get(tool.name)
+        copy = mcp_copy.TOOLS.get(tool.name) or mcp_copy.PREPARED_TOOLS.get(tool.name)
         if copy is not None:
             tool.title = copy.title
             tool.description = copy.describe(properties)
@@ -84,6 +84,10 @@ def render_prompt(key: str, arguments: dict, available: set[str]) -> tuple[str, 
         pasted = [mcp_copy.PASTED_POLICY, "```text", str(arguments.get("policy_text") or "").strip(), "```"]
     elif key == "read_result":
         values["run_id"] = _clean(arguments.get("run_id"))
+    elif key == "more_numbers":
+        values["run_id"] = _clean(arguments.get("run_id"))
+        # The question is the person's own words; quotes are dropped so it stays one quoted phrase.
+        values["question"] = _clean(arguments.get("question")).replace('"', "'") or mcp_copy.NO_QUESTION
     elif key == "field_notes":
         run_id = _clean(arguments.get("run_id"))
         values["columns"] = ", ".join(CSV_COLUMNS)
