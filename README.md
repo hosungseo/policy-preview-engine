@@ -221,3 +221,7 @@ scripts/serve-profile.sh mock     # 키 없음, 모델 호출 없음
 ---
 
 2026 공공 AI 대전환 챌린지 출품작. 행정안전부에 부여한 사용권과 충돌하지 않는 비독점 공개
+
+### 원본 다운로드 버전 확인 (2026-11-27)
+
+기존 2만 명 패널의 Nemotron-Personas-Korea 원본 revision은 `ada0f5b53a38bb5a30cce09358adde883c1ab63a`입니다. 9개 다운로드 메타데이터·원본 체크섬 및 2만 명의 전체 필드·프로필 대조로 확인했습니다. [근거와 적용 범위](docs/provenance/nemotron-source-revision.md)를 참고하세요. 저장된 사례와 애드온은 재생성하지 않았으며, 개별 과거 실행의 설정까지 입증한 것은 아닙니다.

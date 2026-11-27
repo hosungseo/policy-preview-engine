@@ -1,0 +1,114 @@
+{
+  "source_repo": "nvidia/Nemotron-Personas-Korea",
+  "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+  "revision_status": "verified_local_download",
+  "checked_on": "2026-11-27",
+  "metadata_root": "~/policy-preview/data/vendor/korean-people-persona/.cache/huggingface",
+  "ref_path": "~/policy-preview/data/hf/hub/datasets--nvidia--Nemotron-Personas-Korea/refs/main",
+  "parquet_files": [
+    {
+      "file": "train-00000-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "5f447553b9e30ac98631af17f2274780586fbd5e2705125b8f3a49fe2af037b2",
+      "bytes": 220263908,
+      "downloaded_at_utc": "2026-09-23T14:32:55.703418+00:00"
+    },
+    {
+      "file": "train-00001-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "332ade7365bd842838de6295e15f4457d0050b4792b33a8330b3b8a39a6dfc3b",
+      "bytes": 220182609,
+      "downloaded_at_utc": "2026-09-23T14:33:20.393434+00:00"
+    },
+    {
+      "file": "train-00002-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "65d4860663fab1ff4166f5db4eb96fc39e84ccc952391ab36437d0373bc6d5f1",
+      "bytes": 220265631,
+      "downloaded_at_utc": "2026-09-23T14:33:17.026834+00:00"
+    },
+    {
+      "file": "train-00003-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "d94a0f221edd1e70e28d7e19acf9b9f4cfa315b630f51607b28b06498a28591b",
+      "bytes": 220283830,
+      "downloaded_at_utc": "2026-09-23T14:33:12.029955+00:00"
+    },
+    {
+      "file": "train-00004-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "c31efb3b3f0ef6405956683a9a6fb99276dea2c16b22efe883555a31ff05b3ed",
+      "bytes": 220304978,
+      "downloaded_at_utc": "2026-09-23T14:40:25.330257+00:00"
+    },
+    {
+      "file": "train-00005-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "e95979de298ffecac1db437401baf19e3bdae16355fcd5a54320c63290c3e07f",
+      "bytes": 220183836,
+      "downloaded_at_utc": "2026-09-23T14:40:46.911442+00:00"
+    },
+    {
+      "file": "train-00006-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "5b0fc5fd097bd9c82be9f6c9ff57eddee314226eabe820f83e2426bed34e40ff",
+      "bytes": 220384182,
+      "downloaded_at_utc": "2026-09-23T14:40:16.719965+00:00"
+    },
+    {
+      "file": "train-00007-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "73a4178828b9d08cd44b141c3c0da2d69521a8fa9cd22194868d07c36f0a6680",
+      "bytes": 220272087,
+      "downloaded_at_utc": "2026-09-23T14:40:32.733289+00:00"
+    },
+    {
+      "file": "train-00008-of-00009.parquet",
+      "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
+      "sha256": "e32faf2717f7b9634ff38d62b175f9d9817b1eee797c043032b3dc2d8d055fe6",
+      "bytes": 220254045,
+      "downloaded_at_utc": "2026-09-23T14:42:47.539199+00:00"
+    }
+  ],
+  "saved_panel_people_checked": 20000,
+  "saved_full_panel_fields_checked": [
+    "age",
+    "arts_persona",
+    "bachelors_field",
+    "career_goals_and_ambitions",
+    "country",
+    "culinary_persona",
+    "cultural_background",
+    "district",
+    "education_level",
+    "family_persona",
+    "family_type",
+    "hobbies_and_interests",
+    "hobbies_and_interests_list",
+    "housing_type",
+    "marital_status",
+    "military_status",
+    "occupation",
+    "persona",
+    "professional_persona",
+    "province",
+    "sex",
+    "skills_and_expertise",
+    "skills_and_expertise_list",
+    "sports_persona",
+    "travel_persona",
+    "uuid"
+  ],
+  "saved_profile_matches": 20000,
+  "saved_artifacts": [
+    {
+      "path": "engine/ppservice/data/panel-20k.jsonl.gz",
+      "sha256": "54bebf2a10f1f398f4d7ba7e0e42b7763650d73aa063f020ace8e823e6334c55"
+    },
+    {
+      "path": "engine/ppservice/data/panel-20k-full.jsonl.xz",
+      "sha256": "f7b6a43b5c2baf572f5e68cfc1404f5baa85a47f8fb02fb6ce1eca45b5291b85"
+    }
+  ],
+  "limitation": "This verifies the saved source panels, not the configuration or source revision of every historical run."
+}
