@@ -24,7 +24,7 @@ const LIMITS = [
 
 const SOURCES: [string, string, string, string][] = [
   ["NVIDIA Nemotron-Personas-Korea", "합성 인물 100만 명(26개 필드, 17개 시도·252개 시군구)", "CC BY 4.0", "https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea"],
-  ["tantara/Nemotron-Personas-Korea-Qwen3-0.6B-embeddings", "인물 100만 명의 1024차원 임베딩", "CC BY 4.0", "https://huggingface.co/datasets/tantara/Nemotron-Personas-Korea-Qwen3-0.6B-embeddings"],
+  ["intfloat/multilingual-e5-large", "의미 검색 기본값(1024차원). 인물 벡터는 원문에서 새로 계산 필요. 기존 공개 예시는 이전 검색 구성으로 만든 보관 결과", "모델 MIT · 인물 CC BY 4.0", "https://huggingface.co/intfloat/multilingual-e5-large"],
   ["civilian7/korean-people-persona", "SQLite·FTS5 변환 도구(외부 도구로만 사용)", "명시 없음", "https://github.com/civilian7/korean-people-persona"],
   ["hongsw/harness", "한국어 화법 어댑터·다관점 리뷰 아이디어", "—", "https://github.com/hongsw/harness"],
   ["TypeSafe Jev (System One)", "보정된 확률로 답하는 판단 모델 — 정량 점검 5,000명·쟁점 소속·자기모순 점검·수정안 비교·정책문 점검·관점 태그·발언 읽기·직업 분류", "API 이용", "https://docs.typesafe.ai"],

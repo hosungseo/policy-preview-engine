@@ -186,7 +186,7 @@ class Run:
         missing_semantic_uuids: list[str] = []
         semantic_note = ""
         if not semantic.available():
-            self._fallback("의미 검색 경로 생략: 임베딩 파일 없음")
+            self._fallback(f"의미 검색 경로 생략: {semantic.unavailable_reason()}")
         elif spec["semantic_query"]:
             try:
                 query = semantic.embed_query(spec["semantic_query"])
@@ -194,7 +194,7 @@ class Run:
                 candidates = personas.fetch(conn, personas.ids_for_uuids(conn, [u for u, _ in hits],
                                                                         missing=missing_semantic_uuids))
                 semantic_ids = [pid for pid, _ in semantic.rerank_without_names(candidates, query, 300)]
-                semantic_note = (f"공개 임베딩으로 상위 {len(candidates)}명을 찾은 뒤, 이름 편향을 줄이려고 "
+                semantic_note = (f"{config.QUERY_MODEL}로 새로 계산한 임베딩으로 상위 {len(candidates)}명을 찾은 뒤, "
                                  f"이름을 지운 서술로 다시 임베딩해 {len(semantic_ids)}명을 골랐습니다.")
             except Exception as e:  # noqa: BLE001  model download / MPS errors fall back to two channels
                 self._fallback(f"의미 검색 경로 생략: {type(e).__name__}: {str(e)[:120]}")

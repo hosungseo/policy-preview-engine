@@ -11,7 +11,7 @@ export default function SiteFooter() {
             아닙니다.
           </p>
           <p className="pp-footer-credits">
-            데이터 NVIDIA Nemotron-Personas-Korea(CC BY 4.0) · 임베딩 tantara/Nemotron-Personas-Korea-Qwen3-0.6B-embeddings(CC BY 4.0) ·
+            데이터 NVIDIA Nemotron-Personas-Korea(CC BY 4.0) · 의미 검색 기본값 intfloat/multilingual-e5-large(MIT, 인물 벡터 새로 계산 필요) ·
             검색 DB civilian7/korean-people-persona · 화법·다관점 아이디어 hongsw/harness · 판단 모델 TypeSafe Jev · Upstage Solar Decide · tev1(로컬) · 문장 모델 Claude · LG EXAONE · Gemma(로컬) · 지도 경계 국토교통부 행정구역도(공공누리 제1유형) · 공공 통계 출처는 data/SOURCES.md · 디자인 KRDS
           </p>
         </div>

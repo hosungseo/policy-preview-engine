@@ -10,6 +10,10 @@
 
 ## 표
 
+의미 검색 기본값은 `intfloat/multilingual-e5-large`(MIT, XLM-RoBERTa 기반)입니다. `data/emb/multilingual-e5-large-v1/`는 원본 인물 서술(CC BY 4.0)에서 **새로 계산 필요**하며 저장소에 배포하지 않습니다. 기존 사전 계산 임베딩과 호환되지 않습니다. 만드는 명령과 모델 revision은 [임베딩 안내](../docs/embeddings.md)에 있습니다.
+
+`web/public/runs/`의 기존 예시 4건은 이전 검색 구성으로 영향권 인물을 고른 보관 결과입니다. 새 모델로 재계산한 결과가 아니며, 검색 단계까지 새 모델로만 만든 예시로 사용하려면 패널 선택 이후 결과를 다시 생성해야 합니다. 이 변경에서 원본 인물 데이터나 이전 판단 결과를 다른 모델이 만든 것으로 바꾸어 표시하지 않았습니다.
+
 | 파일(또는 폴더) 경로 | 내용 | 출처 | 라이선스·이용 조건 | 만든 방법 |
 |---|---|---|---|---|
 | `engine/ppservice/data/persona-accuracy/sources.json`, `sources-reviewed.json` | 정확도 비교에 쓴 공표 표 목록과 검토 상태 | 통계청 「2024 사회조사」(KOSIS DT_1SSFA060R, DT_1SSFA080R, DT_1SSSA020R, DT_1SSSA012R, DT_1SSSA011R), 행정안전부 주민등록인구현황(KOSIS DT_1B04005N) | KOSIS 이용 조건(출처 표기) | `sources-reviewed.json`: `engine/scripts/prepare_measured_baseline.py` / `sources.json`: 손으로 작성한 이전 판 목록 |

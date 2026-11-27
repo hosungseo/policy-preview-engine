@@ -1,7 +1,7 @@
 """A portable receipt for the actual panel selection, without model calls."""
 from __future__ import annotations
 
-from . import panel, personas
+from . import panel, personas, semantic
 
 
 def receipt(*, source: dict, requested_spec: dict, spec: dict, strata: dict, rep_ids: list[int],
@@ -32,6 +32,8 @@ def receipt(*, source: dict, requested_spec: dict, spec: dict, strata: dict, rep
         "affected": {**affected_receipt, "channels": channel_counts, "uuids": aff,
                      "found_by": {by_id[p["id"]]: p["found_by"] for p in affected},
                      "semantic": {"query": spec["semantic_query"], "note": semantic_note,
+                                  "configured_embedding": semantic.embedding_identity(),
+                                  "index_available": semantic.available(),
                                   "order": "embedding_similarity_desc_then_name_removed_similarity_desc",
                                   "sampling": "none", "tie_break": "numpy_argsort_unspecified",
                                   "missing_uuids": missing_semantic_uuids}},

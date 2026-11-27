@@ -28,11 +28,20 @@ def persona_db() -> Path:
 
 
 def emb_matrix() -> Path:
-    return data_dir() / "emb" / "emb.f16.npy"
+    return emb_dir() / "emb.f16.npy"
 
 
 def emb_uuids() -> Path:
-    return data_dir() / "emb" / "emb_uuids.txt"
+    return emb_dir() / "emb_uuids.txt"
+
+
+def emb_dir() -> Path:
+    # A new namespace prevents accidental reuse of retired precomputed vectors.
+    return data_dir() / "emb" / "multilingual-e5-large-v1"
+
+
+def emb_manifest() -> Path:
+    return emb_dir() / "manifest.json"
 
 
 def population_json() -> Path:
@@ -73,11 +82,10 @@ def web_dev_series_dir() -> Path:
 FUTURE_YEAR = 2030
 REACT_MODEL = _env("PP_REACT_MODEL", "haiku")
 SYNTH_MODEL = _env("PP_SYNTH_MODEL", "sonnet")
-QUERY_MODEL = "Qwen/Qwen3-Embedding-0.6B"
-QUERY_INSTRUCTION = (
-    "Given a Korean government policy, retrieve personas of Korean people "
-    "whose daily lives would be directly affected by it"
-)
+QUERY_MODEL = "intfloat/multilingual-e5-large"
+QUERY_REVISION = "3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3"
+EMBEDDING_DIM = 1024
+EMBEDDING_TEXT_FORMAT = "e5-query-passage-name-free-v1"
 
 # (low, high, label), inclusive bounds
 AGE_BANDS = [

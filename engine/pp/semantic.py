@@ -1,7 +1,8 @@
-"""Semantic channel: 1M persona embeddings (Qwen3-Embedding-0.6B) kept on the SSD."""
+"""Optional local E5 retrieval; persona vectors must be freshly computed from text."""
 from __future__ import annotations
 
 import os
+import json
 
 try:
     import numpy as np
@@ -19,7 +20,29 @@ def available() -> bool:
     (the embedding matrix indexes the 1M-person DB, not the 20k bundle)."""
     if np is None or os.environ.get("PP_SEMANTIC", "").strip() == "off" or os.environ.get("PP_PERSONA_SOURCE", "").strip() == "bundle":
         return False
-    return config.emb_matrix().exists() and config.emb_uuids().exists()
+    try:
+        manifest = _manifest()
+    except (OSError, ValueError, TypeError):
+        return False
+    return manifest.get("complete") is True and config.emb_matrix().exists() and config.emb_uuids().exists()
+
+
+def embedding_identity() -> dict:
+    return {"model": config.QUERY_MODEL, "revision": config.QUERY_REVISION,
+            "dimension": config.EMBEDDING_DIM, "text_format": config.EMBEDDING_TEXT_FORMAT,
+            "normalized": True}
+
+
+def _manifest() -> dict:
+    manifest = json.loads(config.emb_manifest().read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict) or any(manifest.get(k) != v for k, v in embedding_identity().items()):
+        raise ValueError("embedding metadata does not match the configured model; 새로 계산 필요")
+    return manifest
+
+
+def unavailable_reason() -> str:
+    return ("의미 검색용 인물 임베딩 새로 계산 필요 또는 의미 검색 꺼짐: "
+            "engine/scripts/build_embeddings.py로 원본 인물 서술에서 생성하세요. 기존 사전 계산 벡터는 호환되지 않습니다.")
 
 
 class EmbIndex:
@@ -32,10 +55,17 @@ class EmbIndex:
 
     @classmethod
     def load(cls) -> "EmbIndex":
+        manifest = _manifest()
+        if manifest.get("complete") is not True:
+            raise ValueError("partial embedding index; 새로 계산 필요")
         matrix = np.load(config.emb_matrix(), mmap_mode="r")
         uuids = [u for u in config.emb_uuids().read_text(encoding="utf-8").split("\n") if u]
-        if len(uuids) != matrix.shape[0]:
+        if matrix.ndim != 2 or matrix.shape[1] != config.EMBEDDING_DIM or matrix.dtype != np.float16:
+            raise ValueError("embedding matrix shape/dtype does not match model metadata")
+        if manifest.get("rows") != matrix.shape[0] or len(uuids) != matrix.shape[0]:
             raise ValueError(f"uuid count {len(uuids)} != matrix rows {matrix.shape[0]}")
+        if len(set(uuids)) != len(uuids):
+            raise ValueError("duplicate embedding UUIDs")
         return cls(matrix, uuids)
 
     def search(self, query: np.ndarray, k: int, chunk: int = 131072) -> list[tuple[str, float]]:
@@ -83,21 +113,24 @@ def _load_model():
         from sentence_transformers import SentenceTransformer
 
         device = "mps" if torch.backends.mps.is_available() else "cpu"
-        _model = SentenceTransformer(config.QUERY_MODEL, device=device)
+        _model = SentenceTransformer(config.QUERY_MODEL, revision=config.QUERY_REVISION,
+                                     device=device, trust_remote_code=False)
+        _model.max_seq_length = 512
     return _model
 
 
 def embed_query(text: str) -> np.ndarray:
-    """Embed a query with the same model as the persona matrix (instruction-prefixed)."""
-    prompt = f"Instruct: {config.QUERY_INSTRUCTION}\nQuery: {text}"
+    """E5 requires distinct query/passage prefixes, including for Korean text."""
+    prompt = f"query: {text}"
     return _load_model().encode([prompt], normalize_embeddings=True)[0].astype(np.float32)
 
 
 def embed_documents(texts: list[str], batch_size: int = 16) -> np.ndarray:
-    return _load_model().encode(texts, batch_size=batch_size, normalize_embeddings=True).astype(np.float32)
+    return _load_model().encode([f"passage: {text}" for text in texts], batch_size=batch_size,
+                                normalize_embeddings=True).astype(np.float32)
 
 
-# The published persona embeddings include the persona's name many times, so names like
+# Persona text can include the persona's name many times, so names like
 # "노인자" or "전철기" dominate queries about the elderly or the subway (seen in the
 # 2026-09-24 smoke test: 7 of the top 10 hits were name matches). Re-embedding a
 # candidate set with the name removed and re-ranking fixes that at small cost.

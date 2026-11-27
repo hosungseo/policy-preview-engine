@@ -293,7 +293,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
           </div>
           {b.meta.fallbacks.length > 0 && <ul className="pp-fallbacks">{b.meta.fallbacks.map((f) => <li key={f}>{f}</li>)}</ul>}
           <p className="pp-sub" style={{ marginTop: 12 }}>
-            데이터 NVIDIA Nemotron-Personas-Korea(CC BY 4.0) · 인물 검색 korean-people-persona(SQLite·FTS5) · 의미 검색 Qwen3-Embedding-0.6B
+            데이터 NVIDIA Nemotron-Personas-Korea(CC BY 4.0) · 인물 검색 korean-people-persona(SQLite·FTS5) · 의미 검색 기본값 intfloat/multilingual-e5-large(MIT, 인물 벡터 새로 계산 필요). 기존 공개 예시는 이전 검색 구성으로 만든 보관 결과이며 재계산하지 않았습니다.
           </p>
           <div className="pp-actions pp-no-print">
             <CopyLink />
