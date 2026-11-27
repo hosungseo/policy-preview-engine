@@ -44,14 +44,19 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
             return tool_result({"error": str(exc), "warnings": [public_rules.WARNING]}, error=True)
 
     @server.tool()
-    def estimate(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, i_confirm_public: StrictBool = False, limits: dict | None = None) -> CallToolResult:
+    def estimate(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, i_confirm_public: StrictBool = False,
+                 limits: dict | None = None, conditions: dict | list[dict] | None = None) -> CallToolResult:
         """Show approximate USD and duration before a paid run. No key needed."""
-        return guarded(lambda: service.estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=limits))
+        return guarded(lambda: service.estimate(policy_text, sample, i_confirm_public=i_confirm_public,
+                                                limits=limits, conditions=conditions))
 
     @server.tool()
-    def start_run(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, seed: StrictInt = 42, i_confirm_public: StrictBool = False, limits: dict | None = None) -> CallToolResult:
+    def start_run(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, seed: StrictInt = 42,
+                  i_confirm_public: StrictBool = False, limits: dict | None = None,
+                  conditions: dict | list[dict] | None = None) -> CallToolResult:
         """Start a paid run with environment BYOK; estimate first, then poll get_run(id)."""
-        return guarded(lambda: jobs.start(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits))
+        return guarded(lambda: jobs.start(policy_text, sample, seed, i_confirm_public=i_confirm_public,
+                                          limits=limits, conditions=conditions))
 
     @server.tool()
     def get_run(id: str) -> CallToolResult:

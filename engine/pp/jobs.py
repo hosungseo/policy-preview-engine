@@ -16,23 +16,31 @@ class Jobs:
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pp-run")
 
     def start(self, policy_text: str, sample: int = service.DEFAULT_SAMPLE, seed: int = 42,
-              credentials: service.Credentials | None = None, i_confirm_public: bool = False, limits=None) -> dict:
+              credentials: service.Credentials | None = None, i_confirm_public: bool = False, limits=None,
+              conditions=None) -> dict:
         service.validate(policy_text, sample, seed, i_confirm_public)
         limits = service.normalize_limits(limits)
+        service.normalize_conditions(conditions)
         credentials = credentials or service.Credentials.from_env()
         credentials.require()
         run_id = uuid4().hex
-        initial = public_rules.envelope({"id": run_id, "status": "queued", "estimate": service.estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=limits)})
+        initial = public_rules.envelope({
+            "id": run_id, "status": "queued",
+            "estimate": service.estimate(policy_text, sample, i_confirm_public=i_confirm_public,
+                                         limits=limits, conditions=conditions),
+        })
         with self._lock:
             self._runs[run_id] = initial
-        self._pool.submit(self._run, run_id, policy_text, sample, seed, credentials, i_confirm_public, limits)
+        self._pool.submit(self._run, run_id, policy_text, sample, seed, credentials, i_confirm_public,
+                          limits, deepcopy(conditions))
         return deepcopy(initial)
 
-    def _run(self, run_id, policy_text, sample, seed, credentials, i_confirm_public, limits):
+    def _run(self, run_id, policy_text, sample, seed, credentials, i_confirm_public, limits, conditions=None):
         with self._lock:
             self._runs[run_id] = {**self._runs[run_id], "status": "running"}
         try:
-            result = service.run_policy(policy_text, sample=sample, seed=seed, credentials=credentials, i_confirm_public=i_confirm_public, limits=limits)
+            result = service.run_policy(policy_text, sample=sample, seed=seed, credentials=credentials,
+                                        i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
             update = {"status": "completed", "result": result}
         except Exception as exc:
             update = {"status": "failed", "error": "실행 실패: 패널 DB, 모델 키·잔액·연결을 확인하세요. "

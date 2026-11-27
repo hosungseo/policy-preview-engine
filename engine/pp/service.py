@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from . import analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, public_rules, provenance, react, segment
+from . import analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, policy_groups, public_rules, provenance, react, segment, visit_shared
 
 DEFAULT_SAMPLE = 200
 MAX_SAMPLE = panel_provider.MAX_N
@@ -67,18 +67,32 @@ def normalize_limits(limits=None):
         raise RequestError("Invalid budget limits; use finite nonnegative cost and integer call/token/retry/concurrency caps") from None
 
 
-def estimate(policy_text: str, sample: int = DEFAULT_SAMPLE, *, i_confirm_public: bool = False, limits=None) -> dict:
+def normalize_conditions(conditions=None) -> list[dict]:
+    try:
+        return policy_groups.normalize_conditions(conditions)
+    except policy_groups.ConditionError as exc:
+        raise RequestError(str(exc)) from None
+
+
+def estimate(policy_text: str, sample: int = DEFAULT_SAMPLE, *, i_confirm_public: bool = False,
+             limits=None, conditions=None) -> dict:
     """Transparent planning assumptions, never a quote or a measured runtime guarantee."""
     validate(policy_text, sample, i_confirm_public=i_confirm_public)
     limits = normalize_limits(limits)
+    norm_conditions = normalize_conditions(conditions)
     # Budget all reaction prompts and an upper bound for grouping, outreach and QA.
     input_tokens = sample * (len(policy_text) + 1200) + sample * 1400 + 16000
     output_tokens = sample * 550 + 16000
     usd = (input_tokens * 1.0 + output_tokens * 5.0) / 1_000_000
     seconds = math.ceil(sample / 8) * 6 + 90
+    hash_inputs = {"policy": policy_text, "sample": sample, "limits": asdict(limits)}
+    if norm_conditions:
+        hash_inputs["conditions"] = norm_conditions
     return public_rules.envelope({"sample": sample, "policy_chars": len(policy_text), "model": MODEL,
-            "input_hash": provenance.input_hash({"policy": policy_text, "sample": sample, "limits": asdict(limits)}),
+            "input_hash": provenance.input_hash(hash_inputs),
             "budget_limits": asdict(limits), "attribution": attribution.build(),
+            "target_conditions": norm_conditions,
+            "missing_people": visit_shared.missing_people(policy_text),
             "estimated_cost_usd": {"low": round(usd * .5, 4), "high": round(usd * 2, 4)},
             "estimated_seconds": {"low": seconds, "high": seconds * 3},
             "assumptions": {"input_usd_per_million": 1, "output_usd_per_million": 5,
@@ -108,9 +122,11 @@ def _api_transport(credentials: Credentials):
 
 
 def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 42,
-               credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None) -> dict:
+               credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None,
+               conditions=None) -> dict:
     """Text -> sampled reactions -> grounded issues -> consultation plan, using the existing engine."""
     validate(policy_text, sample, seed, i_confirm_public)
+    norm_conditions = normalize_conditions(conditions)
     credentials = credentials or Credentials.from_env()
     credentials.require()
     title = policy_text.strip().splitlines()[0][:120]
@@ -121,8 +137,9 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         from . import bundle_db
         db = bundle_db.ensure()
         panel_version = db.stem
-    sampled = panel_provider.provide({"policy_text": policy_text, "n": sample,
-                                      "affected": sample // 4, "seed": seed}, db)
+    sampled, active_conditions, grouping_basis = policy_groups.select_panel(
+        policy_text, sample, seed, norm_conditions, db
+    )
     people = sampled["people"]
     if not people:
         raise RequestError("No panel members match the request")
@@ -131,9 +148,12 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         from . import bundle_db
         source = provenance.artifact(bundle_db.bundle_path(), compressed=True)
     panel_version = source["panel_version"]
+    sampling_inputs = {"sample": sample, "affected": sample // 4, "seed": seed}
+    if norm_conditions:
+        sampling_inputs["conditions"] = norm_conditions
     inputs = provenance.execution_inputs(
         {"text": policy_text, "public_confirmed": i_confirm_public},
-        source, {"sample": sample, "affected": sample // 4, "seed": seed}, asdict(limits),
+        source, sampling_inputs, asdict(limits),
         models={"provider": "anthropic", "model": MODEL,
                 "clarity_provider": "typesafe" if credentials.typesafe else None,
                 "clarity_model": os.environ.get("PP_JEV_MODEL") or "jev-latest" if credentials.typesafe else None})
@@ -191,82 +211,34 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
                 raise
             except Exception:
                 clarity = {"available": False, "reason": "Jev 호출 실패: 키·잔액·연결을 확인하세요"}
-    reaction_segments = {r["rid"]: r.get("segment_id") for r in reactions}
-    issue_segments = {it["id"]: {reaction_segments[rid] for rid in it["member_ids"]} for it in issues}
-    clause_issues = [{**s, "issues": [it["id"] for it in issues if s["id"] in issue_segments[it["id"]]]}
-                     for s in segments]
-    missing = [{"kind": "uncovered_clause", "segment_id": c["id"],
-                "reason": "검증된 인용으로 연결된 쟁점이 없어 실제 의견수렴에서 별도 확인 필요"}
-               for c in clause_issues if not c["issues"]]
-    missing += [{"kind": "panel_limit", "group": "19세 미만", "reason": "원본 합성 패널에 포함되지 않음"},
-                {"kind": "panel_limit", "group": "소득별 관점", "reason": "패널에 소득 정보 없음"}]
-    # Group by occupation without exporting individual records, votes, counts, or rankings.
-    group_reactions = []
-    outreach = []
-    # Follow source clause order, with first occurrence in the panel as a stable tie breaker.
-    # Never use the number or intensity of reactions to order groups.
-    ordered_groups = list(dict.fromkeys(p["occupation"] for p in people))
-    ordered_groups.sort(key=lambda group: min(
-        (clause_order.get(r.get("segment_id"), len(segments)) for r in reactions
-         if by_uuid[r["uuid"]]["occupation"] == group), default=len(segments)))
-    for group in ordered_groups:
-        rows = [r for r in reactions if by_uuid[r["uuid"]]["occupation"] == group]
-        group_reactions.append({"group": group,
-            "status": "AI가 상상한 반응" if rows else "반응을 만들지 못함",
-            "reactions": [{k: r[k] for k in ("reason", "trigger_quote", "quote_verified", "segment_id", "suggestion")}
-                          for r in rows]})
-        if any(not r["would_comment"] for r in rows):
-            missing.append({"kind": "underheard_group", "group": group,
-                            "reason": "스스로 의견을 내기 어려울 수 있다는 AI 짐작; 현장 확인 필요"})
-            outreach.append({"group": group, "method": "현장 방문 또는 중간 다리를 통한 짧은 질문",
-                             "where": "해당 집단을 만나는 지역 지원 담당 부서에 접점을 문의",
-                             "question": "의견을 내는 데 무엇이 걸리고 어떤 통로가 편한가요?"})
-    who = []
-    for it in issues:
-        members = {by_uuid[by_rid[rid]["uuid"]]["occupation"] for rid in it["member_ids"]}
-        groups = [group for group in ordered_groups if group in members]
-        questions = [q["question"] for q in qa if q["issue_id"] == it["id"]]
-        who.append({"issue_id": it["id"], "groups": groups,
-                    "questions": questions or ["이 조항으로 생활에서 무엇이 달라지며 무엇을 확인해야 하나요?"],
-                    "basis": "문안 조항에 연결된 집단; 현장 확인 필요"})
-    diag = {"reliability_findings": diagnostics.question_reliability_findings(policy_text, []), "warnings": []}
-    # This route gathers prose, not quantitative survey answers; report unavailable metrics honestly.
-    diag["status"] = "qualitative_only"
-    diag["note"] = "정량 확률 응답을 수집하지 않아 분산·집단 차이 진단은 계산하지 않았습니다."
-    warnings = [public_rules.WARNING, diag["note"]]
-    warnings += [item["message"] for item in diag["reliability_findings"] + diag["warnings"]]
-    public = public_rules.check_output({
-        "clauses": clause_issues,
-        "issues": [{k: it[k] for k in ("id", "title", "summary")} for it in issues],
-        "missing_perspectives": missing, "who_to_ask": who, "outreach": outreach,
-        "questions": qa, "group_reactions": group_reactions,
-        "clarity": clarity,
-    }, policy_text, warnings)
-    return public_rules.envelope({"schema": "pp.run/2", "synthetic": True,
+    public, warnings, diag, limits_notes = policy_groups.build_consultation_views(
+        policy_text, segments, people, reactions, issues, qa, clarity, active_conditions, grouping_basis
+    )
+    return public_rules.envelope({"schema": policy_groups.SCHEMA, "synthetic": True,
             "warnings": warnings, "diagnostics": diag,
             "input_hash": provenance.input_hash(inputs), "execution_inputs": inputs,
             "selection": selection_receipt, "attribution": attribution.build(source),
             "budget": budget.current().snapshot(),
             "conditions": {"model": MODEL, "seed": seed, "panel_version": panel_version,
                            "source": sampled["source"], "public_confirmed": i_confirm_public,
-                           "reaction_failures": bool(failures), "unverified_quotes": bool(mismatches)},
-            "estimate": estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=limits), **public,
-            "limits": ["반응은 합성 프로필마다 별도 호출로 만들고 공개 시 직업 집단으로 묶었습니다.",
-                       "당사자 목록은 문안의 모든 조항에서 추출한 전수 목록이 아닙니다.",
-                       "반응의 비율·건수·순위는 제공하지 않습니다. 비용 산정용 sample은 의견의 수가 아닙니다.",
-                       "이 모델 구성의 오차는 측정되지 않았습니다. 실제 당사자에게 확인하세요.",
-                       "Jev 명료성 점검은 조항 맥락 4,000자·전체 안내 6,000자를 사용합니다.",
-                       "큰 문안의 계층 요약에서 쟁점을 놓칠 수 있습니다."]})
+                           "reaction_failures": bool(failures), "unverified_quotes": bool(mismatches),
+                           "grouping_basis": grouping_basis, "confirmed_conditions": bool(norm_conditions),
+                           "panel_separation": True},
+            "estimate": estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=limits,
+                                 conditions=conditions),
+            **public,
+            "limits": limits_notes})
 
 
 def run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 42,
-               credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None) -> dict:
+               credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None,
+               conditions=None) -> dict:
     limits = normalize_limits(limits)
     ledger = budget.Budget(limits)
     with ledger.scope(), budget.use_prices({"llm": (1.0, 5.0), "jev": (jev.PRICE_PER_M_INPUT, 0.0)}):
         try:
             return _run_policy(policy_text, sample=sample, seed=seed, credentials=credentials,
-                               i_confirm_public=i_confirm_public, limits=limits)
+                               i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
         except Exception as exc:
             exc.budget_snapshot = ledger.snapshot()
             raise

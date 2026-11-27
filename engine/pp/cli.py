@@ -2,10 +2,21 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from . import budget, config, llm, public_rules, service
+
+
+def _load_conditions(raw: str | None):
+    if not raw:
+        return None
+    text = Path(raw[1:]).read_text(encoding="utf-8") if raw.startswith("@") else raw
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        raise service.RequestError("conditions must be valid JSON (or @path to a JSON file)") from None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -26,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--max-retries", type=int, default=2)
         p.add_argument("--max-concurrency", type=int, default=8)
         p.add_argument("--max-cost-usd", type=float, default=10.0)
+        p.add_argument("--conditions", type=str, default=None,
+                       help="Confirmed target conditions as JSON string or @path.json")
         if command == "run":
             p.add_argument("--out", type=Path)
             p.add_argument("--seed", type=int, default=42)
@@ -45,13 +58,16 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         limits = service.normalize_limits({k: getattr(args, k) for k in (
             "max_calls", "max_output_tokens", "max_retries", "max_concurrency", "max_cost_usd")})
+        conditions = _load_conditions(args.conditions)
         text = args.policy.read_text(encoding="utf-8")
-        preview = service.estimate(text, args.sample, i_confirm_public=args.i_confirm_public, limits=limits)
+        preview = service.estimate(text, args.sample, i_confirm_public=args.i_confirm_public,
+                                   limits=limits, conditions=conditions)
         if args.cmd == "estimate":
             print(public_rules.dumps(preview))
             return 0
         print(public_rules.NOTICE + "\n실행 전 예상: " + public_rules.dumps(preview), file=sys.stderr, flush=True)
-        result = service.run_policy(text, sample=args.sample, seed=args.seed, i_confirm_public=args.i_confirm_public, limits=limits)
+        result = service.run_policy(text, sample=args.sample, seed=args.seed,
+                                    i_confirm_public=args.i_confirm_public, limits=limits, conditions=conditions)
         body = public_rules.dumps(result) + "\n"
         if args.out:
             args.out.write_text(body, encoding="utf-8")

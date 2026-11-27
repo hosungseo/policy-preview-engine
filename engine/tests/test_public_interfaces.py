@@ -35,7 +35,7 @@ def fake_models(persona_db, monkeypatch):
 
 
 def assert_result(result, sample=12):
-    assert result["schema"] == "pp.run/2"
+    assert result["schema"] == "pp.run/3"
     assert result["estimate"]["sample"] == sample
     assert not result["conditions"]["reaction_failures"]
     assert result["group_reactions"]

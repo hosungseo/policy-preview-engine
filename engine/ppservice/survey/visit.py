@@ -14,11 +14,27 @@ from __future__ import annotations
 
 import gzip
 import json
-import re
 from collections import Counter
 from statistics import NormalDist
 
-from pp import attribution, config
+from pp import attribution, config, visit_shared
+from pp.visit_shared import (
+    ADDON_GROUPS,
+    ALWAYS_MISSING,
+    CHILD_NEGATION,
+    CHILD_OTHER_CONTEXT,
+    CHILD_PARENT_CONTEXT,
+    CHILDREN_NO_SPOUSE,
+    DEFAULT_VENUES,
+    PARTIES,
+    PROVINCE,
+    ROSTER_LEGACY,
+    YOUNG_CHILD,
+    base_groups as _base_groups,
+    header,
+    missing_people,
+    young_child_candidate,
+)
 
 from . import panel
 from .aggregate import (DIGITAL_LIMIT, MIN_GROUP, MONEY_LIMIT, UNSURE, Z_MULTI, compare_tops, int_percent,
@@ -32,52 +48,10 @@ DISTRICT_MIN = 40
 ROSTER = panel.BUNDLE.parent / "roster-1m.json.gz"  # per-district counts over the 1,000,000-person list
 ROSTER_DISTRICT_MIN, ROSTER_TIMES = 300, 1.3
 QUIET_GAP_PP = 5        # a group's "never spoke up" share is shown only when it differs this much from everyone's
-YOUNG_CHILD = re.compile(r"영유아|어린이집|갓난|신생아|유치원")
-CHILD_NEGATION = re.compile(r"(?:자녀|아이|영유아|신생아).{0,12}(?:없|아니)|(?:키우|양육|돌보).{0,5}(?:않|못)|비양육")
-CHILD_OTHER_CONTEXT = re.compile(r"교사|원장|근무|보육교직원|간호사|실습|봉사|조카|손주|어린 시절|"
-                                 r"(?:어린이집|유치원).{0,8}(?:근처|인근|주변|옆|앞|맞은편)")
-CHILD_PARENT_CONTEXT = re.compile(r"(?:영유아|갓난(?:아기|아이)?|신생아).{0,18}(?:키우|키웁|양육)|"
-                                  r"(?:어린이집|유치원).{0,8}(?:다니는|등원하는).{0,8}(?:자녀|아이|아들|딸)|"
-                                  r"(?:자녀|아이|아들|딸).{0,12}(?:어린이집|유치원).{0,8}(?:보내|등원)|"
-                                  r"(?:어린이집|유치원).{0,4}학부모")
-DEFAULT_VENUES = ["행정복지센터", "주민자치회"]
-PROVINCE = {"경상남": "경남", "경상북": "경북", "전라남": "전남", "충청남": "충남", "충청북": "충북"}
-# The source's '자녀와 거주 (한부모)' is a living arrangement (it includes older parents living with grown-up
-# children), not 한부모가족 eligibility, so the group is named by who the person lives with.
-CHILDREN_NO_SPOUSE = "배우자 없이 자녀와 사는 사람"
-# Labels the 1M roster file may still carry from before a rename (scripts/build_roster_1m.py rebuilds it).
-ROSTER_LEGACY = {CHILDREN_NO_SPOUSE: "한부모 가구"}
 # What a card's group does not mean, by attribute: household composition is not eligibility, the digital proxy is
 # information finding (not filing papers or applying in an app), drawn income bands and flags are not amounts.
 CARD_CAUTIONS = {"가구": config.FAMILY_NOTE, "digital": DIGITAL_LIMIT, "kiosk_hard": DIGITAL_LIMIT,
                  "income": MONEY_LIMIT, "livelihood": MONEY_LIMIT, "basic_pension": MONEY_LIMIT}
-
-# People the synthetic list cannot stand in for. The first three apply to every policy; the rest are named only when
-# the policy text mentions them.
-ALWAYS_MISSING = [
-    {"who": "만 19세 미만", "route": "학교·청소년센터를 통한 의견 듣기"},
-    {"who": "외국인 주민(귀화하지 않은 결혼이민자 포함)", "route": "가족센터·외국인주민지원센터, 다국어 안내"},
-    {"who": "단체·업계의 조직된 의견", "route": "입법예고 의견 제출, 간담회"},
-]
-PARTIES = [
-    (re.compile(r"다문화|결혼이민|이주민"), "다문화가족·결혼이민자 당사자", "가족센터, 다국어 상담 창구를 통한 대면 면담"),
-    (re.compile(r"외국인 ?근로자|이주노동|고용허가"), "외국인 근로자와 고용 사업주", "외국인력지원센터, 사업주 단체"),
-    (re.compile(r"청소년|학생|학교"), "학생·청소년 당사자", "학교, 청소년센터, 학생 참여 기구"),
-    (re.compile(r"장애"), "장애 당사자와 가족", "장애인복지관, 장애인 단체"),
-    (re.compile(r"사업자|업체|영업|가맹|소상공인"), "규제를 받는 사업자", "업종 협회·상인회 간담회"),
-    (re.compile(r"농업|어업|농어민|축산"), "농어민", "농·수협, 이장단 회의"),
-]
-
-
-def header(profile: str) -> dict:
-    """The labelled lines at the top of a persona profile ('학력: … / 혼인: …')."""
-    out = {}
-    for line in profile.split("\n\n")[0].split("\n"):
-        for part in line.split(" / "):
-            if ": " in part:
-                k, v = part.split(": ", 1)
-                out[k.strip()] = v.strip()
-    return out
 
 
 def load_context() -> dict[str, dict]:
@@ -85,82 +59,6 @@ def load_context() -> dict[str, dict]:
         return {}
     raw = gzip.decompress(panel.CONTEXT.read_bytes()).decode("utf-8")
     return {r["uuid"]: r for r in (json.loads(x) for x in raw.splitlines() if x.strip())}
-
-
-def young_child_candidate(profile: str) -> bool:
-    """A textual clue for review, never proof of household composition or eligibility."""
-    for sentence in re.split(r"[.!?。\n]+", profile):
-        if not YOUNG_CHILD.search(sentence) or CHILD_NEGATION.search(sentence):
-            continue
-        if not CHILD_OTHER_CONTEXT.search(sentence) or CHILD_PARENT_CONTEXT.search(sentence):
-            return True
-    return False
-
-
-def _base_groups(p: dict, h: dict) -> list[tuple[str, str, list[str]]]:
-    """(attribute, label, venue kinds) for every base-persona group this person belongs to."""
-    out = [("연령대", p["age_band"], {
-        "19–29세": ["대학·청년센터", "온라인 설문·누리소통망"],
-        "30대": ["직장인 대상 저녁·온라인 간담회", "온라인 설문"],
-        "40대": ["학교 학부모회", "직장인 대상 저녁·온라인 간담회"],
-        "50대": ["주민자치회", "직능·자영업 단체"],
-        "60대": ["주민자치회", "평생학습관"],
-        "70세 이상": ["경로당·노인복지관", "방문 면담(온라인 설문은 닿기 어렵습니다)"],
-    }.get(p["age_band"], DEFAULT_VENUES)),
-        ("성별", "여성" if p["sex"] == "여자" else "남성", ["성별을 맞춘 소규모 좌담", "온라인 설문"]),
-        ("권역", "수도권 주민" if p.get("capital") else "비수도권 주민", ["권역별 주민 설명회"]),
-        ("시도", f"{PROVINCE.get(p['province'], p['province'])} 주민", ["시도·시군구 주민 설명회", "행정복지센터"])]
-    edu = h.get("학력", "")
-    if edu in ("무학", "초등학교", "중학교"):
-        out.append(("학력", "중학교 졸업 이하", ["쉬운 말 자료를 쓴 대면 설명회", "행정복지센터"]))
-    elif edu in ("4년제 대학교", "대학원"):
-        out.append(("학력", "대학 졸업 이상", ["온라인 설문", "직장인 대상 저녁·온라인 간담회"]))
-    marital = h.get("혼인", "")
-    if marital == "미혼":
-        out.append(("혼인", "미혼", ["대학·청년센터", "온라인 설문·누리소통망"]))
-    elif marital == "사별":
-        out.append(("혼인", "배우자와 사별한 사람", ["경로당·노인복지관", "방문 면담"]))
-    elif marital == "이혼":
-        out.append(("혼인", "이혼한 사람", ["가족센터", "행정복지센터"]))
-    household = h.get("가구", "")
-    if household.startswith("혼자 거주"):
-        out.append(("가구", "혼자 사는 사람", ["1인가구 지원센터", "행정복지센터"]))
-    elif "한부모" in household:
-        out.append(("가구", CHILDREN_NO_SPOUSE, ["가족센터", "행정복지센터"]))
-    if young_child_candidate(p["profile"]):
-        out.append(("영유아", "영유아·보육 관련 언급 인물(확인 후보)", ["어린이집·유치원 학부모 모임", "육아종합지원센터"]))
-    housing = h.get("주거", "")
-    if housing == "아파트":
-        out.append(("주택", "아파트에 사는 사람", ["입주자대표회의", "관리사무소 게시판"]))
-    elif housing == "단독주택":
-        out.append(("주택", "단독주택에 사는 사람", ["통·반장 회의", "마을회관"]))
-    elif housing == "주택 이외의 거처":
-        out.append(("주택", "오피스텔·고시원 등 주택이 아닌 곳에 사는 사람", ["주거복지센터", "행정복지센터"]))
-    if h.get("직업") == "무직":
-        out.append(("일", "일을 하지 않는 사람", ["고용센터", "행정복지센터"]))
-    return out
-
-
-# attribute -> (add-on, {value: (label, venue kinds)})
-ADDON_GROUPS = {
-    "tenure": ("housing", {"monthly": ("월세로 사는 사람", ["주거복지센터", "행정복지센터"]),
-                           "jeonse": ("전세로 사는 사람", ["주거복지센터", "온라인 설문"]),
-                           "own": ("자기 집에 사는 사람", ["입주자대표회의", "주민자치회"])}),
-    "income": ("finance", {"lt10": ("가구 연소득 1천만 원 미만", ["행정복지센터 복지 창구", "종합사회복지관"]),
-                           "ge100": ("가구 연소득 1억 원 이상", ["직능 단체", "온라인 설문"])}),
-    "livelihood": ("welfare", {True: ("기초생활보장 수급자", ["행정복지센터 복지 창구", "종합사회복지관"])}),
-    "disability": ("welfare", {True: ("등록 장애인", ["장애인복지관", "장애인 단체"])}),
-    "basic_pension": ("welfare", {True: ("기초연금을 받는 사람", ["경로당·노인복지관", "행정복지센터"])}),
-    "employment": ("work", {"self_alone": ("직원 없이 일하는 자영업자", ["상인회", "소상공인지원센터"]),
-                            "employer": ("직원을 둔 사업주", ["상공회의소·업종 협회", "소상공인지원센터"]),
-                            "wage": ("임금 근로자", ["직장인 대상 저녁·온라인 간담회", "온라인 설문"])}),
-    "nonregular": ("work", {True: ("비정규직 근로자", ["노동권익센터", "고용센터"])}),
-    "dual_earner": ("work", {True: ("맞벌이 가구", ["직장인 대상 저녁·온라인 간담회", "어린이집·학교 학부모 모임"])}),
-    "digital": ("digital", {"poor": ("인터넷·스마트폰으로 정보 찾기를 어려워하는 사람", ["행정복지센터 방문 창구", "디지털배움터"])}),
-    "kiosk_hard": ("digital", {True: ("키오스크 주문·결제를 어려워하는 사람", ["행정복지센터 방문 창구", "경로당·노인복지관"])}),
-    "religion": ("belief", {"protestant": ("개신교 신자", ["종교 단체 협의 창구"]), "buddhist": ("불교 신자", ["종교 단체 협의 창구"]),
-                            "catholic": ("천주교 신자", ["종교 단체 협의 창구"]), "none": ("종교가 없는 사람", DEFAULT_VENUES)}),
-}
 
 
 def memberships(people: list[dict], context: dict, addons: tuple[str, ...]) -> dict[tuple[str, str], dict]:
@@ -398,8 +296,7 @@ def view(spec: dict, people: list[dict], answers: dict, options: list[str], pane
     if rows and not regional:
         region_note = "사는 지역에 따른 차이는 믿을 수 있는 최소 차이를 넘지 않았습니다. 어디에 사느냐보다 어떤 처지냐에서 갈립니다."
     text = " ".join(str(spec.get(x, "")) for x in ("title", "policy_text", "question"))
-    missing = [{"who": who, "route": route, "party": True} for pattern, who, route in PARTIES if pattern.search(text)]
-    missing += [{**m, "party": False} for m in ALWAYS_MISSING]
+    missing = missing_people(text)
     small = None
     if not cards:
         small = (f"{len(sample):,}명의 답으로는 따로 찾아갈 집단이 가려지지 않았습니다. "
