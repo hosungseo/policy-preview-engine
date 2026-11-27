@@ -89,3 +89,18 @@ def test_holdout_matches_the_running_decision_model(monkeypatch, provider, model
     monkeypatch.setenv("PP_JEV_MODEL", model)
     got = profile.holdout()
     assert (got or {}).get("mae_pp") == expected
+
+
+def test_flash_is_labelled_and_never_borrows_solar_decide_accuracy(monkeypatch):
+    _clear_profile_env(monkeypatch)
+    monkeypatch.setenv("PP_LLM_PROVIDER", "exaone")
+    monkeypatch.setenv("PP_JEV_PROVIDER", "upstage")
+    monkeypatch.setenv("PP_JEV_MODEL", "solar-decide-flash")
+    monkeypatch.setenv("PP_UPSTAGE_REGION", "kr")
+    current = profile.current()
+    assert current["decision"]["name"] == "Upstage Solar Decide Flash (solar-decide-flash · 한국 리전)"
+    assert current["kind"] == "korean"
+    assert profile.holdout() is None
+    monkeypatch.setenv("PP_JEV_MODEL", "solar-decide")
+    assert profile.current()["decision"]["name"].startswith("Upstage Solar Decide (")
+    assert profile.holdout()["mae_pp"] == 10.7

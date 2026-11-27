@@ -199,9 +199,16 @@ class Run:
             except Exception as e:  # noqa: BLE001  model download / MPS errors fall back to two channels
                 self._fallback(f"의미 검색 경로 생략: {type(e).__name__}: {str(e)[:120]}")
         affected_receipt = {}
+        from . import rerank
         affected, channel_counts = panel.build_affected(conn, spec, set(rep_ids), k=self.n_aff,
                                                         semantic_ids=semantic_ids, seed=self.seed,
-                                                        receipt=affected_receipt)
+                                                        receipt=affected_receipt,
+                                                        ranker=rerank.rank if rerank.enabled() else None)
+        if rerank.enabled():
+            affected_receipt["rerank"].update(model=rerank.MODEL, revision=rerank.REVISION,
+                                              max_candidates=rerank.MAX_CANDIDATES, max_length=512)
+            if affected_receipt["rerank"]["status"] == "fallback":
+                self._fallback("재순위 모델을 사용할 수 없어 기존 선택 유지: " + affected_receipt["rerank"]["error_type"])
         found_by = {c["id"]: c["found_by"] for c in affected}
         rows = personas.fetch(conn, rep_ids + [c["id"] for c in affected])
         occupations = [r["occupation"] for r in rows]

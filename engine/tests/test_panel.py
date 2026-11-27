@@ -31,8 +31,9 @@ def test_normalize_spec_cleans_and_maps_provinces():
     assert spec["filters"] == [{"occupation_like": ["택시"], "province_in": ["경상북", "전북"]}]
     assert spec["keywords"] == ["지하철로", "택시"]
     assert spec["semantic_query"] == "지하철로 출퇴근하는 노인"
+    assert panel.normalize_spec({"keywords": ["택시"]})["keywords"] == ["택시"]
     with pytest.raises(ValueError):
-        panel.normalize_spec({"filters": [], "keywords": ["택시"], "semantic_query": ""})
+        panel.normalize_spec({"keywords": ["집"]})
 
 
 @pytest.mark.parametrize("group, message", [

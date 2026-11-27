@@ -7,14 +7,15 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import public_rules, service
+from . import public_rules, safety_gate, service
 from .jobs import Jobs
 
 
 class PublicJSONResponse(JSONResponse):
     def render(self, content):
         data = content if isinstance(content, dict) else {"data": content}
-        return public_rules.dumps(data).encode("utf-8")
+        # Optional output gate (PP_SAFETY_GATE); off by default, then the response is unchanged.
+        return public_rules.dumps(safety_gate.apply(data)).encode("utf-8")
 
 
 class PolicyRequest(BaseModel):
@@ -28,6 +29,7 @@ class PolicyRequest(BaseModel):
 
 
 def create_app(jobs: Jobs | None = None) -> FastAPI:
+    safety_gate.mode()  # an invalid PP_SAFETY_GATE stops startup instead of failing every response
     jobs = jobs or Jobs()
 
     @asynccontextmanager

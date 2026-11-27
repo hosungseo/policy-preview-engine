@@ -45,8 +45,29 @@ def main(argv: list[str] | None = None) -> int:
     api = sub.add_parser("api")
     api.add_argument("--port", type=int, default=8765)
     sub.add_parser("mcp")
+    trend = sub.add_parser("trend", help="공개 집계로 과거 추세 기준선 계산 (모델 호출 0회)")
+    trend.add_argument("--history", type=Path, required=True)
+    trend.add_argument("--question-id", required=True)
+    trend.add_argument("--group", required=True)
+    trend.add_argument("--definition-id", required=True)
+    trend.add_argument("--target-year", type=int, required=True)
+    trend.add_argument("--as-of", required=True, help="Prediction cutoff, YYYY-MM-DD")
+    trend.add_argument("--method", choices=("last", "linear"), default="last")
     args = parser.parse_args(argv)
     try:
+        if args.cmd == "trend":
+            from .trend_baseline import predict
+            try:
+                rows = json.loads(args.history.read_text(encoding="utf-8"))
+                if not isinstance(rows, list) or any(not isinstance(r, dict) for r in rows):
+                    raise ValueError("history_rows_required")
+                result = predict(rows, question_id=args.question_id, group=args.group,
+                                 definition_id=args.definition_id, target_year=args.target_year,
+                                 as_of=args.as_of, method=args.method)
+            except (ValueError, KeyError, TypeError, OverflowError):
+                raise service.RequestError("과거 집계의 정의·공표일·확률과 입력 형식을 확인하세요.") from None
+            print(json.dumps(result, ensure_ascii=False, allow_nan=False))
+            return 0
         if args.cmd == "api":
             import uvicorn
             from .api import create_app

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Start the review server with one of three model setups. The screen shows which one is running.
 #   scripts/serve-profile.sh global   # Claude (sentences) + TypeSafe Jev (decisions)
-#   scripts/serve-profile.sh korean   # LG EXAONE + Upstage Solar Decide
+#   scripts/serve-profile.sh korean   # LG EXAONE + Upstage Solar Decide (PP_KOREAN_DECISION_MODEL=solar-decide-flash for Flash)
 #   scripts/serve-profile.sh local    # local OpenAI-compatible LLM (e.g. Gemma 4) + local decision model (e.g. tev1:4b)
 #   scripts/serve-profile.sh mock     # no keys, no model calls
 # Keys come from the git-ignored .env (copy .env.example; never commit it). A legacy .env.service is read when .env is absent. Local endpoints default to Ollama on this machine and
@@ -51,7 +51,9 @@ case "$KIND" in
     export PP_LLM_PROVIDER=cli PP_JEV_PROVIDER=api
     unset PP_JEV_URL PP_JEV_MODEL ;;
   korean)
-    export PP_LLM_PROVIDER=exaone PP_JEV_PROVIDER=upstage PP_JEV_MODEL=solar-decide PP_EXAONE_LOCAL_ONLY=1 ;;
+    # PP_KOREAN_DECISION_MODEL=solar-decide-flash picks the low-latency variant (same endpoint and price).
+    export PP_LLM_PROVIDER=exaone PP_JEV_PROVIDER=upstage PP_EXAONE_LOCAL_ONLY=1
+    export PP_JEV_MODEL="${PP_KOREAN_DECISION_MODEL:-solar-decide}" ;;
   local)
     export PP_LLM_PROVIDER=openai
     export PP_LLM_BASE_URL="${PP_LOCAL_LLM_URL:-http://127.0.0.1:11434/v1}"

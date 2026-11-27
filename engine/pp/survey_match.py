@@ -166,7 +166,9 @@ PROVINCE_FULL = {"서울": "서울특별시", "부산": "부산광역시", "대�
 
 
 def _work(s: str, occupation: str | None, a: dict) -> bool | None:
-    jobless = (occupation or "") == "무직"
+    from .life_context import working
+
+    jobless = not working({"occupation": occupation})
     emp, nonreg = a.get("employment"), a.get("nonregular")
     s = {"임금봉급근로자": "임금근로자", "고용원있는사업주": "고용원이있는자영업자", "고용원없는자영자": "고용원이없는자영업자",
          "고용인이있는자영업자": "고용원이있는자영업자", "고용인이없는자영업자": "고용원이없는자영업자",

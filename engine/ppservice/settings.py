@@ -12,8 +12,11 @@ def _env(name: str, default: str = "") -> str:
 
 
 def jev_price_per_m_input() -> float:
-    """Input-token price for the currently selected decision-model provider."""
-    return 0.1 if _env("PP_JEV_PROVIDER", "api").lower() == "upstage" else 0.042
+    """Input-token price for the currently selected decision-model provider (and Upstage model)."""
+    if _env("PP_JEV_PROVIDER", "api").lower() == "upstage":
+        from pp import jev
+        return jev.upstage_price_per_m_input(_env("PP_JEV_MODEL", "solar-decide"))
+    return 0.042
 
 
 def _int(name: str, default: int) -> int:

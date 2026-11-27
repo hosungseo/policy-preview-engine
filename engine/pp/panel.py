@@ -70,7 +70,7 @@ def diversify(cands: list[dict], k: int, max_per_occupation: int = 5, seed: int 
         buckets[(config.REGION_OF[cand["province"]], config.age_band(cand["age"]))].append(cand)
     for items in buckets.values():
         rng.shuffle(items)
-        items.sort(key=lambda c: -len(c["found_by"]))
+        items.sort(key=lambda c: (-c.get("rerank_score", float("-inf")), -len(c["found_by"])))
     keys = sorted(buckets, key=str)
     rng.shuffle(keys)
     per_occupation: dict[str, int] = defaultdict(int)
@@ -107,7 +107,7 @@ def interleave(lists: list[list[int]]) -> list[int]:
 
 def build_affected(conn, spec: dict, exclude: set[int], k: int = 100,
                    semantic_ids: list[int] | None = None, seed: int = 42, *,
-                   receipt: dict | None = None) -> tuple[list[dict], dict]:
+                   receipt: dict | None = None, ranker=None) -> tuple[list[dict], dict]:
     """Union of three channels minus the representative panel, then diversified."""
     spec = normalize_spec(spec)
     filter_receipts, lists = [], []
@@ -132,15 +132,39 @@ def build_affected(conn, spec: dict, exclude: set[int], k: int = 100,
     rows = personas.fetch(conn, list(found_by))
     cands = [{"id": r["id"], "province": r["province"], "age": r["age"], "occupation": r["occupation"],
               "found_by": found_by[r["id"]]} for r in rows]
+    rerank_audit = {"enabled": ranker is not None, "status": "off"}
+    if ranker is not None and cands and spec["semantic_query"]:
+        from .rerank import MAX_CANDIDATES
+        # Score a pool wider than the default 100-person panel, while keeping every stratum in play.
+        shortlist = diversify(cands, MAX_CANDIDATES, seed=seed)
+        lookup = {r["id"]: r for r in rows}
+        try:
+            import math
+            ranked = ranker([lookup[c["id"]] for c in shortlist], spec["semantic_query"])
+            scores = dict(ranked)
+            if (len(ranked) != len(shortlist) or set(scores) != {c["id"] for c in shortlist}
+                    or any(not math.isfinite(s) for s in scores.values())):
+                raise ValueError("invalid reranker result")
+            for cand in cands:
+                if cand["id"] in scores:
+                    cand["rerank_score"] = scores[cand["id"]]
+            rerank_audit.update(status="applied", scored_count=len(scores))
+        except Exception as exc:  # optional model unavailable, busy or timed out: keep original selection
+            rerank_audit.update(status="fallback", error_type=type(exc).__name__)
+    elif ranker is not None:
+        rerank_audit["status"] = "no_candidates_or_query"
     picked = diversify(cands, k, seed=seed)
     if receipt is not None:
         receipt.update({"filter_groups": filter_receipts, "filter_merge": "round_robin_deduplicated_limit_300",
                         "fts": {"requested_keywords": spec["keywords"],
                                 "usable_keywords": personas.usable_keywords(spec["keywords"]),
-                                "order": "bm25 ASC, rowid ASC", "limit": 300},
+                                "order": "long: bm25 ASC, rowid ASC; short: rowid ASC; round_robin_merge", "limit": 300},
+                        "rerank": rerank_audit,
                         "candidate_count": len(cands), "requested_count": k, "selected_count": len(picked),
                         "excluded_representative_count": len(set().union(*map(set, channels.values())) & exclude),
-                        "selection": "region_age_round_robin_then_channel_count_desc_with_seeded_ties",
+                        "selection": ("region_age_round_robin_then_rerank_score_desc_then_channel_count_desc_with_seeded_ties"
+                                      if rerank_audit["status"] == "applied" else
+                                      "region_age_round_robin_then_channel_count_desc_with_seeded_ties"),
                         "occupation_cap": 5, "occupation_cap_increment": 5, "seed": seed,
                         "status": "candidate_not_eligibility"})
     return picked, {name: len(ids) for name, ids in channels.items()}

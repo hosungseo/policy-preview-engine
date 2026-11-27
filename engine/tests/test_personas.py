@@ -42,10 +42,24 @@ def test_filter_ids(persona_db):
 
 
 def test_usable_keywords_and_fts(persona_db):
-    assert personas.usable_keywords(['"지하철로"', "택시", "지하철로", "버스를"]) == ["지하철로", "버스를"]
+    assert personas.usable_keywords(['"지하철로"', "택시", "지하철로", "버스를"]) == ["지하철로", "택시", "버스를"]
     conn = personas.connect()
     assert len(personas.fts_ids(conn, ["지하철로"])) == 57
-    assert personas.fts_ids(conn, ["택시"]) == []
+    assert len(personas.fts_ids(conn, ["택시"])) == 17
+
+
+def test_short_search_is_literal_and_uses_every_indexed_column(persona_db):
+    import sqlite3
+    with sqlite3.connect(persona_db) as conn:
+        conn.execute("UPDATE persona SET sports_persona='월세 50% A_ OR 돌봄' WHERE id=2")
+        conn.execute("INSERT INTO persona_fts(persona_fts) VALUES ('rebuild')")
+    conn = personas.connect()
+    for keyword in ("월세", "50%", "A_", "OR", "돌봄"):
+        assert 2 in personas.fts_ids(conn, [keyword])
+    assert personas.fts_ids(conn, ["월%", "월_", "없는단어"]) == []
+    assert personas.fts_ids(conn, ["월세"], limit=0) == []
+    mixed = personas.fts_ids(conn, ["지하철로", "월세"], limit=2)
+    assert len(mixed) == len(set(mixed)) == 2 and 2 in mixed
 
 
 def test_occupation_names_are_current_jobs_in_the_db(persona_db):

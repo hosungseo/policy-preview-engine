@@ -58,7 +58,7 @@ def test_affected_people_from_caller_keywords_and_occupations(persona_db):
     out = panel_provider.provide({"policy_text": "", "n": 10, "affected": 4, "keywords": ["지하철로", "버스"],
                                   "occupations": ["요양보호사"]})
     search = out["affected_search"]
-    assert search["keywords_used"] == ["지하철로"] and search["keywords_too_short"] == ["버스"]
+    assert search["keywords_used"] == ["지하철로", "버스"] and search["keywords_too_short"] == []
     assert search["occupations_used"] == ["요양보호사"]
     assert search["channels"]["fts"] > 0 and search["channels"]["filter"] > 0
     assert out["counts"]["affected_found"] == 4

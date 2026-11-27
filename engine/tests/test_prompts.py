@@ -38,7 +38,7 @@ def test_target_prompt_lists_real_occupation_names():
 
 
 def test_other_prompts_have_parseable_markers():
-    assert "경북" in prompts.target_prompt("정책") and "3글자 이상" in prompts.target_prompt("정책")
+    assert "경북" in prompts.target_prompt("정책") and "2글자 이상" in prompts.target_prompt("정책")
     assert "\n- 택시 운전원\n" in prompts.occupation_prompt(["택시 운전원", "무직"])
     cand = {"group": "농림어업 숙련 종사자", "n": 12, "direct": 0.5, "oppose": 0.4, "silent": 0.9, "channels": ["경로당"]}
     block = prompts.outreach_block(cand, ["너무 어렵네요."])

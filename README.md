@@ -163,6 +163,27 @@ API·MCP의 `limits` 안 같은 이름(밑줄 사용)으로 조절합니다. 비
 `--i-confirm-public`(API·MCP: `i_confirm_public=true`)로 공개 사실을 확인할 수 있습니다.
 규칙 검사는 우회 표현을 놓칠 수 있으므로 사람이 확인해야 합니다.
 
+### 선택: 출력 안전 관문 (`PP_SAFETY_GATE`)
+
+HTTP API와 MCP가 응답을 내보내기 직전에 한 번 더 검사합니다. **기본값은 꺼짐**이며, 꺼져 있으면 응답이 전과 같습니다.
+
+| 값 | 동작 |
+|---|---|
+| 비움 또는 `off` | 검사하지 않음(기본) |
+| `report` | 응답은 그대로 두고 끝에 `safety_gate` 항목으로 걸린 문장을 알려 줌 |
+| `block` | 걸린 줄을 "안전 관문이 가린 문장입니다(…)"로 바꾸고 `safety_gate` 항목을 붙임 |
+
+검사 규칙은 네 가지입니다. 추가 설치 없이 엔진 안에서 돕니다.
+
+- **실제 여론으로 오인할 표현**: "국민 여론은…", "조사 결과…", "주민 대다수가…"처럼 합성 반응을 실제 여론·조사처럼 쓴 문장
+- **수급 자격 단정**: "이 분은 기초연금 수급 대상입니다"처럼 특정인의 자격을 단정한 문장
+- **프로필에 없는 개인사**: "저는 작년에 암 수술을 받아서"처럼 질병·이혼·빚·전과 같은 민감한 사건을 지어낸 문장
+- **프롬프트 주입**: 문안·입법예고 원문에 섞여 되돌아오는 "이전 지시를 무시하고…", 역할 표시, 키 요구, 도구 호출 지시, 숨은 문자, 외부 주소로 새는 그림 링크
+
+문안 원문 인용(`trigger_quote`·조항 원문·`policy_text`)은 앞의 세 규칙에서 빼고 프롬프트 주입만 검사합니다. 고지·오류 안내처럼 엔진이 직접 쓰는 문구도 검사하지 않습니다. 단순한 글자 규칙이라 놓치거나 지나치게 막을 수 있으니, 공개 전에는 사람이 확인하세요.
+
+더 깊게 보려면 내 컴퓨터에서 NeMo Guardrails 서버를 띄우고 `PP_SAFETY_GATE_URL=http://127.0.0.1:8090`을 지정합니다. 엔진은 같은 내용을 그 서버의 check mode(`POST /v1/checks`, 출력 검사)로 보냅니다. `PP_SAFETY_GATE_CONFIG`로 설정 이름을, `PP_SAFETY_GATE_TIMEOUT`(초, 기본 60)으로 기다릴 시간을 정합니다. 주소는 내 컴퓨터(loopback)만 받습니다. 서버가 막거나 응답하지 않으면 `block`에서는 내용을 가리고(안전 쪽으로 실패), `report`에서는 그 사실만 적습니다. Nemotron Content Safety·NemoGuard JailbreakDetect 연결은 검증 결과상 권장하지 않으며 기본으로 연결하지 않습니다. 선택 기능의 한계는 `docs/optional-experiments.md`를 보세요.
+
 모델 키는 디스크·결과·로그에 저장하지 않습니다. 실행 문안과 합성 프로필은 이용자의 키로 Anthropic에,
 선택적 명료성 점검 문안은 TypeSafe에 전송합니다. 실행 중 임시 반응 파일은 처리 후 삭제하며,
 CLI의 `--out`은 사용자가 지정한 결과 파일을 남깁니다.
@@ -290,6 +311,7 @@ PP_JEV_PROVIDER=mock PP_LLM_PROVIDER=mock ../.venv/bin/python -m pytest
 |---|---|---|
 | Jev (TypeSafe) | `PP_JEV_PROVIDER=api`, `TYPESAFE_API_KEY` | `https://api.typesafe.ai/v1/systemone` |
 | 업스테이지 Solar Decide | `PP_JEV_PROVIDER=upstage`, `UPSTAGE_API_KEY` (모델 기본값 `solar-decide`) | `https://api.upstage.ai/v1/systemone` (기본, 글로벌) |
+| 업스테이지 Solar Decide Flash (빠른 변형) | 위 설정에 `PP_JEV_MODEL=solar-decide-flash`를 더함 | 위와 같은 주소. 질문·답 형식과 단가도 같음 |
 | 국내 처리: 업스테이지 한국 리전(비공개 베타, 접근 신청 필요) | 위 설정에 `PP_UPSTAGE_REGION=kr`을 더하거나, 안내받은 기본 주소를 `UPSTAGE_BASE_URL`에 넣음 | `https://kr.api.upstage.ai/v1/systemone` — 경로는 승인 후 안내 기준으로 확인 |
 | 로컬 판단 모델 | `PP_JEV_PROVIDER=api`, `PP_JEV_URL=http://127.0.0.1:11434/v1/systemone`, `PP_JEV_MODEL=tev1:4b` 등 | 내 컴퓨터(외부 전송 없음) |
 | 시험 | `PP_JEV_PROVIDER=mock` | 없음 |
@@ -300,6 +322,8 @@ PP_JEV_PROVIDER=mock PP_LLM_PROVIDER=mock ../.venv/bin/python -m pytest
   - `UPSTAGE_BASE_URL`은 `https://` 주소만 받습니다. 업스테이지 키가 그 주소로 가므로 안내받은 주소만 넣으세요.
   - 업스테이지 키가 다른 주소로 새지 않도록 `PP_JEV_URL`은 업스테이지 설정에 쓰이지 않습니다.
 - **로컬**: Jev와 같은 형식으로 답하는 로컬 서버를 `PP_JEV_URL`로 연결합니다. 이때 TypeSafe 키는 보내지 않고, 그 서버가 키를 요구하면 `PP_JEV_API_KEY`만 보냅니다.
+- **Solar Decide Flash**: 업스테이지가 2026-10-08에 낸 응답이 빠른 변형(베타)입니다. 주소·질문 형식·답 형식이 Solar Decide와 같아 모델 이름만 바꾸면 됩니다. 한국 리전에서도 같은 이름으로 쓸 수 있습니다. 정확도는 아직 이 저장소에서 재지 않았으므로 화면에 Solar Decide의 정확도 기록을 붙이지 않습니다. `scripts/serve-profile.sh korean`에서는 `PP_KOREAN_DECISION_MODEL=solar-decide-flash`로 고릅니다.
+- **업스테이지 베타 동의**: 두 Solar Decide 모델 모두 베타입니다. 2026-12-23(한국 시간)부터는 조직 소유자가 [Model access](https://console.upstage.ai/model-access) 화면에서 베타 약관에 동의하지 않으면 `403 model_opt_in_required`가 납니다. 이때 엔진은 동의 화면 주소를 담은 오류로 멈춥니다.
 
 문장 모델(심층 분석의 이유·쟁점·공청회·계획서 문장)은 `PP_LLM_PROVIDER`로 고릅니다.
 
@@ -338,6 +362,19 @@ scripts/serve-profile.sh mock     # 키 없음, 모델 호출 없음
 
 - 구성마다 심층 분석에서 들은 사람 수가 달라 비용·시간을 그대로 견주면 안 됩니다.
 - 같은 날 Solar Decide는 분당 100건·5만 토큰 한도가 있어 병렬 호출을 16으로 올리자 429 오류가 났습니다. 코드는 업스테이지가 알려 주는 재시도 시각까지 기다립니다.
+
+판단 모델 단가와, 위 기록 중 판단 모델 900회 호출(본 문항·대조 문장·순서 뒤집기 × 300명)의 비용입니다. 새로 호출하지 않고 저장된 답별 입력 토큰 수에 단가를 곱했습니다.
+
+| 판단 모델 | 모델 이름 | 입력 100만 토큰당 | 출력 | 한 번 호출 입력 토큰(저장 기록 평균) | 900회 호출 비용 |
+|---|---|---|---|---|---|
+| TypeSafe Jev | `jev-latest` | $0.042 | 무료 | 약 2,140 | 약 $0.08 |
+| Upstage Solar Decide | `solar-decide` | $0.10 | 무료 | 약 1,330 | 약 $0.12 |
+| Upstage Solar Decide Flash | `solar-decide-flash` | $0.10 | 무료 | 재지 않음(같은 바탕 모델이라 비슷할 것으로 봄) | 약 $0.12(추정) |
+| 로컬 tev1:4b | `tev1:4b` | 0원 | 0원 | — | 0원 |
+
+- 단가는 2026-11-27에 업스테이지 모델 문서([Solar Decide](https://console.upstage.ai/docs/models/solar-decide), [Solar Decide Flash](https://console.upstage.ai/docs/models/solar-decide-flash))에서 확인했습니다. 업스테이지에서 직접 쓰면 **Flash도 Solar Decide와 단가가 같아 비용은 줄지 않습니다.** 얻는 것은 빠른 응답입니다.
+- Solar Decide는 한 번 호출에 드는 입력 토큰이 Jev의 약 60%지만 단가가 2.4배라, 같은 900회에 약 1.5배가 듭니다.
+- Solar 기록은 처음 시도가 668건에서 멈춘 뒤 다시 실행해 900건을 채운 것입니다. 다시 실행할 때 이미 받은 답은 토큰 0으로 저장되므로, 평균은 실제로 호출한 답만으로 냈습니다.
 - 단가는 바뀔 수 있으니 각 회사의 최신 안내를 확인하세요. 코드가 비용을 계산할 때 쓰는 입력 단가는 `engine/pp/jev.py`에 있습니다.
 
 ## 7. 한계

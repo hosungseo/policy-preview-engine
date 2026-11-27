@@ -85,7 +85,7 @@ def arts_held_out(rows: list[dict], by_uuid: dict, t: dict) -> dict:
                "family": "무급가족종사자"}.get(r.get("employment"))
         if r.get("employment") == "wage" and r.get("nonregular"):
             key = "임시근로자"
-        if (by_uuid[r["uuid"]].get("occupation") or "") in life_context.NO_JOB:
+        if not life_context.working(by_uuid[r["uuid"]]):
             key = "해당없음(무직)"
         if key:
             groups[key].append(r["arts"])

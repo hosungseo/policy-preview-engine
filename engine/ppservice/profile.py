@@ -58,7 +58,8 @@ def _decision() -> dict:
         is_kr = jev.upstage_is_korean_region()
         where = "korean" if is_kr else "global"
         region_label = "한국 리전" if is_kr else "글로벌"
-        return {"name": f"Upstage Solar Decide ({jev.model()} · {region_label})", "where": where}
+        family = "Upstage Solar Decide Flash" if jev.model().lower() == "solar-decide-flash" else "Upstage Solar Decide"
+        return {"name": f"{family} ({jev.model()} · {region_label})", "where": where}
     if jev.custom_endpoint():
         return {"name": jev.model(), "where": "local" if _is_local(jev.api_url()) else "global"}
     return {"name": "TypeSafe Jev", "where": "global"}
@@ -95,7 +96,9 @@ def holdout() -> dict | None:
         return None
     record = json.loads(records[-1].read_text(encoding="utf-8"))
     name = jev.model().lower()
-    key = "solar" if "solar" in name else "tev1" if "tev1" in name else "jev" if "jev" in name else None
+    # Only solar-decide itself was measured; the Flash variant must not borrow its accuracy.
+    key = ("solar" if name == "solar-decide" else None) if "solar" in name else \
+        "tev1" if "tev1" in name else "jev" if "jev" in name else None
     entry = record.get("models", {}).get(key) if key else None
     new = ((entry or {}).get("fwd") or {}).get("new")
     if not new:

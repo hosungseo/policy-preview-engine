@@ -104,3 +104,59 @@ def test_custom_endpoint_keeps_legacy_api_compatibility_without_typesafe_key(mon
     assert captured["url"] == "http://127.0.0.1:9010/systemone"
     assert captured["authorization"] == "Bearer custom_key"
     assert captured["body"]["model"] == "jev-latest"
+
+
+def test_solar_decide_flash_is_a_model_choice_on_the_same_endpoint(monkeypatch):
+    monkeypatch.setenv("PP_JEV_PROVIDER", "upstage")
+    monkeypatch.setenv("PP_JEV_MODEL", "solar-decide-flash")
+    monkeypatch.setenv("UPSTAGE_API_KEY", "solar_test_key")
+    captured = {}
+
+    def fake_post(url, body, *, headers, timeout):
+        captured.update(url=url, authorization=headers.get("Authorization"), body=json.loads(body))
+        return answer().decode()
+
+    monkeypatch.setattr(jev.net, "post", fake_post)
+    jev.evaluate({"persona": "p"}, {"q": {"type": "noul", "instructions": "x"}}, cache=False)
+    assert captured["url"] == "https://api.upstage.ai/v1/systemone"
+    assert captured["authorization"] == "Bearer solar_test_key"
+    assert captured["body"]["model"] == "solar-decide-flash"
+
+
+@pytest.mark.parametrize(("name", "price"), [("solar-decide", 0.1), ("solar-decide-flash", 0.1),
+                                              (" Solar-Decide-Flash ", 0.1), ("solar-decide-next", 0.1)])
+def test_upstage_price_follows_the_listed_model_table(monkeypatch, name, price):
+    monkeypatch.setenv("PP_JEV_PROVIDER", "upstage")
+    monkeypatch.setenv("PP_JEV_MODEL", name)
+    assert jev.upstage_price_per_m_input() == price
+    assert jev.price_per_m_input() == price
+    assert settings.jev_price_per_m_input() == price
+    assert jobs.jev_price_per_m_input() == price
+
+
+def test_default_provider_and_price_are_unchanged(monkeypatch):
+    for key in ("PP_JEV_PROVIDER", "PP_JEV_MODEL", "PP_LLM_PROVIDER"):
+        monkeypatch.delenv(key, raising=False)
+    assert jev.provider() == "api" and jev.model() == "jev-latest"
+    assert jev.price_per_m_input() == jev.PRICE_PER_M_INPUT == 0.042
+    monkeypatch.setenv("PP_JEV_PROVIDER", "upstage")
+    assert jev.model() == "solar-decide"
+
+
+def test_beta_opt_in_403_names_the_consent_page_without_retrying(monkeypatch):
+    monkeypatch.setenv("PP_JEV_PROVIDER", "upstage")
+    monkeypatch.setenv("PP_JEV_MODEL", "solar-decide-flash")
+    monkeypatch.setenv("UPSTAGE_API_KEY", "solar_test_key")
+    calls = []
+
+    def fake_post(url, body, *, headers, timeout):
+        calls.append(url)
+        raise jev.net.HTTPError(403, {}, b'{"error":{"type":"model_opt_in_required","message":"agree first"}}')
+
+    monkeypatch.setattr(jev.net, "post", fake_post)
+    with pytest.raises(jev.JevError) as info:
+        jev.evaluate("state", {"q": {"type": "noul", "instructions": "x"}}, cache=False)
+    assert len(calls) == 1
+    message = str(info.value)
+    assert "model_opt_in_required" in message and "console.upstage.ai/model-access" in message
+    assert "solar-decide-flash" in message and "solar_test_key" not in message

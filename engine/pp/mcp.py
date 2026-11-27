@@ -6,13 +6,14 @@ from typing import Literal
 
 from pydantic import StrictBool, StrictInt
 
-from . import mcp_copy, mcp_guide, public_rules, service, mcp_setup, mcp_notices
+from . import mcp_copy, mcp_guide, public_rules, safety_gate, service, mcp_setup, mcp_notices
 from .jobs import Jobs
 from .condition_schema import Conditions
 
 
 def tool_result(data: dict, *, error: bool = False, context: str = "") -> CallToolResult:
-    data = public_rules.envelope(data)
+    # Optional output gate (PP_SAFETY_GATE) before any text reaches the assistant; off by default.
+    data = safety_gate.apply(public_rules.envelope(data))
     if "summary" in data:
         text = data["summary"]["text"]
     else:
@@ -66,6 +67,7 @@ class PublicMCP(FastMCP):
 
 
 def create_server(jobs: Jobs | None = None) -> FastMCP:
+    safety_gate.mode()  # an invalid PP_SAFETY_GATE stops startup instead of failing every tool call
     jobs = jobs or Jobs()
     server = PublicMCP(mcp_copy.SERVER_NAME, instructions=mcp_copy.INSTRUCTIONS)
     mcp_guide.register(server)

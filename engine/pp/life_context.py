@@ -36,8 +36,9 @@ from . import housing_context
 
 OFFICIAL = Path(__file__).resolve().parents[1] / "series" / "official"
 VERSION = "life-context-v2"
-VALUE_SCHEMA = "life-context-values-v3"
+VALUE_SCHEMA = "life-context-values-v4"
 FINANCE_LIMIT = "가구 기준 통계를 사람 패널에 맞춘 근사: 가구 연결키·정확한 가구원 수가 없어 개인 기준 비율로 해석할 수 없음"
+BENEFIT_ASSET_LIMIT = "수급·기초연금 배정과 순자산 상위 20%의 동시 추첨을 막는 합성자료 정합 규칙이며, 실제 재산 기준·수급 자격 판정이 아님"
 INCOME_BANDS = ("lt10", "10_30", "30_50", "50_70", "70_100", "ge100")
 INCOME_KO = {"lt10": "1천만 원 미만", "10_30": "1천만~3천만 원", "30_50": "3천만~5천만 원", "50_70": "5천만~7천만 원",
              "70_100": "7천만~1억 원", "ge100": "1억 원 이상"}
@@ -54,6 +55,14 @@ COMMUTE_KO = {"walk": "걸어서", "bike": "자전거", "car": "자가용(승용
 EDU_HEAD = {"무학": "(가구주 교육수준) 초졸 이하", "초등학교": "(가구주 교육수준) 초졸 이하",
             "중학교": "(가구주 교육수준) 중졸", "고등학교": "(가구주 교육수준) 고졸"}
 NO_JOB = {"무직"}
+# An earlier occupation can precede the current status (e.g. 전직 교사, 현재 구직중).
+# Match a status at the end, never a job title such as 구직 상담원.
+_NOT_WORKING = re.compile(r"(?:^|[\s,(（])(?:현재\s*)?(?:구직\s*중|구직자|취업\s*준비\s*중|취준생|실업자|무직)[)）\s]*$")
+
+
+def working(person: dict) -> bool:
+    occupation = (person.get("occupation") or "").strip()
+    return bool(occupation) and occupation not in NO_JOB and not _NOT_WORKING.search(occupation)
 # Persona text that already speaks to an attribute; checked on the narrative only (the header lists the occupation).
 PROFILE_MENTIONS = {
     "tenure": r"자가(?!용|진단|격리|발전)|전세|월세|사글세|무상 ?거주|내 ?집|자기 ?집|본인 ?소유|자기 ?소유|임대차|세입자|셋방|월셋",
@@ -162,7 +171,7 @@ def _mix(rows: dict, weights: dict) -> dict:
 
 def employment_status(person: dict, seed: int) -> str | None:
     """Wage worker / self-employed (alone or with employees) / unpaid family worker for people with an occupation."""
-    if (person.get("occupation") or "") in NO_JOB or "employment" in mentions(person):
+    if not working(person) or "employment" in mentions(person):
         return None
     rows = tables()["employment"].get(person["province"], {}).get(person["sex"], {})
     shares = rows.get(_age5(int(person["age"]), 70))
@@ -222,7 +231,7 @@ def finance_constraints(people: list[dict], tenure: dict, status: dict | None = 
             edu = EDU_HEAD.get(p.get("education_level") or "", "(가구주 교육수준) 대졸 이상")
             add("income", edu, i, inc[edu])
             add("debt", edu, i, binary(debt[edu]))
-            if (p.get("occupation") or "") in NO_JOB:
+            if not working(p):
                 add("income", "status none", i, inc["(가구주 종사상지위) 기타(무직·학생 등)"])
                 add("debt", "status none", i, binary(debt["(가구주 종사상지위) 기타(무직학생 등)"]))
             elif (status or {}).get(p["uuid"]) == "wage":
@@ -421,7 +430,7 @@ def build(people: list[dict], seed: int = 2026) -> tuple[dict, dict]:
             shares = t["religion"].get(p["province"], {}).get(p["sex"], {}).get(_age5(max(age - 10, 0)))
             a["religion"] = _draw(_rng(seed, "religion", uid), shares or {})
         if "commute" not in skip:
-            works = (p.get("occupation") or "") not in NO_JOB
+            works = working(p)
             a["commute"] = _draw(_rng(seed, "commute", uid), commute_probs(p) or {}) if works else None
             if not works:
                 a["value_status"]["commute"] = "not_applicable"
@@ -455,7 +464,7 @@ def build(people: list[dict], seed: int = 2026) -> tuple[dict, dict]:
     gaps.update(assign_habits(people, out, seed))
     gaps.update(assign_culture(people, out, seed))
     gaps.update(assign_surveys(people, out, seed))
-    diag = {"value_schema": VALUE_SCHEMA, "finance_unit": "household_to_person_approximation", "limitations": [FINANCE_LIMIT],
+    diag = {"value_schema": VALUE_SCHEMA, "finance_unit": "household_to_person_approximation", "limitations": [FINANCE_LIMIT, BENEFIT_ASSET_LIMIT],
             "addon_rake_gap": gaps, "rake_gap": {"income": inc_gap, "debt": debt_gap, "car": car_gap, "smoking": smoke_gap,
                          "health_good": good_gap, "hypertension": hyper_gap, "diabetes": diab_gap}}
     return out, diag
@@ -493,19 +502,29 @@ def _head_age_label(person: dict) -> str:
 
 def assign_networth(people: list[dict], out: dict, tenure: dict, seed: int) -> float | None:
     """Net worth quintile: P(quintile | drawn income band) by Bayes, raked to the published mean net worth by head age,
-    tenure and province (quintile means as values)."""
+    tenure and province (quintile means as values). Benefit recipients cannot draw the top quintile;
+    this is a conservative synthetic consistency constraint, not an eligibility or legal asset test.
+    The structural zero is set before raking, so its effect is included in the reported fitting gap."""
     n = tables()["networth"]
     idx = [i for i, p in enumerate(people) if "income" in out[p["uuid"]]]
     start = []
     for i in idx:
         band = out[people[i]["uuid"]]["income"]
         w = {q: n["income_given_quintile"][q].get(band) for q in QUINTILES}
+        a = out[people[i]["uuid"]]
         if any(v is None for v in w.values()):
             out[people[i]["uuid"]]["networth"] = None
             out[people[i]["uuid"]]["value_status"]["networth"] = "unknown"
             start.append(None)
             continue
-        total = sum(w.values()) or 1.0
+        if a.get("livelihood") or a.get("basic_pension"):
+            w["5"] = 0.0
+        total = sum(w.values())
+        if total <= 0:
+            a["networth"] = None
+            a["value_status"]["networth"] = "unknown"
+            start.append(None)
+            continue
         start.append({q: w[q] / total for q in QUINTILES})
     idx, start = ([i for i, row in zip(idx, start) if row is not None], [row for row in start if row is not None])
     if not idx:
@@ -548,10 +567,10 @@ def assign_work_extra(people: list[dict], out: dict, seed: int) -> None:
             band = "15-29세" if a < 30 else ("60세이상" if a >= 60 else f"{a // 10 * 10}-{a // 10 * 10 + 9}세")
             bands.setdefault(band, []).append(p)
     for band, members in bands.items():
-        workers = [p for p in members if (p.get("occupation") or "") not in NO_JOB]
+        workers = [p for p in members if working(p)]
         cond = min(1.0, dual[band] * len(members) / len(workers)) if workers else 0.0
         for p in members:
-            works = (p.get("occupation") or "") not in NO_JOB
+            works = working(p)
             out[p["uuid"]]["dual_earner"] = works and _rng(seed, "dual", p["uuid"]).random() < cond
 
 
@@ -713,7 +732,7 @@ def _culture_traits(kind: str, p: dict, a: dict) -> list[str]:
                ARTS_PROVINCE.get(p["province"], p["province"])]
         out += [{"1": "1인", "2": "2인", "3+": "3인이상"}[size]] if size else []
         out += ["장애등록" if a.get("disability") else "해당사항없음"] if a.get("disability") is not None else []
-        if (p.get("occupation") or "") in NO_JOB:
+        if not working(p):
             out.append("해당없음(무직)")
         elif a.get("employment") == "wage" and "nonregular" in a:
             out.append("임시근로자" if a["nonregular"] else "상용근로자")
@@ -769,7 +788,7 @@ def _adult(p: dict, a: dict) -> bool:
 
 
 def _working(p: dict, a: dict) -> bool:
-    return p.get("occupation") != "무직"
+    return working(p)
 
 
 def _youth(p: dict, a: dict) -> bool:

@@ -40,7 +40,7 @@ def test_missing_and_zero_rates_are_different(monkeypatch):
         assert assigned[p["uuid"]][key] is None
         assert assigned[p["uuid"]]["value_status"][key] == "unknown"
     assert diag["finance_unit"] == "household_to_person_approximation"
-    assert diag["limitations"] == [lc.FINANCE_LIMIT]
+    assert diag["limitations"] == [lc.FINANCE_LIMIT, lc.BENEFIT_ASSET_LIMIT]
     table["livelihood"]["서울"]["남자"]["65"] = 0
     table["disability"]["rate"][p["district"]]["남자"]["65"] = 0
     table["nps_oldage"]["서울"]["남자"]["65"] = 0

@@ -202,25 +202,48 @@ def occupation_names(conn: sqlite3.Connection) -> list[str]:
 
 
 def usable_keywords(keywords: list[str]) -> list[str]:
-    """FTS5 trigram cannot match terms shorter than 3 characters, so drop them."""
+    """Keep two-character terms; fts_ids uses a literal fallback below trigram length."""
     out: list[str] = []
     for word in keywords:
         word = str(word).replace('"', "").strip()
-        if len(word) >= 3 and word not in out:
+        if len(word) >= 2 and word not in out:
             out.append(word)
     return out
 
 
 def fts_ids(conn: sqlite3.Connection, keywords: list[str], limit: int = 300) -> list[int]:
     words = usable_keywords(keywords)
-    if not words:
+    if not words or limit <= 0:
         return []
-    query = " OR ".join(f'"{w}"' for w in words)
+    long = [w for w in words if len(w) >= 3]
+    short = [w for w in words if len(w) == 2]
+    hits = []
+    if long:
+        query = " OR ".join(f'"{w}"' for w in long)
+        hits = [r[0] for r in conn.execute(
+            "SELECT rowid FROM persona_fts WHERE persona_fts MATCH ? ORDER BY bm25(persona_fts), rowid LIMIT ?",
+            (query, limit))]
+    if not short:
+        return hits
+    # Read the indexed columns: the full DB has more persona fields than the portable bundle.
+    # Identifiers come only from SQLite's schema and are quoted; terms remain bound parameters.
+    columns = [r[1] for r in conn.execute("PRAGMA table_info(persona_fts)")]
+    tests = " OR ".join('instr(lower(coalesce("' + c.replace('"', '""') + '", \'\')), lower(j.value)) > 0'
+                        for c in columns)
     rows = conn.execute(
-        "SELECT rowid FROM persona_fts WHERE persona_fts MATCH ? ORDER BY bm25(persona_fts), rowid LIMIT ?",
-        (query, limit),
-    ).fetchall()
-    return [r[0] for r in rows]
+        f"SELECT rowid FROM persona_fts WHERE EXISTS (SELECT 1 FROM json_each(?) j WHERE {tests}) "
+        "ORDER BY rowid LIMIT ?", (json.dumps(short, ensure_ascii=False), limit))
+    short_hits = [r[0] for r in rows]
+    # Give both channels a share of a bounded result, without changing long-only BM25 ordering.
+    out, seen = [], set()
+    for i in range(max(len(hits), len(short_hits))):
+        for group in (hits, short_hits):
+            if i < len(group) and group[i] not in seen:
+                seen.add(group[i])
+                out.append(group[i])
+                if len(out) == limit:
+                    return out
+    return out
 
 
 def population(conn: sqlite3.Connection) -> dict:

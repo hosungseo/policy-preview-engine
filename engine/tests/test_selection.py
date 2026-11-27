@@ -47,7 +47,7 @@ def test_selection_receipt_records_actual_conditions_uuids_counts_and_revision(p
     assert sql["parameters"]["province"] == '["경상북", "전북"]'
     assert sql["parameters"]["age_min"] == 65 and sql["order"] == "id ASC" and sql["sampling"] == "none"
     assert aff["fts"]["requested_keywords"] == ["지하철로", "택시"]
-    assert aff["fts"]["usable_keywords"] == ["지하철로"]
+    assert aff["fts"]["usable_keywords"] == ["지하철로", "택시"]
     job.stage_panel()
     assert json.loads(job.path("selection.json").read_text()) == audit
 

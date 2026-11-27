@@ -1,4 +1,7 @@
 from pp import life_context as lc
+import copy
+
+import pytest
 
 BASE = {"uuid": "u-1", "district": "서울-강남구", "province": "서울", "housing_type": "아파트", "age": 45, "sex": "남자",
         "family_type": "배우자·자녀와 거주", "occupation": "마케팅 전문가", "education_level": "4년제 대학교",
@@ -20,6 +23,69 @@ def small_panel() -> list[dict]:
             occupation="무직" if i % 5 == 0 else "사무 보조원",
             education_level=("고등학교", "4년제 대학교", "중학교")[i % 3]))
     return people
+
+
+@pytest.mark.parametrize("occupation", ["전직 교사, 현재 구직중", "전직 사무원 (현재 구직 중)",
+                                       "구직중", "구직자", "취업 준비 중", "무직", "", None])
+def test_current_jobless_status_overrides_former_job(occupation):
+    p = person(1, occupation=occupation)
+    assert not lc.working(p)
+    assert lc.employment_status(p, 2026) is None
+
+
+@pytest.mark.parametrize("occupation", ["구직 상담원", "취업 상담사", "교사", "전직 교사, 현재 사무원"])
+def test_job_titles_are_not_mistaken_for_jobless_status(occupation):
+    assert lc.working(person(1, occupation=occupation))
+
+
+def test_seekers_receive_no_worker_attributes_or_commute():
+    from pp import survey_match
+
+    people = [person(i, occupation="전직 사무원, 현재 구직중", marital_status="배우자있음") for i in range(40)]
+    assigned, _ = lc.build(people)
+    for p in people:
+        a = assigned[p["uuid"]]
+        assert "employment" not in a and "nonregular" not in a
+        assert a["commute"] is None and a["value_status"]["commute"] == "not_applicable"
+        assert a["dual_earner"] is False
+        for key in ("night_work", "shift_work", "long_hours", "worker_care", "sleep_trouble"):
+            assert key not in a
+        assert survey_match.member("취업자", p, a) is False
+        assert survey_match.member("미취업자", p, a) is True
+        assert "일하는 형태" not in lc.block(a, "work")
+        assert "출퇴근 수단" not in lc.block(a, "work")
+
+
+def test_benefit_asset_consistency_preserves_receipts_and_allows_other_wealth():
+    people = [person(i, age=70) for i in range(180)]
+    out = {p["uuid"]: {"income": "10_30", "value_status": {},
+                        "livelihood": i % 3 == 0, "basic_pension": i % 3 == 1}
+           for i, p in enumerate(people)}
+    before = copy.deepcopy(out)
+    tenure = {p["uuid"]: "own" for p in people}
+    gap = lc.assign_networth(people, out, tenure, 2026)
+    for uid, a in out.items():
+        assert a["livelihood"] == before[uid]["livelihood"]
+        assert a["basic_pension"] == before[uid]["basic_pension"]
+        if a["livelihood"] or a["basic_pension"]:
+            assert a["networth"] in ("1", "2", "3", "4")
+    assert any(a["networth"] == "5" for a in out.values())
+    repeated = copy.deepcopy(before)
+    assert lc.assign_networth(people, repeated, tenure, 2026) == gap
+    assert repeated == out
+
+
+def test_missing_or_unsupported_asset_distribution_remains_unknown(monkeypatch):
+    t = copy.deepcopy(lc.tables())
+    for q in lc.QUINTILES:
+        t["networth"]["income_given_quintile"][q]["lt10"] = 0 if q != "5" else 1
+        t["networth"]["income_given_quintile"][q]["10_30"] = None if q == "5" else .1
+    monkeypatch.setattr(lc, "tables", lambda: t)
+    people = [person(1), person(2)]
+    out = {p["uuid"]: {"income": band, "livelihood": True, "value_status": {}}
+           for p, band in zip(people, ("lt10", "10_30"))}
+    assert lc.assign_networth(people, out, {p["uuid"]: "own" for p in people}, 2026) is None
+    assert all(a["networth"] is None and a["value_status"]["networth"] == "unknown" for a in out.values())
 
 
 def test_rake_matches_every_constraint_when_consistent():

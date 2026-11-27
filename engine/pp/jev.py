@@ -1,8 +1,8 @@
 """Typed decision-model client for TypeSafe Jev and Upstage Solar Decide.
 
 The provider is selected with ``PP_JEV_PROVIDER``: ``api`` (TypeSafe, the legacy default),
-``upstage`` (Solar Decide), or ``mock``.  ``PP_JEV_URL`` remains a custom endpoint option for
-legacy ``api`` deployments; TypeSafe credentials are never sent to that endpoint.  The Upstage endpoint is
+``upstage`` (Solar Decide; ``PP_JEV_MODEL=solar-decide-flash`` picks the low-latency variant), or ``mock``.
+``PP_JEV_URL`` remains a custom endpoint option for legacy ``api`` deployments; TypeSafe credentials are never sent to that endpoint.  The Upstage endpoint is
 ``UPSTAGE_BASE_URL`` when set, else the base of ``PP_UPSTAGE_REGION`` (``global`` or ``kr``), else global.
 """
 from __future__ import annotations
@@ -27,7 +27,11 @@ UPSTAGE_API = "https://api.upstage.ai/v1/systemone"  # the default (global) Sola
 UPSTAGE_REGIONS = {"global": "https://api.upstage.ai/v1", "kr": "https://kr.api.upstage.ai/v1"}
 API = TYPESAFE_API  # compatibility for callers that imported the legacy endpoint name
 PRICE_PER_M_INPUT = 0.042  # legacy TypeSafe USD per million input tokens; output tokens are free
-UPSTAGE_PRICE_PER_M_INPUT = 0.1  # Solar Decide USD per million input tokens; output tokens are free
+# Upstage System One models (both beta) and their listed USD price per million input tokens; output tokens are free.
+# Source: console.upstage.ai/docs/models/solar-decide and /solar-decide-flash, checked 2026-11-27.
+# solar-decide-flash is the low-latency variant: same endpoint, request and response, same listed price.
+UPSTAGE_DECIDE_MODELS = {"solar-decide": 0.1, "solar-decide-flash": 0.1}
+UPSTAGE_PRICE_PER_M_INPUT = UPSTAGE_DECIDE_MODELS["solar-decide"]
 
 _usage_lock = threading.Lock()
 _usage: dict[str, dict] = {}
@@ -227,8 +231,13 @@ def api_key() -> str | None:
     return _env_or_repo_key("TYPESAFE_API_KEY")
 
 
+def upstage_price_per_m_input(name: str | None = None) -> float:
+    """Listed input price of an Upstage System One model; an unlisted name is costed as Solar Decide."""
+    return UPSTAGE_DECIDE_MODELS.get((name if name is not None else model()).strip().lower(), UPSTAGE_PRICE_PER_M_INPUT)
+
+
 def price_per_m_input() -> float:
-    return UPSTAGE_PRICE_PER_M_INPUT if provider() == "upstage" else PRICE_PER_M_INPUT
+    return upstage_price_per_m_input() if provider() == "upstage" else PRICE_PER_M_INPUT
 
 
 def available() -> bool:
@@ -361,6 +370,11 @@ def evaluate(state, questions: dict, *, label: str = "other", cache: bool = True
             if e.code == 429 or e.code >= 500:
                 time.sleep(_retry_wait(e.headers, attempt))
                 continue
+            if e.code == 403 and provider() == "upstage" and b"model_opt_in_required" in (e.body or b""):
+                # From 2026-12-23 (KST) both Solar Decide models need the organization owner's beta-terms consent.
+                raise JevError("HTTP 403 model_opt_in_required: the Upstage organization owner must agree to the "
+                               "beta model terms at https://console.upstage.ai/model-access before "
+                               f"{model()} can be used") from e
             raise JevError(f"HTTP {e.code}: {e.body!r}") from e
         except (net.NetError, JevError, json.JSONDecodeError) as e:
             last = e
