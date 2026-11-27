@@ -161,10 +161,10 @@ def test_top_block_puts_the_banner_before_any_number():
     lines = nc.top_lines(nc.view({**engine_like(), "mode": "archived"}))
     first_number = next(i for i, line in enumerate(lines) if "%" in line)
     assert lines[:3] == [nc.HEAD, nc.BANNER, nc.TAILS["archived"]] and first_number > 1
-    assert ("규모: 합성 인물 풀 100만 명 중 인구 비율(시도·연령·성별)대로 뽑은 5,000명 추정"
-            "(판단 모델: Jev · 이유 수집: 문장 모델 400명 별도, 대표 300·영향권 100)") in lines
+    assert ("규모: 합성 인물 풀 100만 명에서 AI가 5,000명의 반응을 추정"
+            "(실제 조사 아님 · 판단 모델: Jev · 이유 수집: 문장 모델 400명 별도, 대표 300·영향권 100)") in lines
     assert ("대표 패널 모의 분포: 찬성 쪽 47% · 반대 쪽 17% · 모름 36% "
-            "(흔들림 폭 ±3.8%p: 대조 문장 2.1%p·선택지 순서 3.8%p 중 큰 값, 최소 3.0%p)") in lines
+            "(흔들림 3.8%p: 문장·순서를 바꿔 다시 물었을 때 달라진 정도 · 대조 2.1%p·순서 3.8%p, 최소 3.0%p)") in lines
     assert nc.UNSURE_NOTE in lines and nc.BASELINE_NONE in lines and lines[-1] == nc.OUTSIDE
     assert nc.TAILS["archived"] not in nc.top_lines(nc.view({**engine_like(), "mode": "archived"}), tail=False)
 
@@ -190,7 +190,7 @@ def test_group_table_applies_the_four_small_group_tiers():
     assert "명·" in cells["세종"] and nc.SMALL_CELL in cells["세종"] and "▲" not in cells["세종"]
     assert cells["제주"].endswith(nc.THIN_CELL + " |") and "▲" not in cells["제주"]  # 30–99: note, no mark
     assert cells["동남권"].endswith("▲ |") and cells["70세 이상"].endswith("▲ |")  # 100+ beyond the wobble
-    assert not cells["30대"].endswith("▲ |") and table[2] == "| " + " | ".join(nc.TABLE_COLUMNS) + " |"
+    assert not cells["30대"].endswith("▲ |") and table[3] == "| " + " | ".join(nc.TABLE_COLUMNS) + " |"
     assert [h["label"] for h in numbers["highlights"]] == ["60대 · 동남권", "70세 이상"]  # 18 people: dropped
 
 
@@ -203,7 +203,7 @@ def test_slices_follow_tiers_and_never_mix_panels():
     assert "18명 중 찬성 쪽 7명(39%) · 반대·유보 11명(61%)" in small and nc.SMALL_NOTE in small
     full = nc.slice_text({"filters": {"age_band": "60대"}, "n": 893, "favor": .39, "oppose": .27, "unsure": .34}, numbers)
     assert full == ("[대표 패널] 60대: 합성 인물 893명 중 찬성 쪽 39% · 반대 쪽 27% · 모름 34% "
-                    "(전체 대비 찬성 쪽 -8%p) (흔들림 폭 ±3.8%p)")
+                    "(전체 대비 찬성 쪽 -8%p) (흔들림 3.8%p: 문장·순서를 바꿔 다시 물었을 때 달라진 정도) " + nc.UNSURE_NOTE)
     affected = nc.slice_text({"panel": "affected", "n": 100, "favor": .29, "oppose": .41, "unsure": .30}, numbers)
     assert affected.startswith("[영향권 패널 · 비대표] 전체: 합성 인물 100명") and "전체 대비" not in affected
     with pytest.raises(ValueError):
@@ -219,7 +219,7 @@ def test_slices_follow_tiers_and_never_mix_panels():
 def test_fallback_mock_and_baseline_lines():
     fallback = nc.top_lines(nc.view(engine_like(model_kind="text", model="Claude", n=300)))
     assert nc.TAILS["fallback"].replace("{n}", "300명") in fallback
-    assert any(line.startswith("규모:") and "300명(문장 모델 Claude 소표본)" in line for line in fallback)
+    assert any(line.startswith("규모:") and "300명의 반응을 추정(실제 조사 아님 · 문장 모델 Claude 소표본)" in line for line in fallback)
     assert nc.TAILS["mock"] in nc.top_lines(nc.view({**engine_like(), "mode": "mock"}))
     line = nc.baseline_line(baseline())
     assert line.startswith("과거 공개 기준선(참고): 찬성 54% · 반대 30% · 모름 16% [2024 통계청 사회조사 · 직전값 · 모델 호출 0회]")
@@ -239,11 +239,11 @@ def test_card_order_is_numbers_table_places_then_people_outside():
     card = summary_card.build(result, "run")
     text = card["text"]
     assert result == original and len(text) <= summary_card.MAX_CHARS
-    order = [public_rules.NOTICE, nc.BANNER, "대표 패널 모의 분포:", "| 집단 |", nc.AFFECTED.split(":")[0],
+    order = [nc.BANNER, "대표 패널 모의 분포:", "| 집단 |", nc.AFFECTED.split(":")[0],
              nc.SLICE_HEAD, summary_card.MORE_NUMBERS, "찾아갈 곳 · 먼저 물을 질문", "명단 밖 사람 · 빠진 관점"]
     assert [text_index(text, n) for n in order] == sorted(text_index(text, n) for n in order)
     assert text_index(text, nc.BANNER) < text_index(text, "%")
-    assert nc.TAILS["archived"] not in text  # the archive notice already opens the card
+    assert text.count(nc.TAILS["archived"]) == 1
     assert card["numbers"]["schema"] == "pp.numbers/1"
     numbers_part = text[text_index(text, nc.HEAD):text_index(text, "현장에서 확인할 질문 초안")]
     assert nc.violations(numbers_part) == []
@@ -266,14 +266,14 @@ def test_archived_examples_with_real_judge_numbers_keep_every_card(key):
     card = summary_card.build(result, "archive")
     text = card["text"]
     assert len(text) <= summary_card.MAX_CHARS
-    assert text.splitlines()[0] == public_rules.NOTICE and nc.BANNER in text and "5,000명 추정(판단 모델: Jev" in text
+    assert text.splitlines()[0] == nc.BANNER and "AI가 5,000명의 반응을 추정(실제 조사 아님 · 판단 모델: Jev" in text
     assert "대표 패널 모의 분포: 찬성 쪽 " in text and nc.SWING_UNKNOWN in text  # archives have no wobble record
     assert all("| " + r["group"] + " | " in text for r in card["numbers"]["rows"] if r["axis"] == "age_band")
     for c in card["cards"]:
         assert "먼저 물을 질문(편집 초안): " + c["questions"][0] in text
         assert all("보관 결과 인용: " + q in text for q in c.get("reaction_quotes", []))
         assert all(hint in text for hint in c["contact_hints"])
-    assert "명단 밖 사람 · 빠진 관점" in text and text.rstrip().endswith('view="full")로 조회하세요.')
+    assert "명단 밖 사람 · 빠진 관점" in text and text.rstrip().endswith('저장 위치: Documents/백번미리묻다.')
     assert nc.violations(text) == []
 
 
@@ -285,7 +285,6 @@ def test_numbers_reach_the_assistant_through_mcp_unchanged(monkeypatch, mode):
     from pp.jobs import Jobs
     load = archived_examples.load
     monkeypatch.setattr(archived_examples, "load", lambda key: {**load(key), **archive_numbers(key)})
-    expected = summary_card.build(archived_examples.load("subway-free-ride"), "x")["text"]
     monkeypatch.setenv("PP_SAFETY_GATE", mode)
     jobs = Jobs()
     try:
@@ -293,6 +292,7 @@ def test_numbers_reach_the_assistant_through_mcp_unchanged(monkeypatch, mode):
     finally:
         jobs.close()
     assert not response.isError
+    expected = summary_card.build(archived_examples.load("subway-free-ride"), response.structuredContent["id"])["text"]
     text = response.content[0].text
     assert text == expected and nc.BANNER in text and "| 60대 | 893명 | 39% | 61% | -8%p |" in text
     assert response.structuredContent["safety_gate"]["findings"] == []
@@ -307,7 +307,7 @@ def test_numbers_stay_bounded_with_long_prose_and_many_slices():
     card = summary_card.build(result, "run")
     assert len(card["text"]) <= summary_card.MAX_CHARS and card["truncated"]
     for needle in (nc.BANNER, "대표 패널 모의 분포:", "| 60대 |", nc.CANDIDATES_HEAD, summary_card.MORE_NUMBERS,
-                   "명단 밖 사람 · 빠진 관점", "save_review"):
+                   "명단 밖 사람 · 빠진 관점", "이 결과를 저장해 줘"):
         assert needle in card["text"], needle
     assert nc.SLICE_HEAD not in card["text"]  # earlier re-aggregations give way first
 
@@ -315,7 +315,7 @@ def test_numbers_stay_bounded_with_long_prose_and_many_slices():
 def test_mock_numbers_keep_the_trial_line_first():
     result = {**engine_like(), "mode": "mock", "trial_notice": mcp_setup.TRIAL_NOTICE, "result_label": "체험"}
     text = summary_card.build(result, "run")["text"]
-    assert text.splitlines()[0] == mcp_setup.TRIAL_NOTICE and public_rules.NOTICE in text
+    assert text.splitlines()[0] == nc.BANNER and nc.TAILS["mock"] in text
     assert text_index(text, nc.BANNER) < text_index(text, "%")
 
 

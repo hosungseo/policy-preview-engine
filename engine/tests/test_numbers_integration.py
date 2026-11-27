@@ -55,8 +55,8 @@ def test_native_slice_uses_its_own_variability_and_safe_reason_text():
     result["overall"]["variability"]["width_pp"] = 6.4
     sliced = numbers.slice_results(result, {"age_band": "60대"})
     text = nc.slice_text(sliced, nc.view(result))
-    assert "±3.0%p" in text and "±6.4%p" not in text
-    assert "안내가 걱정입니다." in text and "별도 문장 모델 소표본" in text
+    assert "흔들림 3.0%p" in text and "흔들림 6.4%p" not in text
+    assert "안내가 걱정입니다." in text and "문장 모델이라 한쪽으로 쏠릴 수 있음" in text
     assert nc.violations(text) == []
     sliced = numbers.slice_results(result, {"age_min": 99})
     assert "0명" in nc.slice_text(sliced) and "%" not in nc.slice_text(sliced)

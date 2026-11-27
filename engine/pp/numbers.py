@@ -138,7 +138,8 @@ def distribution(rows):
     counts = {k: sum(r["probabilities"][k] for r in rows) for k in STANCES}
     return {"n": n, "counts": {k: round(v, 4) for k, v in counts.items()},
             "count_kind": "expected" if any(r.get("source") == "decision_model" for r in rows) else "selected",
-            "count_notice": "판단 모델의 확률 합계는 추정 인원이며 정수 선택 건수가 아닙니다.",
+            "count_notice": ("판단 모델의 확률 합계는 추정 인원이며 정수 선택 건수가 아닙니다." if any(r.get("source") == "decision_model" for r in rows)
+                             else "문장 모델의 단일 선택 건수입니다. 한쪽으로 쏠릴 수 있으며 판단 모델 분포와 측정 방법이 다릅니다."),
             "rates": {k: counts[k] / n for k in STANCES} if n >= 5 else None,
             "small_group": n < 100, "rates_hidden": n < 5,
             "warning": (
@@ -218,6 +219,9 @@ def slice_results(result, filters=None, reason_limit=3):
     if panel not in {"representative", "affected"} or ("stance" in filters and filters["stance"] not in STANCES):
         raise ValueError("invalid panel or stance")
     data = result.get("result", result)
+    regions = sorted(set(config.REGION_OF.values()))
+    if "region" in filters and filters["region"] not in regions:
+        raise ValueError("권역은 다음 값 중에서 고르세요: " + ", ".join(regions) + ". 서울은 province(시도)로 넣으세요.")
     sliced = data.get("slice_data", {})
     if sliced.get("schema") != "pp.slice/1":
         raise ValueError("slice data unavailable; retrieve full result")
@@ -226,15 +230,40 @@ def slice_results(result, filters=None, reason_limit=3):
                 and all(r.get(k) == (config.to_raw_province(v) or v if k == "province" else v)
                         for k, v in filters.items() if k not in {"age_min", "age_max", "panel"}))
     rows = [r for r in sliced["rows"] if matches(r)]
-    reasons = [r for r in sliced.get("reason_rows", sliced["rows"]) if matches(r) and r.get("reason")]
+    raw_reasons = [r for r in sliced.get("reason_rows", sliced["rows"]) if matches(r) and r.get("reason")]
+    reasons = [r for r in raw_reasons if "규칙 검사로 문장을 제외함" not in r["reason"]]
+    dist = distribution(rows)
+    scope = sliced.get("scope")
+    if scope == "archived_reason_sample":
+        # Archived individual rows are voices, never the denominator of the saved Jev table.
+        condition = {k: v for k, v in filters.items() if k != "panel"}
+        if condition == {"age_min": 70} or condition == {"age_min": 70, "age_max": 130}:
+            condition = {"age_band": "70세 이상"}
+        elif set(condition) == {"age_min", "age_max"} and condition["age_min"] % 10 == 0 and condition["age_max"] == condition["age_min"] + 9:
+            condition = {"age_band": f'{condition["age_min"]}대'}
+        match = None
+        if panel == "representative":
+            if not condition:
+                match = data["overall"]["representative"]
+            elif len(condition) == 1:
+                key, value = next(iter(condition.items()))
+                if key == "province":
+                    value = config.to_raw_province(value) or value
+                match = next((g for g in data.get("by_group", {}).get(key, []) if g["group"] == value and g["panel"] == panel), None)
+        dist = deepcopy(match) if match else {"n": None, "rates": None, "counts": None, "rates_hidden": True, "warning": None}
+        scope = "archived_group_table" if match else "archived_voices_only"
+    if "stance" in filters:
+        # A selected modal stance is not a conditional probability vector.
+        dist.update(rates=None, counts=None, rates_hidden=True)
     # Enforce the same four small-group tiers and instability signals in every slice.
     return public_rules.envelope({"schema": "pp.slice/1", "numeric_notice": NOTICE, "panel": panel,
             **{k: data[k] for k in ("mode", "trial_notice", "result_label", "archive") if k in data},
-            "filters": filters, **distribution(rows), "variability": variability(rows),
+            **dist, "filters": filters, "variability": variability(rows) if scope != "archived_group_table" else variability([]),
             "reasons": [{"id": r["id"], "stance": r["stance"], "reason": r["reason"], "source": r["source"]} for r in reasons[:reason_limit]],
-            "reason_notice": "이유는 별도 문장 모델 소표본이며 판단 모델 분포의 개인별 이유로 단정할 수 없습니다.",
-            "source_scope": sliced.get("scope"), "cost_usd": 0, "model_calls": 0,
-            "highlight": False, "warnings": [UNKNOWN_NOTICE, *(["보관된 이유 소표본 재집계이며 Jev 전체 분포가 아닙니다."] if sliced.get("scope") == "archived_reason_sample" else [])]})
+            "reason_n": len(raw_reasons), "excluded_reason_n": len(raw_reasons) - len(reasons),
+            "reason_notice": "문장 모델이라 한쪽으로 쏠릴 수 있습니다. 이유는 판단 모델 분포의 개인별 이유가 아닙니다.",
+            "source_scope": scope, "cost_usd": 0, "model_calls": 0,
+            "highlight": False, "warnings": [UNKNOWN_NOTICE]})
 
 
 def from_archive(data):

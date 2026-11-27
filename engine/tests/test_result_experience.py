@@ -21,7 +21,7 @@ def test_mcp_summary_full_and_saved_result(fake_models, tmp_path):
         return result
     try:
         quote = call('estimate', policy_text=POLICY, sample=12, seed=7).structuredContent
-        assert quote['recommended_sample']['sample'] == 12
+        assert quote['recommended_sample']['sample'] == 200
         started = call('start_run', plan_id=quote['plan_id']).structuredContent
         full = wait_job(jobs.get, started['id'])
         assert full['status'] == 'completed'
@@ -29,7 +29,7 @@ def test_mcp_summary_full_and_saved_result(fake_models, tmp_path):
         summary = call('get_run', id=started['id'])
         text = summary.content[0].text
         assert len(text) <= 3000
-        for label in ('찾아갈 곳', '먼저 물을 질문', '명단 밖 사람', '재시작', 'save_review', 'view="full"', 'NVIDIA'):
+        for label in ('찾아갈 곳', '먼저 물을 질문', '명단 밖 사람', '재시작', '이 결과를 저장해 줘', '전체 결과를 보여 줘', 'NVIDIA'):
             assert label in text
         assert 'result' not in summary.structuredContent
         assert 'selection' not in json.dumps(summary.structuredContent)
@@ -127,7 +127,7 @@ def test_summary_large_prose_is_bounded_without_mutating_full_result(fake_models
     assert len(card['text']) <= 3000
     assert card['truncated']
     assert '명단 밖 사람' in card['text']
-    assert 'save_review' in card['text']
+    assert '이 결과를 저장해 줘' in card['text']
     assert result == original
 
 

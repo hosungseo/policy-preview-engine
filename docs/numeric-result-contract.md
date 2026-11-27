@@ -23,7 +23,7 @@ HTTP: `POST /slice-results`, 본문은 `{"result": 전체결과, "filters": {...
 
 CLI: `pp slice-results result.json --filters '{"province":"서울","stance":"support"}'`.
 
-조건은 `age_min`, `age_max`, `age_band`, `region`, `province`, `sex`, `stance`, `panel`입니다. `stance`는 `support`/`oppose`/`unknown`, `panel`은 기본 `representative` 또는 `affected`입니다. 여러 조건은 AND입니다. 판단 모델의 찬반 필터는 확률이 가장 높은 선택을 기준으로 사람을 고른 뒤 해당 사람들의 확률을 평균합니다. 문장 모델의 이유는 같은 조건의 별도 소표본이며 판단 모델 개인별 이유로 단정하지 않습니다. `reason_limit`은 0~10입니다. 모든 재집계는 비용·모델 호출 0이며 축소 인원에 소집단 규칙과 흔들림을 다시 계산합니다.
+조건은 `age_min`, `age_max`, `age_band`, `region`, `province`, `sex`, `stance`, `panel`입니다. `stance`는 `support`/`oppose`/`unknown`, `panel`은 기본 `representative` 또는 `affected`입니다. 여러 조건은 AND입니다. 판단 모델의 찬반 필터는 확률이 가장 높은 선택을 기준으로 사람을 고릅니다. 필터로 정해진 비율은 표시하지 않으며 rates와 counts는 null입니다. 문장 모델의 이유는 같은 조건의 별도 소표본이며 판단 모델 개인별 이유로 단정하지 않습니다. `reason_limit`은 0~10입니다. 모든 재집계는 비용·모델 호출 0이며 축소 인원에 소집단 규칙과 흔들림을 다시 계산합니다.
 
 ## 과거 공개 기준선
 
@@ -37,6 +37,7 @@ CLI: `pp slice-results result.json --filters '{"province":"서울","stance":"sup
   "group": "all",
   "options": ["찬성", "반대", "모름"],
   "probabilities": [0.5, 0.3, 0.2],
+  "source_name": "통계청 사회조사",
   "method": "last",
   "target_year": 2026,
   "as_of": "2025-12-31",
@@ -63,4 +64,4 @@ CLI: `pp slice-results result.json --filters '{"province":"서울","stance":"sup
 
 포장 스크립트는 `web/public/runs`의 원본과 SHA-256 출처를 유지합니다. 도시철도는 Jev 5,000명 원본 확률 평균의 찬성 쪽 46.93%, 반대 쪽 17.18%, 모름·유보 35.88%를 그대로 사용합니다(원본 반올림 합계 99.99%). 숫자를 정수 선택 건수로 바꾸지 않습니다.
 
-원본의 집단별 `reserve`는 반대·유보 합계이므로 `favor=1-reserve`와 함께 표시합니다(도시철도 60대 893명, 찬성 쪽 39.08%, 반대·유보 60.92%). 반대와 모름을 따로 복원할 수 없으므로 세 선택지의 `rates`는 null로 유지합니다. 원래 쟁점 순서·반복·배치 점검은 전체 찬반의 문장/선택지 흔들림과 다른 검사라서 `width_pp`로 재사용하지 않습니다. 보관 예시의 재집계는 원래 남아 있는 이유 소표본만 계산하며 `source_scope=archived_reason_sample`과 한계를 표시합니다. 새 모델 호출로 숫자를 보충하지 않습니다.
+원본의 집단별 `reserve`는 반대·유보 합계이므로 `favor=1-reserve`와 함께 표시합니다(도시철도 60대 893명, 찬성 쪽 39.08%, 반대·유보 60.92%). 반대와 모름을 따로 복원할 수 없으므로 세 선택지의 `rates`는 null로 유지합니다. 원래 쟁점 순서·반복·배치 점검은 전체 찬반의 문장/선택지 흔들림과 다른 검사라서 `width_pp`로 재사용하지 않습니다. 보관 예시 재집계는 조건이 저장 집단표와 같으면 그 Jev 행을 반환합니다(`source_scope=archived_group_table`). 70세 이상은 age_min:70도 같은 집단으로 처리합니다. 표에 없는 조건은 숫자 없이 이유 목소리만 반환합니다(`source_scope=archived_voices_only`, n/rates/counts=null). 이유 소표본은 비율로 표시하지 않으며 문장 모델 쏠림을 알립니다. 새 모델 호출로 숫자를 보충하지 않습니다.

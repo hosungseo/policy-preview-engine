@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from . import service
 
-RECOMMENDATION = {'sample': 12, 'reason': '처음에는 합성 프로필 12개로 시작하세요. 실제 응답자 수나 대표성을 뜻하지 않습니다. 기존 기본값은 200입니다.'}
+RECOMMENDATION = {'sample': 200, 'decision_sample': 3000, 'reason': '기본은 AI 반응 판단 3,000명과 문장 모델 이유 200명이며, 판단 상한은 5,000명입니다. 실제 사람 조사가 아닙니다.'}
 
 
 def environment(credentials):

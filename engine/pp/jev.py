@@ -338,6 +338,11 @@ def evaluate(state, questions: dict, *, label: str = "other", cache: bool = True
         base = json.dumps(state, ensure_ascii=False, sort_keys=True)
         answers = {qid: _mock_answer(q, int(hashlib.sha256((base + qid).encode("utf-8")).hexdigest()[:8], 16))
                    for qid, q in questions.items()}
+        if label == "fast_distribution" and "base" in answers:
+            # A deliberately stable fictional repeat; not an uncertainty measurement of real opinions.
+            from copy import deepcopy
+            for qid in ("control", "reversed"):
+                answers[qid] = deepcopy(answers["base"])
         with budget.attempt(f"jev:{label}", [state, questions], mock=True):
             pass
         _record(label, 0, time.time() - started)

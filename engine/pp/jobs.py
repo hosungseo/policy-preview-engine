@@ -73,7 +73,7 @@ class Jobs(RunExperience):
             started_at = self._started_at.get(run_id)
         state = run_progress.snapshot(state, started_at)
         if state["status"] == "completed":
-            state["save_notice"] = summary_card.SAVE_NOTICE
+            state["save_notice"] = summary_card.SAVE_NOTICE.format(run_id=run_id)
         return summary_card.response(state) if view == "summary" else state
 
     def close(self):

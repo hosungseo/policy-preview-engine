@@ -214,7 +214,7 @@ def test_engine_recovery_guidance_naming_tools_is_not_injection(mock_mode, monke
         response = asyncio.run(mcp.create_server(jobs).call_tool("get_run", {"id": quote["plan_id"]}))
     finally:
         jobs.close()
-    assert "start_run(plan_id=" in response.structuredContent["next_action"]
+    assert "돌려받은 실행 번호" in response.structuredContent["next_action"]
     assert response.structuredContent["safety_gate"]["findings"] == []
     nested = safety_gate.apply({"problems": [{"next_action": "estimate로 예상 비용을 확인하세요.",
                                               "message": "start_run을 다시 호출하세요."}]})

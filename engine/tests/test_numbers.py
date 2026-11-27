@@ -183,7 +183,7 @@ def test_archived_numbers_preserve_actual_mass_without_inventing_groups(example)
     assert all(group["rates"] is None for group in result["by_group"]["age_band"] if group["panel"] == "representative")
     assert any(group["panel"] == "affected" for group in result["by_group"]["age_band"])
     sliced = numbers.slice_results(result, {"age_min": 60})
-    assert sliced["source_scope"] == "archived_reason_sample" and sliced["cost_usd"] == 0
+    assert sliced["source_scope"] == "archived_voices_only" and sliced["cost_usd"] == 0
     if example == "subway-free-ride":
         assert overall["n"] == 5000
         assert overall["rates"]["support"] == pytest.approx(.4693)

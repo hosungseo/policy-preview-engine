@@ -32,7 +32,7 @@ def _react(system: str, prompt: str) -> dict:
         "support": s % 5 - 2,
         "impact": config.IMPACTS[s % 3],
         "trigger_quote": flat[start:start + 14],
-        "reason": f"MOCK 반응 {s % 97}번입니다.",
+        "reason": "체험용 가짜 문장입니다. 실제 현장에서 당사자 이야기를 직접 확인하세요.",
         "concerns": [f"우려{s % 4}"],
         "hopes": [],
         "suggestion": f"MOCK 제안 {s % 3}" if s % 2 else "",

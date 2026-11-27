@@ -18,6 +18,17 @@ def tool_result(data: dict, *, error: bool = False, context: str = "") -> CallTo
         text = data["summary"]["text"]
     elif data.get("schema") == "pp.slice/1" and "text" in data:
         text = data["text"]
+    elif "plan_id" in data and "stages" in data:
+        stages = data["stages"]
+        cost, seconds = data["estimated_cost_usd"], data["estimated_seconds"]
+        text = ("비용·시간 견적이며 분석 결과가 아닙니다.\n" +
+                (data.get("trial_notice", "") + "\n" if data.get("trial_notice") else "") +
+                f"AI 반응 판단 {stages['distribution']['n']:,}명 · 별도 문장 모델 이유 {stages['reasons']['n']:,}명\n" +
+                f"예상 비용: {cost['low']}~{cost['high']}달러 · 예상 시간: {seconds['low']}~{seconds['high']}초\n" +
+                f"견적 번호: {data['plan_id']}\n기본은 판단 3,000명·이유 200명, 판단 상한은 5,000명입니다.\n" +
+                "이 견적으로 실행해 달라고 말하세요. 유료 실행은 비용 동의 후 시작합니다.")
+        if stages['distribution'].get('fallback'):
+            text += "\n판단 모델이 없어 문장 모델 이유 소표본으로 대체합니다. 분포가 한쪽으로 쏠릴 수 있습니다."
     else:
         result = data.get('result', {})
         reaction = data.get('status') == 'completed' and bool(result)
@@ -27,7 +38,7 @@ def tool_result(data: dict, *, error: bool = False, context: str = "") -> CallTo
         visible = data if reaction else {k: v for k, v in data.items() if k != 'notice'}
         text = (prefix + '\n' if prefix else '') + json.dumps(visible, ensure_ascii=False)
     content = [TextContent(type="text", text=text)]
-    if data.get('status') == 'completed' and (data.get('mode') == 'mock' or data.get('result', {}).get('mode') == 'mock'):
+    if 'summary' not in data and data.get('status') == 'completed' and (data.get('mode') == 'mock' or data.get('result', {}).get('mode') == 'mock'):
         data['assistant_guidance'] = '답변 맨 위 첫 줄에 다음 문장을 그대로 전달하세요: ' + mcp_setup.TRIAL_NOTICE
         content.append(TextContent(type="text", text=data['assistant_guidance']))
     return CallToolResult(content=content,
@@ -123,10 +134,23 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
                 source = jobs.get(id, view="full") if id else result
                 sliced = aggregate(source, filters, reason_limit)
                 source_result = source.get("result", source)
-                prefix = (sliced["trial_notice"] + "\n" if sliced.get("trial_notice") else "") + numbers_copy.BANNER
-                sliced["text"] = prefix + "\n" + numbers_copy.slice_text(sliced, numbers_copy.view(source_result))
+                source_view = numbers_copy.view(source_result)
+                prefix = numbers_copy.BANNER + ("\n" + numbers_copy.TAILS[sliced['mode']] if sliced.get('mode') in numbers_copy.TAILS else "")
+                if source_view and source_view['fallback']:
+                    prefix += "\n" + numbers_copy.TAILS['fallback'].format(n=numbers_copy.people(source_view['n']))
+                sliced["text"] = prefix + "\n" + numbers_copy.slice_text(sliced, source_view)
                 return sliced
-            except (ValueError, TypeError, KeyError):
+            except mcp_setup.SetupError:
+                raise
+            except ValueError as exc:
+                if str(exc).startswith("권역은"):
+                    raise service.RequestError(str(exc)) from None
+                raise service.RequestError("전체 결과의 slice_data와 연령·권역·시도·성별·찬반 필터를 확인하세요.") from None
+            except KeyError:
+                if id:
+                    raise mcp_setup.SetupError("run_not_found") from None
+                raise service.RequestError("전체 결과의 slice_data와 연령·권역·시도·성별·찬반 필터를 확인하세요.") from None
+            except TypeError:
                 raise service.RequestError("전체 결과의 slice_data와 연령·권역·시도·성별·찬반 필터를 확인하세요.") from None
         return guarded(slice_local)
 

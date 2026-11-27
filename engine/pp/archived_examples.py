@@ -50,6 +50,10 @@ FIELD_QUESTIONS = {
 def load(example):
     data = json.loads(files("pp").joinpath("data", "examples", example + ".json").read_text(encoding="utf-8"))
     issues = data["issues"]
+    if example == "subway-free-ride":
+        summaries = {"i1": "무임에서 할인으로 바뀔 때 생활비·이동 부담이 생길 가능성을 현장에서 확인해야 합니다.",
+                     "i3": "도시철도가 없는 지역에서 버스 지원이 이동에 도움이 될지 현장에서 확인해야 합니다."}
+        issues = [{**i, "summary": summaries.get(i['id'], i['summary'])} for i in issues]
     clauses = [{**s, "issues": [i["id"] for i in issues if s["id"] in i["segments"]]} for s in data["segments"]]
     who = []
     for issue in issues:

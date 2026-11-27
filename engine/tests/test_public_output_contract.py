@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from pp import api, cli, llm, mcp, public_rules, service
+from pp import api, cli, llm, mcp, numbers_copy, public_rules, service
 from pp.jobs import Jobs
 from test_public_interfaces import fake_models, wait_job
 
@@ -106,7 +106,7 @@ def test_mcp_output_contract(malicious_models):
         state = wait_job(jobs.get, started.structuredContent["id"])
         assert state["status"] == "completed", state
         result = await server.call_tool("get_run", {"id": state["id"]})
-        assert result.content[0].text.splitlines()[0] == NOTICE
+        assert result.content[0].text.splitlines()[0] == numbers_copy.BANNER
         assert_notice(result.structuredContent)
         assert len(result.content[0].text) <= 3000
         assert malicious_models not in json.dumps(result.structuredContent, ensure_ascii=False)

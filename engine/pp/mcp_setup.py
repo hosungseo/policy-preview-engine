@@ -22,7 +22,7 @@ GUIDANCE = {
     "input_rejected": ("입력 문안 또는 형식이 실행 규칙에 맞지 않습니다.", "표시된 낱말이나 입력 항목을 고쳐 다시 비용을 확인하세요."),
     "budget_exceeded": ("설정한 비용 또는 호출 한도에 닿아 멈췄습니다.", "합성 프로필 수(sample)를 줄여 새 비용을 확인하세요."),
     "run_not_found": ("이 서버에서 해당 실행 번호(run id)를 찾지 못했습니다.", "estimate의 plan_id(견적 번호)가 아니라 start_run이 돌려준 id(실행 번호)를 넣으세요. 서버를 재시작했다면 새 견적부터 시작하세요."),
-    "plan_id_as_run_id": ("이 번호는 견적 번호입니다. start_run에 쓰세요.", "start_run(plan_id=견적 번호)으로 실행한 뒤, 돌려받은 id(실행 번호)로 get_run을 부르세요."),
+    "plan_id_as_run_id": ("이 번호는 견적 번호입니다. 실행 번호를 넣으세요.", "이 견적으로 실행해 달라고 말한 뒤, 돌려받은 실행 번호로 결과를 확인하세요."),
     "model_call_failed": ("모델 응답을 받지 못했습니다.", "check_setup으로 실행 준비 상태를 확인하세요."),
     "lawmaking_unavailable": ("국민참여입법센터의 자료를 지금 읽지 못했습니다.", "잠시 뒤 find_notice로 다시 찾아보세요."),
     "notice_not_found": ("고른 입법예고의 이유·주요내용 원문을 찾지 못했습니다.", "find_notice로 예고를 다시 고르세요."),

@@ -30,6 +30,7 @@ A row may give "reserve" (oppose + unsure) instead of oppose and unsure.
 from __future__ import annotations
 
 import re
+from decimal import Decimal, ROUND_HALF_UP
 from dataclasses import dataclass
 
 from . import public_rules
@@ -60,12 +61,12 @@ TAILS = {
     "fallback": "판단 모델 없이 문장 모델 소표본({n})으로 대체한 결과입니다. 분포가 한쪽으로 쏠릴 수 있어 방향 참고만 하세요.",
     "mock": "화면 구조 확인용 가짜 숫자(0원 체험)입니다. 결과 수치에 뜻이 없습니다.",
 }
-SCALE = "규모: 합성 인물 풀 {pool} 중 인구 비율({strata})대로 뽑은 {n} 추정(판단 모델: {model}{reasons})"
-SCALE_TEXT = "규모: 합성 인물 풀 {pool} 중 인구 비율({strata})대로 뽑은 {n}(문장 모델 {model} 소표본)"
+SCALE = "규모: 합성 인물 풀 {pool}에서 AI가 {n}의 반응을 추정(실제 조사 아님 · 판단 모델: {model}{reasons})"
+SCALE_TEXT = "규모: 합성 인물 풀 {pool}에서 AI가 {n}의 반응을 추정(실제 조사 아님 · 문장 모델 {model} 소표본)"
 REASONS = " · 이유 수집: 문장 모델 {n} 별도{split}"  # split: ", 대표 300·영향권 100"
 DIST = "대표 패널 모의 분포: {parts}{swing}"
-SWING = " (흔들림 폭 ±{pp})"
-SWING_BASIS = " (흔들림 폭 ±{pp}: 대조 문장 {contrast}·선택지 순서 {order} 중 큰 값, 최소 3.0%p)"
+SWING = " (흔들림 {pp}: 문장·순서를 바꿔 다시 물었을 때 달라진 정도)"
+SWING_BASIS = " (흔들림 {pp}: 문장·순서를 바꿔 다시 물었을 때 달라진 정도 · 대조 {contrast}·순서 {order}, 최소 3.0%p)"
 SWING_UNKNOWN = " (흔들림 폭 미측정: 집단 차이를 강조하지 않음)"
 UNSTABLE = ("불안정: 대조 문장이나 선택지 순서만 바꿔도 결과가 흔들립니다. 이 문항의 숫자는 방향 참고로 쓰기 어렵습니다. "
             "문항을 다듬어 다시 실행하세요.")
@@ -77,14 +78,14 @@ METHODS = {"last": "직전값", "linear": "직선 추세"}
 OUTSIDE = "명단 밖: 19세 미만·외국인 주민·단체의 조직된 의견(맨 아래에서 따로 확인)."
 
 # Group table (markdown, so an assistant can show it as is).
-TABLE_HEAD = "집단별 모의 분포(대표 패널 · ▲: 100명 이상이고 집단 차이가 흔들림 폭 ±{pp}와 인원 비교 기준을 넘음)"
+TABLE_HEAD = "집단별 모의 분포(대표 패널 · ▲: 100명 이상, 찬성·반대·모름 중 하나의 차이가 흔들림 {pp}와 인원 비교 기준 초과)\n불안정: 해당 집단의 흔들림이 7%p를 넘음."
 TABLE_HEAD_NONE = "집단별 모의 분포(대표 패널 · 흔들림 폭 미측정이라 강조 없음)"
 TABLE_COLUMNS = ("집단", "합성 인물", FAVOR, OPPOSE, UNSURE, "찬성 쪽 차이")
 TABLE_COLUMNS_RESERVE = ("집단", "합성 인물", FAVOR, RESERVE, "찬성 쪽 차이")
 TINY_CELL = "해석 불가(5명 미만)"
 SMALL_CELL = "소집단 주의"
 THIN_CELL = "표본 여유 부족"
-AFFECTED = "영향권 패널(비대표 · 전체 비율에 합산하지 않음): {label} 합성 인물 {body}"
+AFFECTED = "별도 측정 · 영향권 패널(비대표 · 합산하지 않음): 문장 모델 단일 선택은 한쪽으로 쏠려 위 분포와 직접 비교할 수 없습니다. {label}, 이유를 적은 합성 인물 {n}의 목소리 참고."
 
 # Numbers that lead to a place to visit.
 BASIS = "숫자 근거: {label} 합성 인물 {n} 중 {measure} 추정 {share}(전체 대비 {diff}, 흔들림 폭 초과)"
@@ -115,7 +116,8 @@ def pool(n: int) -> str:
 
 
 def _half_up(value: float) -> int:
-    return int(value + 0.5) if value >= 0 else -int(-value + 0.5)
+    # Stabilize only floating-point noise at decimal boundaries; round the raw delta once.
+    return int(Decimal(str(round(value, 10))).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
 
 def pct(share: float | None) -> str:
@@ -187,6 +189,8 @@ def tier(n: int) -> str:
 def share_body(n: int, favor, oppose=None, unsure=None, reserve=None) -> str:
     """'893명 중 찬성 쪽 39% · ...' with the small-group rules applied."""
     level = tier(n)
+    if n == 0:
+        return "0명(조건에 맞는 인물 없음)"
     if level in ("tiny", "small"):
         counts = counts_text(n, favor, oppose, unsure, reserve)
         if level == "tiny":
@@ -205,6 +209,8 @@ def _row(row: dict) -> dict:
     keys = ("favor", "oppose", "unsure", "reserve")
     out = {k: _num(row.get(k)) for k in keys}
     rates = row.get("rates") or {}
+    if not rates and row.get("counts") and row.get("n"):
+        rates = {k: v / row["n"] for k, v in row["counts"].items()}
     for key, stance in (("favor", "support"), ("oppose", "oppose"), ("unsure", "unknown")):
         if out[key] is None:
             out[key] = _num(rates.get(stance))
@@ -291,7 +297,7 @@ def _table_rows(by_group: dict, numbers: dict) -> list[dict]:
                 swing is not None and diff is not None and abs(diff) > swing)
             # Cells under 30 people never get the mark; the table shows their badge instead.
             rows.append({"axis": axis, "group": str(row.get("group")), "n": int(n), **shares,
-                         "diff_pp": round(diff, 1) if diff is not None else None, "tier": tier(int(n)),
+                         "diff_pp": diff, "tier": tier(int(n)),
                          "counts": row.get("counts"), "availability_notice": row.get("availability_notice"),
                          "unstable": bool((row.get("variability") or {}).get("unstable")),
                          "exceeds": bool(exceeds) and not numbers["unstable"] and swing is not None and n >= SMALL})
@@ -386,7 +392,7 @@ def table_lines(numbers: dict, rows: list[dict] | None = None) -> list[str]:
     reserve_only = any(r["favor"] is not None and (r["oppose"] is None or r["unsure"] is None) for r in rows)
     columns = TABLE_COLUMNS_RESERVE if reserve_only else TABLE_COLUMNS
     head = TABLE_HEAD.format(pp=pp(numbers["swing_pp"])) if numbers["swing_pp"] is not None else TABLE_HEAD_NONE
-    lines = [head, "", "| " + " | ".join(columns) + " |", "|" + "---|" + "---:|" * (len(columns) - 1)]
+    lines = [head, "차이는 반올림 전 원값 기준입니다. 반대·유보는 반대와 모름의 합계입니다.", "", "| " + " | ".join(columns) + " |", "|" + "---|" + "---:|" * (len(columns) - 1)]
     for r in rows:
         if r["favor"] is None:
             cells = ["—"] * (len(columns) - 3)
@@ -414,7 +420,7 @@ def affected_line(numbers: dict) -> str | None:
     a = numbers["affected"]
     if not a:
         return None
-    return AFFECTED.format(label=a["label"], body=share_body(a["n"], a["favor"], a["oppose"], a["unsure"], a["reserve"]))
+    return AFFECTED.format(label=a["label"], n=people(a["n"])) + (" " + THIN_NOTE if tier(a['n']) == 'thin' else "")
 
 
 def basis_line(h: dict) -> str:
@@ -433,35 +439,50 @@ def slice_text(item: dict, numbers: dict | None = None, warnings: list | None = 
     if panel not in PANELS:
         raise ValueError("panel_must_be_representative_or_affected")
     filters = item.get("filters") or {}
-    label = " · ".join(str(v) for k, v in filters.items() if k != "panel") or SLICE_ALL
+    stance_names = {"support": "찬성한 합성 인물", "oppose": "반대한 합성 인물", "unknown": "모름·유보인 합성 인물"}
+    label = " · ".join(stance_names.get(v, str(v)) if k == "stance" else f"{v}세 이상" if k == "age_min" else f"{v}세 이하" if k == "age_max" else str(v) for k, v in filters.items() if k != "panel") or SLICE_ALL
     shares = _row(item)
-    n = int(item["n"])
-    text = SLICE.format(panel=PANELS[panel], filters=label,
-                        body=share_body(n, shares["favor"], shares["oppose"], shares["unsure"], shares["reserve"]))
+    n = int(item.get("n") or 0)
+    voices_only = item.get("source_scope") in {"archived_voices_only", "archived_reason_sample"}
+    filtered = "stance" in filters
+    if voices_only:
+        text = f"[{PANELS[panel]}] {label}: 보관 예시는 표에 있는 집단만 숫자로 볼 수 있습니다. 다른 조건의 숫자는 모의(0원) 실행이나 직접 실행에서 확인하세요."
+    elif filtered:
+        text = f"[{PANELS[panel]}] {label}: 합성 인물 {people(n)}의 선택으로 걸렀습니다. 필터로 정해진 비율은 표시하지 않습니다."
+    else:
+        text = SLICE.format(panel=PANELS[panel], filters=label,
+                            body=share_body(n, shares["favor"], shares["oppose"], shares["unsure"], shares["reserve"]))
     level = tier(n)
     var = item.get("variability")
     swing = (var.get("width_pp") if var.get("available") else None) if isinstance(var, dict) else numbers.get("swing_pp") if numbers else None
-    if numbers and item.get("source_scope") != "archived_reason_sample" and panel == "representative" and level in ("thin", "full") and shares["favor"] is not None and numbers.get("favor") is not None:
+    if numbers and not voices_only and not filtered and panel == "representative" and level in ("thin", "full") and shares["favor"] is not None and numbers.get("favor") is not None:
         diff = 100 * (shares["favor"] - numbers["favor"])
         text += " " + DIFF.format(diff=signed(diff))
-        if level == "thin" and swing is not None and abs(diff) > swing:
-            text += " " + THIN_NOTE
-    if level not in ("tiny", "small"):
+    if level == "thin" and not voices_only:
+        text += " " + THIN_NOTE
+    if level not in ("tiny", "small") and not voices_only and not filtered:
         text += SWING.format(pp=pp(swing)) if swing is not None else SLICE_SWING_UNKNOWN
     if INFLATED_AXES & set(filters):
         text += " " + INFLATE_NOTE
     if isinstance(var, dict) and var.get("unstable"):
         text += " " + UNSTABLE
-    if item.get("source_scope") == "archived_reason_sample":
-        text += " 보관된 이유 소표본 재집계이며 Jev 전체 분포가 아닙니다."
-    reasons = [public_rules.check_output(_clip(r.get("reason", "") if isinstance(r, dict) else r), "", warnings if warnings is not None else [])
-               for r in (item.get("reasons") or [])[:2] if r]
+    if not voices_only and not filtered and shares["unsure"] is not None:
+        text += " " + UNSURE_NOTE
+    reasons = [public_rules.check_output(_clip(r.get("reason", "") if isinstance(r, dict) else r, 240), "", warnings if warnings is not None else [])
+               for r in (item.get("reasons") or []) if r]
+    reasons = [r for r in reasons if "규칙 검사로 문장을 제외함" not in r]
     if reasons:
+        limit = min(240, max(40, (2650 - len(text) - 250) // len(reasons)))
+        reasons = [_clip(r, limit) for r in reasons]
         reason_n = item.get("reasons_n")
         if reason_n is None and item.get("schema") == "pp.slice/1":
-            text += "\n  이유(별도 문장 모델 소표본, AI가 상상한 문장이며 실제 사람의 말이 아님): " + " / ".join(reasons)
+            text += f"\n이 집단에서 이유를 적은 합성 인물 {people(item.get('reason_n', len(reasons)))}의 말(문장 모델이라 한쪽으로 쏠릴 수 있음 · 실제 사람의 말 아님):\n" + "\n".join(f"{i}. {r}" for i, r in enumerate(reasons, 1))
         else:
             text += "\n  " + SLICE_REASONS.format(n=people(reason_n or n), quotes=" / ".join(reasons))
+    if item.get("excluded_reason_n"):
+        text += f"\n규칙 검사로 제외한 이유: {item['excluded_reason_n']}개(인용에서 제외)."
+    if 0 < item.get("reason_n", 0) < 100:
+        text += "\n" + (SMALL_NOTE if item["reason_n"] < 30 else THIN_NOTE)
     return text
 
 
@@ -491,7 +512,7 @@ FORBIDDEN: tuple[Forbidden, ...] = (
         + r"|\d+대\s*(?:의|는|은|이|가)?\s*" + _PCT + r"|" + _PCT + r"\s*(?:가|이|는|은)\s*(?:찬성|반대|지지|모름|유보)"),
               "숫자의 주어가 실제 사람처럼 읽힙니다.", "합성 인물 N명 중 찬성 쪽 X%"),
     Forbidden("sampling_error", re.compile(r"신뢰\s*수준|표본\s*오차|오차\s*범위|통계적으로\s*유의|유의미한\s*차이"),
-              "확률표본의 오차가 아니라 모델 흔들림입니다.", "흔들림 폭 ±X%p(대조 문장·선택지 순서 기준)"),
+              "확률표본의 오차가 아니라 모델 흔들림입니다.", "흔들림 X%p(문장·순서를 바꿔 다시 물었을 때 달라진 정도)"),
     Forbidden("rate_rank", re.compile(r"찬성률|반대율|지지율|\d+\s*위(?![가-힣])|1등|수급\s*(?:대상|자격)\s*(?:확정|해당)"),
               "조사 비율·순위·자격 판정처럼 읽힙니다.", "찬성 쪽 X%, 모의 추정치(제도 자격과 무관)"),
     Forbidden("panel_mix", re.compile(r"대표\s*(?:패널)?\s*[\d,]+\s*명?\s*\+\s*영향권|영향권[^.\n]{0,15}(?:더해|합쳐|합산해)"),

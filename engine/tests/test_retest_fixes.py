@@ -58,6 +58,11 @@ def test_mock_summary_and_full_repeat_exact_first_line_for_assistant(offline):
             response = asyncio.run(server.call_tool("get_run", {"id": started["id"], "view": view}))
             assert not response.isError
             first_line = response.content[0].text.splitlines()[0]
+            if view == "summary":
+                assert first_line == summary_card.numbers_copy.BANNER
+                assert summary_card.numbers_copy.TAILS["mock"] in response.content[0].text
+                assert len(response.content) == 1 and "assistant_guidance" not in response.structuredContent
+                continue
             assert first_line == mcp_setup.TRIAL_NOTICE
             assert "실제 여론이 아닙니다" in first_line
             assert all(word in first_line for word in ("0원", "구조", "가짜", "키"))
@@ -79,8 +84,8 @@ def test_plan_id_rejected_as_run_id_with_recovery(offline, already_started):
         response = asyncio.run(server.call_tool("get_run", {"id": quote["plan_id"]}))
         assert response.isError
         assert response.structuredContent["code"] == "plan_id_as_run_id"
-        assert response.structuredContent["message"] == "이 번호는 견적 번호입니다. start_run에 쓰세요."
-        assert "start_run(plan_id=" in response.structuredContent["next_action"]
+        assert response.structuredContent["message"] == "이 번호는 견적 번호입니다. 실행 번호를 넣으세요."
+        assert "돌려받은 실행 번호" in response.structuredContent["next_action"]
         assert quote["plan_id"] not in response.model_dump_json()
         recovered = jobs.start_planned(plan_id=quote["plan_id"])
         if started:

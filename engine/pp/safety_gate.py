@@ -193,6 +193,7 @@ def scan_text(text: str, *, profile: str | None = None, source: bool = False) ->
     if not text:
         return []
     findings: list[Finding] = []
+    from .numbers_copy import FORBIDDEN
     for lineno, line in enumerate(text.splitlines() or [text], 1):
         hidden = _HIDDEN.search(line)
         if hidden:
@@ -205,6 +206,11 @@ def scan_text(text: str, *, profile: str | None = None, source: bool = False) ->
                     break
         if source:
             continue
+        for rule in FORBIDDEN:
+            m = rule.pattern.search(line)
+            if m and _affirmed(line, m):
+                findings.append(Finding("real_opinion", _excerpt(line, m.start(), m.end()), line=lineno))
+                break
         for rule, patterns in (("real_opinion", _REAL_OPINION), ("eligibility", _ELIGIBILITY)):
             for pattern in patterns:
                 m = pattern.search(line)

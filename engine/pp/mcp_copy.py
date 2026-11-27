@@ -217,7 +217,7 @@ ERRORS: dict[str, ErrorCopy] = {
         "나눈 부분마다 비용 미리 보기는 무료입니다."),
     "invalid_sample": ErrorCopy(
         "합성 인물 수는 1부터 5,000 사이의 숫자여야 합니다.",
-        "처음이면 12처럼 숫자로 넣으세요.",
+        "기본 이유 수집은 200명입니다.",
         "인원에 따른 비용은 비용 미리 보기로 무료로 견줘 볼 수 있습니다."),
     "invalid_limits": ErrorCopy(
         "비용 상한을 적는 칸 이름이나 값이 맞지 않습니다.",
@@ -350,7 +350,7 @@ PROMPTS: dict[str, PromptCopy] = {
                  fallback="`get_run`을 `id=\"{run_id}\"`와 `view=\"full\"`로 불러 `by_group`에서 물은 집단의 줄을 그대로 옮기세요. "
                           "조건 두 개를 겹친 숫자(예: 60대이면서 서울)는 아직 다시 자를 수 없다고 알리고, 숫자를 새로 계산하지 마세요. "
                           "`by_group`이 없으면 이 결과에는 집단별 숫자가 없다고만 알리세요."),
-            Step("숫자에는 '[대표 패널] 60대: 합성 인물 893명 중 찬성 쪽 39%(흔들림 폭 ±3.8%p)'처럼 누구의 몇 명인지와 흔들림 폭을 붙이세요. "
+            Step("도구가 돌려준 `text`의 실제 인원·비율·흔들림만 그대로 보여 주세요. 안내의 숫자나 미측정 흔들림을 새로 붙이지 마세요. "
                  "'국민의 ~%'처럼 실제 사람의 비율로 바꾸지 마세요."),
             Step("5명 미만 칸은 비율 없이 인원만 쓰고, 30명 미만 칸에는 '소집단 주의'를 붙이세요. "
                  "대표 패널과 영향권 패널의 숫자를 더하거나 섞지 마세요."),
@@ -512,7 +512,7 @@ GUIDE_START = f"""# 백번 미리 묻다: 처음 쓰는 법
 5. 현장에 다녀와 들은 내용 기록하기
 
 ## 숫자 읽는 법
-- "합성 인물 5,000명 중 찬성 쪽 47%(흔들림 폭 ±3.8%p)"처럼 누구의 몇 명인지와 흔들림 폭을 함께 읽습니다.
+- "합성 인물 N명 중 찬성 쪽 X%(흔들림 W%p: 문장·순서를 바꿔 다시 물었을 때 달라진 정도)"처럼 누구의 몇 명인지와 흔들림 폭을 함께 읽습니다.
 - 흔들림 폭은 문장이나 선택지 순서를 바꿨을 때 AI의 답이 움직인 정도입니다. 이보다 작은 차이는 차이로 보지 않습니다.
 - 5명 미만 칸은 비율을 숨기고 인원만 보여 줍니다. 30명 미만 칸에는 '소집단 주의'가 붙습니다.
 - 대표 패널(인구 비율대로 뽑은 사람)과 영향권 패널(정책이 직접 닿는 사람)은 합치지 않습니다.
@@ -569,11 +569,14 @@ def result_summary_markdown() -> str:
         # Same fixed number phrases as the card; the archive notice above already plays the tail's role.
         lines += ["", "## " + numbers_copy.HEAD, ""] + numbers_copy.top_lines(summary['numbers'], tail=False)[1:]
         lines += [""] + numbers_copy.table_lines(summary['numbers'])
+        affected = numbers_copy.affected_line(summary["numbers"])
+        if affected:
+            lines += ["", affected]
     lines += ["", "## 찾아갈 곳 · 먼저 물을 질문"]
     for card in summary['cards']:
         lines += ["", "### " + ' · '.join(card['groups'])]
         lines += [card['numbers_basis']] if card.get('numbers_basis') else []
-        lines += ["문안 근거: " + (card['source_quote'] or ''), card['why_ask']]
+        lines += ["문안 근거: " + (card['source_quote'] or ''), "확인할 이유(보관 결과의 AI 요약, 위 숫자와 다를 수 있음): " + card['why_ask']]
         lines += ['- 먼저 물을 질문(편집 초안): ' + q for q in card['questions']]
         lines += ['- 보관 결과 인용: ' + q for q in card.get('reaction_quotes', [])]
         lines += ['- 만날 곳: ' + v for v in card['contact_hints']]
