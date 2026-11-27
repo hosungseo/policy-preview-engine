@@ -14,6 +14,8 @@
 
 `web/public/runs/`의 기존 예시 4건은 이전 검색 구성으로 영향권 인물을 고른 보관 결과입니다. 새 모델로 재계산한 결과가 아니며, 검색 단계까지 새 모델로만 만든 예시로 사용하려면 패널 선택 이후 결과를 다시 생성해야 합니다. 이 변경에서 원본 인물 데이터나 이전 판단 결과를 다른 모델이 만든 것으로 바꾸어 표시하지 않았습니다.
 
+`engine/pp/data/examples/`는 이 네 보관 결과에서 정성 쟁점·질문·접점·문안·빠진 관점만 발췌한 MCP 무료 예시입니다. 인물 이름·서술과 과거 의견 빈도·확률은 넣지 않았으며, 원본 파일 경로·SHA-256·실행 시각·정책 출처·모델 이름을 남깁니다. `python engine/scripts/package_mcp_examples.py`로 원본에서 다시 발췌할 수 있습니다. 아래 원본 예시와 정책 문안의 출처·이용 조건을 그대로 따르며, 실제 인구의 반응이나 새 분석으로 제시하지 않습니다.
+
 | 파일(또는 폴더) 경로 | 내용 | 출처 | 라이선스·이용 조건 | 만든 방법 |
 |---|---|---|---|---|
 | `engine/ppservice/data/persona-accuracy/sources.json`, `sources-reviewed.json` | 정확도 비교에 쓴 공표 표 목록과 검토 상태 | 통계청 「2024 사회조사」(KOSIS DT_1SSFA060R, DT_1SSFA080R, DT_1SSSA020R, DT_1SSSA012R, DT_1SSSA011R), 행정안전부 주민등록인구현황(KOSIS DT_1B04005N) | KOSIS 이용 조건(출처 표기) | `sources-reviewed.json`: `engine/scripts/prepare_measured_baseline.py` / `sources.json`: 손으로 작성한 이전 판 목록 |

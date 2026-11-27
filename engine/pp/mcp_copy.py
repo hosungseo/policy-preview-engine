@@ -22,9 +22,9 @@ INSTRUCTIONS = "\n".join([
     "백번 미리 묻다는 공개·가상 정책 문안을 받아 실제로 누구를 찾아가 무엇을 물을지 정하도록 돕습니다. "
     "합성 인물(실제 사람 아님)의 반응을 AI로 상상할 뿐 여론조사나 찬반 집계가 아닙니다.",
     "사용자는 \"무료 예시 보여 줘\", \"이 문안 비용부터 알려 줘\", \"결과 읽고 누구부터 만날지 정리해 줘\"처럼 말하면 됩니다. "
-    "처음 쓰는 사람에게는 '무료 예시 보기'부터 권하세요(사용법 한 장: `pp://guide/start`).",
+    "처음 묻는 사람에게는 `check_setup`으로 현재 모드를 한 줄로 알려 주세요. 처음 쓰는 사람에게는 '무료 예시 보기'부터 권하세요(사용법 한 장: `pp://guide/start`).",
     "돈이 드는 `start_run` 전에는 `estimate`로 예상 비용을 보여 주고 동의를 받으세요. "
-    "결과를 옮길 때는 고지 한 줄을 맨 앞에 그대로 쓰고 비율·순위·\"대부분\" 같은 말은 쓰지 마세요.",
+    "반응 결과에만 고지 한 줄을 붙이고, 0원 체험은 구조·가짜 숫자와 문장·키 필요 안내를 첫 줄에 쓰세요. 결과에서 비율·순위·\"대부분\" 같은 말은 쓰지 마세요.",
 ])
 
 
@@ -55,33 +55,36 @@ TOOLS: dict[str, ToolCopy] = {
             "정책 문안으로 AI 반응을 만들 때 드는 예상 비용(달러)과 시간을 보여 줍니다. "
             "돈이 들지 않고 키도 필요 없습니다. 사용자가 문안을 주면 가장 먼저 부르세요. "
             "`estimated_cost_usd`(낮은 값~높은 값)와 `estimated_seconds`를 쉬운 말로 옮기고, "
-            "이 값은 청구액 보장이 아닌 계획용 추정이라고 알려 주세요."),
+            "이 값은 청구액 보장이 아닌 계획용 추정이라고 알려 주세요. "
+            "`mode`가 `mock`이면 구조만 보는 체험이며 숫자·문장은 가짜라고 먼저 알리세요. "
+            "`requires_consent`가 거짓이면 사용자의 실행 요청 뒤 추가 동의 없이 0원 체험을 진행하세요."),
     ),
     "start_run": ToolCopy(
-        title="AI 반응으로 현장 질문 만들기(유료)",
+        title="AI 반응으로 현장 질문 만들기",
         description=(
             "합성 인물마다 문안을 읽은 반응을 AI로 만들고, 조항별 쟁점과 현장에서 물을 질문을 정리합니다. "
             "사용자의 Anthropic API 키로 요금이 나갑니다. "
-            "반드시 `estimate`의 예상 비용을 먼저 보여 주고, 사용자가 진행에 동의한 뒤에만 부르세요. "
+            "유료 실행은 `estimate`의 예상 비용을 먼저 보여 주고 동의를 받으세요. 0원 체험은 사용자가 실행을 요청했으면 바로 실행하세요. "
             "`estimate`가 준 `plan_id`로 실행하고, 돌려받은 `id`로 `get_run`을 부릅니다. 체험 설정에서는 무료입니다."),
     ),
     "get_run": ToolCopy(
         title="진행 상황·결과 보기",
         description=(
             "실행 상황(대기 `queued`·진행 중 `running`·완료 `completed`·실패 `failed`)을 알려 주고, 끝나면 결과를 돌려줍니다. "
-            "결과를 옮길 때는 고지 한 줄을 먼저 쓰고, `who_to_ask`(누구에게 무엇을 물을지)와 "
+            "반응 결과는 고지 한 줄, 0원 체험은 구조만 보이며 숫자·문장은 가짜이고 실제 결과에는 키가 필요하다는 안내를 먼저 쓰고, `who_to_ask`(누구에게 무엇을 물을지)와 "
             "`missing_perspectives`(명단에 없는 사람)부터 정리하세요. 프로그램을 다시 켜면 결과가 사라집니다."),
         when_arg=(("view", (
             "실행 상황(대기 `queued`·진행 중 `running`·완료 `completed`·실패 `failed`)을 알려 주고, 끝나면 한 장 요약을 돌려줍니다. "
             "기본은 요약이며, 사용자가 자세한 기록을 원할 때만 `view=\"full\"`을 쓰세요. "
-            "결과를 옮길 때는 고지 한 줄을 먼저 쓰세요. 프로그램을 다시 켜면 결과가 사라지므로 `save_review`로 저장하세요.")),),
+            "반응 결과는 고지 한 줄, 0원 체험은 구조만 보여 주며 숫자·문장은 가짜이고 실제 결과에는 키가 필요하다는 안내를 먼저 쓰세요. "
+            "완료 결과를 처음 보여 준 뒤 파일로 저장할지 한 번만 물어보세요. 프로그램을 다시 켜면 결과가 사라지므로 `save_review`로 저장하세요.")),),
     ),
     # Prepared for the free-trial work package; applied when a tool with this name is registered.
     "try_example": ToolCopy(
         title="무료 예시 해 보기",
         description=(
             "미리 넣어 둔 예시 정책 문안으로 키 없이, 돈 들지 않게 한 번 해 봅니다. "
-            "외부 AI를 쓰지 않는 체험이라 결과 문장은 자리 채움 글이라고 함께 알려 주세요. "
+            "이미 실행해 둔 공개 예시의 보관 결과를 보여 줍니다. 새 분석이 아니며 출처와 보관 결과 표시를 유지하세요. "
             "사용자가 \"무료 예시 보여 줘\"라고 하면 부르고, 체험 뒤에도 동의 없이 유료 실행으로 넘어가지 마세요."),
     ),
     "check_setup": ToolCopy(
@@ -93,20 +96,20 @@ TOOLS: dict[str, ToolCopy] = {
 }
 
 TOOLS.update({
-    "find_notice": ToolCopy("의견 받는 입법예고 찾기(무료)", "현재 의견을 받는 입법예고를 검색합니다. 고른 항목은 `get_notice`로 읽으세요. 분석은 시작하지 않습니다."),
+    "find_notice": ToolCopy("의견 받는 입법예고 찾기(무료)", "현재 의견을 받는 입법예고를 법령 제명 일부로 검색합니다. 약칭 정보공개법 대신 정보공개로 찾아보세요. 고른 항목은 `get_notice`로 읽으세요. 분석은 시작하지 않습니다."),
     "get_notice": ToolCopy("입법예고 원문 읽기(무료)", "고른 입법예고의 이유와 주요내용을 원문 그대로 가져옵니다. 받은 `policy_text`로 `estimate`를 부르세요. 긴 문안은 사용자가 범위를 고릅니다."),
-    "save_review": ToolCopy("전체 결과 파일로 저장", "완료한 결과를 고지·출처와 함께 새 파일에 저장합니다. 기존 파일은 덮어쓰지 않습니다. 프로그램을 끄기 전에 쓰세요."),
+    "save_review": ToolCopy("전체 결과 파일로 저장", "완료한 결과를 고지·출처와 함께 새 파일에 저장합니다. 기존 파일은 덮어쓰지 않습니다. 프로그램을 끄기 전에 저장할지 한 번 물어보세요."),
 })
 
 ARGS: dict[str, ArgCopy] = {
-    "query": ArgCopy("검색어", "찾을 낱말입니다. 비워 두면 최근 입법예고를 봅니다."),
+    "query": ArgCopy("검색어", "법령 제명 일부를 쓰세요. 예: 정보공개법 대신 정보공개. 비워 두면 최근 입법예고를 봅니다."),
     "page": ArgCopy("목록 쪽", "확인할 쪽 번호입니다. 기본값은 1입니다."),
     "seq": ArgCopy("입법예고 번호", "`find_notice`가 돌려준 `seq`를 그대로 넣으세요."),
     "mapping_lbic_id": ArgCopy("연결 번호", "목록의 `mapping_lbic_id`가 있으면 그대로 넣으세요."),
     "announce_type": ArgCopy("예고 구분", "목록의 `announce_type`이 있으면 그대로 넣으세요."),
     "plan_id": ArgCopy("견적 계획 번호", "고른 `estimate`의 `plan_id`입니다. 조건이 바뀌면 다시 견적을 내세요."),
     "conditions": ArgCopy("확인한 문안 조건", "문안에서 확인한 나이·지역·자격 조건입니다. `name`과 `age_min`·`age_max`·`provinces`·`eligibility` 등을 넣습니다. 자격은 현장에서 다시 확인하세요."),
-    "path": ArgCopy("저장할 파일", "프로그램이 실행되는 컴퓨터의 새 파일 이름입니다. 예: `result.json`. 기존 파일은 덮어쓰지 않습니다."),
+    "path": ArgCopy("저장할 파일", "생략하면 홈의 `Documents/백번미리묻다` 폴더에 저장합니다. 상대 경로는 홈 기준입니다. 예: `result.json`. 절대 경로도 되며 기존 파일은 덮어쓰지 않습니다."),
     "policy_text": ArgCopy("정책 문안", (
         "정책 문안 전체(붙여 넣은 글이나 첨부 파일에서 뽑은 글)입니다. 3만 자까지 넣을 수 있고 자동으로 자르지 않습니다. "
         "발표 전 문안과 개인정보는 넣지 마세요.")),
@@ -131,7 +134,7 @@ ARGS: dict[str, ArgCopy] = {
         "사용자가 그 부분을 물었을 때만 쓰세요.")),
     "example": ArgCopy("예시 고르기", (
         "예시 정책 이름입니다. 비워 두면 `subway-free-ride`(도시철도 무임승차)를 씁니다. "
-        "고를 수 있는 이름: `subway-free-ride`, `rural-basic-income`, `life-safety-decree`, `elderly-welfare-rule`, `judge-attendance`.")),
+        "`subway-free-ride`(도시철도 무임승차), `rural-basic-income`(농어촌 기본소득). `life-safety-decree`(생명안전기본법 시행령 제정안), `judge-attendance`(법관 정시출퇴근제 도입).")),
 }
 
 
@@ -251,7 +254,7 @@ PROMPTS: dict[str, PromptCopy] = {
             Step("`check_setup`으로 준비 상태를 확인하되, 키나 자료가 없어도 이 안내는 끝까지 진행하세요.", needs="check_setup"),
             Step("함께 붙인 예시 문안(`pp://examples/{example}`)을 읽고, 제목과 종류(가상 정책안·입법예고 등)를 한 줄로 알려 주세요."),
             Step("`try_example`을 `example=\"{example}\"`로 불러 무료 체험 결과를 받으세요. "
-                 "외부 AI를 쓰지 않아 문장은 자리 채움 글이라는 점을 함께 알려 주세요.",
+                 "공개 예시의 보관 결과이며 새 분석이 아니라는 점과 출처를 함께 알려 주세요.",
                  needs="try_example",
                  fallback="함께 붙인 예시 결과 요약(`pp://examples/result-summary`)으로 결과가 어떤 모양인지 보여 주세요. "
                           "도시철도 무임승차 예시로 사람이 미리 써 둔 것이라는 점도 함께 알려 주세요."),
@@ -421,41 +424,6 @@ EXAMPLES.update({
 DEFAULT_EXAMPLE = "subway-free-ride"
 EXAMPLE_FOOTER = "이 문안으로 해 보려면 '내 문안 비용부터 보기'를 고르고 위 문안을 붙여 넣으세요."
 
-# A hand-written illustration of the result summary layout, built on the subway example.
-# It is not engine output; quotes are verbatim clauses of the example text.
-EXAMPLE_RESULT = {
-    "example": "subway-free-ride",
-    "label": "이 화면은 결과 요약이 어떤 모양인지 보여 주려고 사람이 미리 써 둔 예시입니다. AI가 실제로 만든 결과가 아닙니다.",
-    "first_line": "실제 결과의 맨 첫 줄에는 늘 이 고지가 붙습니다.",
-    "headline": "문안 조항마다 먼저 만날 사람과 현장에서 물을 질문을 정리했습니다. 집단은 문안 조항 순서로 놓았습니다.",
-    "meet_first": [
-        {"who": "2027년 뒤에 66~69세가 되는 도시철도 이용자", "clause": "가",
-         "quote": "도시철도 경로우대 무임승차 기준 연령을 2027년 66세부터 2년마다 1세씩 올려 2035년에 70세로 한다.",
-         "ask": ["본인이 언제부터 무임승차 대상에서 빠지는지 어디서 알게 되나요?",
-                 "요금 할인으로 바뀌면 병원·시장·일터에 가는 길이 어떻게 달라지나요?"],
-         "where": "노인복지관·경로당, 행정복지센터 안내 창구"},
-        {"who": "65세 이상 기초연금 수급자", "clause": "나",
-         "quote": "기초연금 수급자는 기준 연령이 올라가도 65세부터 무임승차를 계속 받는다.",
-         "ask": ["본인이 계속 대상인지 무엇으로 확인하게 되나요?",
-                 "교통카드를 새로 받거나 따로 신청해야 한다면 무엇이 걸리나요?"],
-         "where": "행정복지센터 복지 창구, 노인복지관"},
-        {"who": "도시철도가 없는 지역에 사는 어르신", "clause": "라",
-         "quote": "도시철도가 없는 지역의 어르신을 위해 시내버스 요금 지원 사업을 지방자치단체와 함께 확대한다.",
-         "ask": ["지금 버스 요금 지원을 받고 있나요? 신청은 어떻게 했나요?",
-                 "이런 안내를 어디서 듣는 것이 편한가요?"],
-         "where": "읍면동 행정복지센터, 마을회관·이장 회의"},
-    ],
-    "meet_in_person_intro": "합성 인물 자료에 없거나 조직의 의견이라 AI로 상상할 수 없으니, 직접 만나야 합니다.",
-    "meet_in_person": [
-        {"who": "만 19세 미만", "route": "학교·청소년센터를 통해 의견 듣기"},
-        {"who": "외국인 주민(귀화하지 않은 결혼이민자 포함)", "route": "가족센터·외국인주민지원센터, 다국어 안내"},
-        {"who": "도시철도 운영기관·노인단체 같은 단체의 조직된 의견", "route": "간담회, 입법예고 의견 제출"},
-    ],
-    "check_separately": "「1. 추진 배경」과 「3. 기대 효과」는 이어진 쟁점이 없어 따로 확인할 조항으로 남습니다.",
-    "run_line": "실제 결과에는 합성 인물 수(사람 수 아님), 실제 비용, 걸린 시간, 모델 이름이 한 줄로 붙습니다.",
-    "next": ["현장 면담 질문지 한 장으로 정리하기", "'내 문안 비용부터 보기'로 내 문안 해 보기"],
-}
-
 GUIDE_START = f"""# 백번 미리 묻다: 처음 쓰는 법
 
 공개·가상 정책 문안을 넣으면 실제로 누구를 찾아가 무엇을 물을지 정하도록 돕습니다.
@@ -502,7 +470,7 @@ RESOURCES: dict[str, ResourceCopy] = {
     "pp://guide/start": ResourceCopy("guide-start", "처음 쓰는 법(한 장)",
                                      "무엇을 말하면 되는지, 무엇이 무료이고 유료인지, 어떤 순서로 쓰는지 한 장에 담았습니다."),
     "pp://examples/result-summary": ResourceCopy("example-result-summary", "예시 결과 요약(도시철도 무임승차)",
-                                                 "결과 요약이 어떤 모양인지 보여 주는 예시입니다. 사람이 미리 써 둔 것이며 실제 실행 결과가 아닙니다."),
+                                                 "공개 예시의 기존 실행에서 가져온 보관 결과입니다. 출처와 실제 질문·접점을 함께 보여 줍니다."),
     **{f"pp://examples/{key}": ResourceCopy(f"example-{key}", f"예시 문안: {ex.title}({ex.kind})",
                                             f"바로 해 볼 수 있는 {ex.kind} 문안입니다. 키와 비용 없이 읽을 수 있습니다.")
        for key, ex in EXAMPLES.items()},
@@ -528,17 +496,17 @@ def example_markdown(key: str) -> str:
 
 
 def result_summary_markdown() -> str:
-    r = EXAMPLE_RESULT
-    title = EXAMPLES[r["example"]].title
-    lines = [f"# 예시 결과 요약: {title}", "", f"> {r['label']}", "", f"{r['first_line']}", "", f"> {NOTICE}", "",
-             r["headline"], "", "## 먼저 만날 사람"]
-    for card in r["meet_first"]:
-        lines += ["", f"### {card['who']}", f"- 왜: 「{card['clause']}. {card['quote']}」"]
-        lines += [f"- 물어볼 것: {q}" for q in card["ask"]]
-        lines.append(f"- 만날 곳: {card['where']}")
-    lines += ["", "## 직접 만나야 할 사람", r["meet_in_person_intro"]]
-    lines += [f"- {row['who']}: {row['route']}" for row in r["meet_in_person"]]
-    lines += ["", "## 따로 확인할 조항", r["check_separately"], "", "## 실행 정보", r["run_line"],
-              "", "## 다음에 할 수 있는 일"]
-    lines += [f"- {item}" for item in r["next"]]
-    return "\n".join(lines) + "\n"
+    from . import archived_examples, summary_card
+    result = archived_examples.load(DEFAULT_EXAMPLE)
+    summary = summary_card.build(result, "example")
+    lines = ["# 공개 예시 · 보관 결과: " + result['title'], "", NOTICE, "", archived_examples.NOTICE,
+             "", "## 찾아갈 곳 · 먼저 물을 질문"]
+    for card in summary['cards']:
+        lines += ["", "### " + ' · '.join(card['groups']), "문안 근거: " + (card['source_quote'] or ''), card['why_ask']]
+        lines += ['- 질문: ' + q for q in card['questions']]
+        lines += ['- 만날 곳: ' + v for v in card['contact_hints']]
+    lines += ["", "## 명단 밖 사람"]
+    lines += ['- ' + m['group'] + ': ' + m['route'] for m in summary['missing_perspectives']]
+    lines += ["", "출처: [기존 공개 예시 실행 기록](" + result['archive']['url'] + ")",
+              "합성 인물 자료의 출처와 이용 조건은 [원본 출처 안내](" + result['attribution']['details'] + ")에 있습니다."]
+    return '\n'.join(lines) + '\n'

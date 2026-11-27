@@ -77,7 +77,8 @@ def ai_facing() -> list[tuple[str, str]]:
 def test_people_facing_copy_uses_plain_korean(where, text):
     assert text.strip(), where
     assert jargon(text, code_allowed=False) == [], where
-    assert all(len(s) <= MAX_SENTENCE for s in sentences(text)), where
+    # Source URLs are required evidence, not prose sentences.
+    assert all(len(s) <= MAX_SENTENCE for s in sentences(LINK.sub('', text))), where
 
 
 @pytest.mark.parametrize("where,text", ai_facing())
@@ -256,17 +257,12 @@ def test_example_policies_match_engine_files_and_pass_input_rules(key, monkeypat
 
 
 def test_example_result_summary_follows_output_rules():
-    result = mcp_copy.EXAMPLE_RESULT
-    policy = mcp_copy.EXAMPLES[result["example"]].text
-    for card in result["meet_first"]:
-        assert f"{card['clause']}. {card['quote']}" in policy
-    # Everything except verbatim quotes must pass the same output rules as engine results.
-    plain = {k: v for k, v in result.items() if k != "meet_first"}
-    plain["meet_first"] = [{k: v for k, v in card.items() if k != "quote"} for card in result["meet_first"]]
-    warnings = []
-    assert public_rules.check_output(plain, policy, warnings) == plain and warnings == []
+    from pp import archived_examples
+    result = archived_examples.load(mcp_copy.DEFAULT_EXAMPLE)
     markdown = mcp_copy.result_summary_markdown()
-    assert public_rules.NOTICE in markdown and result["label"] in markdown
+    assert public_rules.NOTICE in markdown and result["result_label"] in markdown
+    assert result["archive"]["url"] in markdown
+    assert any(q["question"] in markdown for q in result["questions"])
 
 
 def test_mcp_layer_errors_use_copy_and_never_echo(server):
@@ -278,7 +274,7 @@ def test_mcp_layer_errors_use_copy_and_never_echo(server):
     for result, code in [(extra, "extra_argument"), (unknown, "unknown_tool"), (invalid, "invalid_value")]:
         assert result.isError
         assert result.structuredContent["error"] == mcp_copy.error(code)
-        assert result.content[0].text.splitlines()[0] == public_rules.NOTICE
+        assert public_rules.NOTICE not in result.content[0].text
         assert SECRET not in result.model_dump_json()
 
 

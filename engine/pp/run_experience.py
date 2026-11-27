@@ -35,6 +35,8 @@ class RunExperience:
             # Reserve and bind atomically; _run waits for this lock before updating state.
             run_id = uuid4().hex
             initial = public_rules.envelope({"id": run_id, "status": "queued",
+                "mode": "mock" if mcp_setup.mock_mode() else "real",
+                **({"result_label": mcp_setup.TRIAL_LABEL, "trial_notice": mcp_setup.TRIAL_NOTICE} if mcp_setup.mock_mode() else {}),
                 "estimate": service.estimate(settings["policy_text"], settings["sample"],
                     i_confirm_public=settings["i_confirm_public"], limits=settings["limits"], conditions=settings["conditions"])})
             self._runs[run_id] = initial
@@ -47,6 +49,6 @@ class RunExperience:
         with self._lock:
             self._runs[run_id]["stage"] = stage
 
-    def save_review(self, run_id, path):
+    def save_review(self, run_id, path=None):
         return review_export.save(self.get(run_id), path)
 

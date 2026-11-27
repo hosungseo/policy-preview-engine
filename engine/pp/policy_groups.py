@@ -76,14 +76,14 @@ def _clean_str_list(value, field_name: str, *, max_items: int = 20) -> list[str]
     if value is None:
         return []
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
-        raise ConditionError(f"conditions.{field_name} must be a list of strings")
+        raise ConditionError(f'조건의 {field_name}은 ["기초연금 수급자"]처럼 문자열 목록으로 넣으세요.')
     out: list[str] = []
     for item in value:
         text = item.strip()
         if text and text not in out:
             out.append(text)
     if len(out) > max_items:
-        raise ConditionError(f"conditions.{field_name} has too many items (max {max_items})")
+        raise ConditionError(f"조건의 {field_name}은 {max_items}개 이하로 넣으세요.")
     return out
 
 
@@ -91,7 +91,7 @@ def _clean_age(value, field_name: str) -> int | None:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 130:
-        raise ConditionError(f"conditions.{field_name} must be an integer between 0 and 130")
+        raise ConditionError(f"조건의 {field_name}은 0~130 사이 정수로 넣으세요.")
     return value
 
 
@@ -128,33 +128,33 @@ def _auto_name(cond: dict) -> str:
 
 def _normalize_one(raw: dict) -> dict:
     if not isinstance(raw, dict):
-        raise ConditionError("each condition must be a JSON object")
+        raise ConditionError("각 조건은 이름과 나이·지역·자격 등을 담은 객체로 넣으세요.")
     if set(raw) - CONDITION_KEYS:
-        raise ConditionError("unknown keys in conditions; use name, age_min, age_max, provinces, occupations, keywords, eligibility, family_type_like, housing_type_in, education_in, sex, clause_ids")
+        raise ConditionError("지원하지 않는 조건 항목이 있습니다. 조건 스키마에 있는 항목만 넣으세요.")
     age_min = _clean_age(raw.get("age_min"), "age_min")
     age_max = _clean_age(raw.get("age_max"), "age_max")
     if age_min is not None and age_max is not None and age_min > age_max:
-        raise ConditionError("conditions.age_min must not exceed conditions.age_max")
+        raise ConditionError("최소 나이(age_min)는 최대 나이(age_max) 이하여야 합니다.")
 
     provinces: list[str] = []
     for name in _clean_str_list(raw.get("provinces"), "provinces"):
         raw_prov = config.to_raw_province(name)
         if not raw_prov:
-            raise ConditionError("unknown province in conditions.provinces")
+            raise ConditionError("지역(provinces)은 서울·부산 등 시도 이름 목록으로 넣으세요.")
         if raw_prov not in provinces:
             provinces.append(raw_prov)
 
     sex = raw.get("sex")
     if sex is not None and sex not in ("남자", "여자"):
-        raise ConditionError("conditions.sex must be 남자 or 여자")
+        raise ConditionError("성별(sex)은 남자 또는 여자로 넣으세요.")
 
     housing = _clean_str_list(raw.get("housing_type_in"), "housing_type_in")
     if set(housing) - set(config.HOUSING_ORDER):
-        raise ConditionError("invalid value in conditions.housing_type_in")
+        raise ConditionError("주거 형태(housing_type_in)에 지원하지 않는 값이 있습니다.")
 
     education = _clean_str_list(raw.get("education_in"), "education_in")
     if set(education) - set(config.EDUCATION_ORDER):
-        raise ConditionError("invalid value in conditions.education_in")
+        raise ConditionError("학력(education_in)에 지원하지 않는 값이 있습니다.")
 
     occupations = _clean_str_list(raw.get("occupations"), "occupations")
     keywords = _clean_str_list(raw.get("keywords"), "keywords")
@@ -164,17 +164,17 @@ def _normalize_one(raw: dict) -> dict:
 
     raw_name = raw.get("name") if raw.get("name") is not None else raw.get("label")
     if raw_name is not None and (not isinstance(raw_name, str) or not raw_name.strip()):
-        raise ConditionError("conditions.name must be a non-empty string")
+        raise ConditionError("조건 이름(name)은 비어 있지 않은 문자열로 넣으세요.")
     name = raw_name.strip()[:80] if isinstance(raw_name, str) else ""
     if name and (public_rules.PERSON.search(name) or public_rules.ELECTION.search(name)):
-        raise ConditionError("conditions.name must describe a group, not an individual or election")
+        raise ConditionError("조건 이름(name)은 개인·선거가 아닌 집단을 나타내야 합니다.")
 
     has_criterion = any([
         age_min is not None, age_max is not None, provinces, occupations,
         keywords, eligibility, family, housing, education, sex is not None,
     ])
     if not has_criterion:
-        raise ConditionError("each condition must specify at least one target criterion")
+        raise ConditionError("각 조건에 나이·지역·자격 등 기준을 하나 이상 넣으세요.")
 
     # Map well-known household/housing eligibility terms into usable DB clues too.
     for term in eligibility:
@@ -219,11 +219,11 @@ def normalize_conditions(raw) -> list[dict]:
     elif isinstance(raw, list):
         items = raw
     else:
-        raise ConditionError("conditions must be a JSON object or a list of objects")
+        raise ConditionError("조건(conditions)은 객체 하나 또는 객체 목록으로 넣으세요.")
     if not isinstance(items, list):
-        raise ConditionError("conditions.groups must be a list of objects")
+        raise ConditionError("조건 묶음(groups)은 객체 목록으로 넣으세요.")
     if len(items) > MAX_CONDITION_GROUPS:
-        raise ConditionError(f"conditions may contain at most {MAX_CONDITION_GROUPS} groups")
+        raise ConditionError(f"조건은 {MAX_CONDITION_GROUPS}개 묶음 이하로 넣으세요.")
     out: list[dict] = []
     seen_names: set[str] = set()
     for item in items:
@@ -231,12 +231,12 @@ def normalize_conditions(raw) -> list[dict]:
         cond = _normalize_one(item)
         if cond["name"] in seen_names:
             if explicit_name:
-                raise ConditionError("conditions contain duplicate group names; give each group a distinct name")
+                raise ConditionError("조건 묶음 이름이 겹칩니다. 묶음마다 다른 이름을 넣으세요.")
             suffix = _auto_name(cond)
             if suffix and suffix != cond["name"] and f"{cond['name']} ({suffix})" not in seen_names:
                 cond["name"] = f"{cond['name']} ({suffix})"
         if cond["name"] in seen_names:
-            raise ConditionError("conditions contain duplicate group names; give each group a distinct name")
+            raise ConditionError("조건 묶음 이름이 겹칩니다. 묶음마다 다른 이름을 넣으세요.")
         seen_names.add(cond["name"])
         out.append(cond)
     return out

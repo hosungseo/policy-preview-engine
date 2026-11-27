@@ -99,7 +99,7 @@ def test_mcp_notices_and_confirmation_including_sdk_errors(fake_models):
         ]:
             result = await server.call_tool(name, arguments)
             assert result.isError
-            assert result.content[0].text.splitlines()[0] == NOTICE
+            assert NOTICE not in result.content[0].text
             assert result.structuredContent["notice"] == NOTICE
         started = await server.call_tool("start_run", {"policy_text": "내부 검토\n" + POLICY,
                                                         "sample": 12, "i_confirm_public": True})

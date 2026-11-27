@@ -101,7 +101,7 @@ def test_mcp_output_contract(malicious_models):
     async def scenario():
         started = await server.call_tool("start_run", {"policy_text": POLICY, "sample": 12})
         assert not started.isError
-        assert started.content[0].text.splitlines()[0] == NOTICE
+        assert started.structuredContent["notice"] == NOTICE
         assert_notice(started.structuredContent)
         state = wait_job(jobs.get, started.structuredContent["id"])
         assert state["status"] == "completed", state

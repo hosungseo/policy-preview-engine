@@ -41,32 +41,32 @@ class Credentials:
 
 def validate(policy_text: str, sample: int = DEFAULT_SAMPLE, seed: int = 42, i_confirm_public: bool = False) -> None:
     if not isinstance(policy_text, str) or not policy_text.strip():
-        raise RequestError("policy_text must be non-empty UTF-8 text")
+        raise RequestError("정책 문안(policy_text)을 비어 있지 않은 글로 넣으세요.")
     if type(i_confirm_public) is not bool:
-        raise RequestError("i_confirm_public must be a boolean")
+        raise RequestError("공개 확인(i_confirm_public)은 true 또는 false로 넣으세요.")
     problem = public_rules.input_problem(policy_text, i_confirm_public)
     if problem:
         raise RequestError(problem + " " + public_rules.WARNING)
     if len(policy_text) > MAX_CHARS:
-        raise RequestError(f"policy_text exceeds {MAX_CHARS} characters; split the document explicitly")
+        raise RequestError(f"문안이 {MAX_CHARS}자를 넘습니다. 확인할 범위를 나눠 넣으세요.")
     if type(sample) is not int or not 1 <= sample <= MAX_SAMPLE:
-        raise RequestError(f"sample must be an integer between 1 and {MAX_SAMPLE}")
+        raise RequestError(f"합성 프로필 수(sample)는 1~{MAX_SAMPLE} 사이 정수로 넣으세요.")
     if type(seed) is not int or not 0 <= seed <= 2_147_483_647:
-        raise RequestError("seed must be an integer between 0 and 2147483647")
+        raise RequestError("추출 기준값(seed)은 0~2147483647 사이 정수로 넣으세요.")
 
 
 def normalize_limits(limits=None):
     if isinstance(limits, budget.Limits):
         limits = asdict(limits)
     if limits is not None and (not isinstance(limits, dict) or limits.keys() - asdict(budget.Limits()).keys()):
-        raise RequestError("Unknown budget limits")
+        raise RequestError("비용 한도(limits)에 지원하지 않는 항목이 있습니다.")
     try:
         values = limits or {}
         if any(isinstance(v, bool) for v in values.values()) or values.get("max_cost_usd", 10) is None:
             raise ValueError("a finite monetary cap is required")
         return budget.Limits(**values)
     except (TypeError, ValueError):
-        raise RequestError("Invalid budget limits; use finite nonnegative cost and integer call/token/retry/concurrency caps") from None
+        raise RequestError("비용 상한은 0 이상의 유한한 숫자, 호출·토큰·재시도·동시 실행 한도는 정수로 넣으세요.") from None
 
 
 def normalize_conditions(conditions=None) -> list[dict]:
@@ -86,13 +86,19 @@ def estimate(policy_text: str, sample: int = DEFAULT_SAMPLE, *, i_confirm_public
     input_tokens = sample * (len(policy_text) + 1200) + sample * 1400 + 16000
     output_tokens = sample * 550 + 16000
     usd = 0 if mcp_setup.mock_mode() else (input_tokens * 1.0 + output_tokens * 5.0) / 1_000_000
-    seconds = math.ceil(sample / 8) * 6 + 90
+    mock = mcp_setup.mock_mode()
+    seconds = 1 if mock else math.ceil(sample / 8) * 6 + 90
+    credit = ({"schema": attribution.SCHEMA, "sources": [attribution.generated()],
+               "notice": "0원 체험의 가상 인물·모의 응답입니다. 실제 분석 결과가 아닙니다."}
+              if mock and not mcp_setup.panel_ready() else attribution.build())
     hash_inputs = {"policy": policy_text, "sample": sample, "limits": asdict(limits)}
     if norm_conditions:
         hash_inputs["conditions"] = norm_conditions
     return public_rules.envelope({"sample": sample, "policy_chars": len(policy_text), "model": "mock" if mcp_setup.mock_mode() else MODEL,
             "input_hash": provenance.input_hash(hash_inputs),
-            "budget_limits": asdict(limits), "attribution": attribution.build(),
+            "budget_limits": asdict(limits), "attribution": credit,
+            "mode": "mock" if mock else "real", "requires_consent": not mock,
+            **({"result_label": mcp_setup.TRIAL_LABEL, "trial_notice": mcp_setup.TRIAL_NOTICE} if mock else {}),
             "target_conditions": norm_conditions,
             "missing_people": visit_shared.missing_people(policy_text),
             "estimated_cost_usd": {"low": round(usd * .5, 4), "high": round(usd * 2, 4)},

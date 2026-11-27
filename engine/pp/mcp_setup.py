@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 from . import attribution, budget, bundle_db, config, llm, personas, public_rules, provenance
 
 TRIAL_LABEL = "체험(모의) 결과"
+TRIAL_NOTICE = "구조만 보여 주는 0원 체험입니다. 숫자·문장은 가짜이며, 실제 결과에는 API 키와 합성 인물 자료가 필요합니다."
 FREE_ALTERNATIVE = "try_example으로 키·패널 없이 무료 예시를 볼 수 있습니다."
 _trial = ContextVar("pp_trial", default=False)
 _panel = ContextVar("pp_trial_panel", default=None)
@@ -25,6 +26,7 @@ GUIDANCE = {
     "lawmaking_unavailable": ("국민참여입법센터의 자료를 지금 읽지 못했습니다.", "잠시 뒤 find_notice로 다시 찾아보세요."),
     "notice_not_found": ("고른 입법예고의 이유·주요내용 원문을 찾지 못했습니다.", "find_notice로 예고를 다시 고르세요."),
     "invalid_notice_request": ("입법예고 검색어나 번호 형식이 맞지 않습니다.", "검색어는 2~50자, 번호는 find_notice가 돌려준 seq를 사용하세요."),
+    "save_failed": ("결과 파일을 저장하지 못했습니다.", "저장 경로를 생략해 홈 폴더 아래에 저장하거나 ~/Desktop/result-new.json처럼 새 파일 이름을 쓰세요. 기존 파일은 덮어쓰지 않습니다."),
 }
 
 
@@ -120,7 +122,7 @@ def mark_result(result: dict) -> dict:
     if not mock_mode():
         return result
     result.update(mode="mock", result_label=TRIAL_LABEL,
-                  trial_notice="체험(모의) 결과입니다. 외부 모델 전송·요금은 없으며 분석 품질을 뜻하지 않습니다.")
+                  trial_notice=TRIAL_NOTICE)
     result["warnings"].insert(0, result["trial_notice"])
     result["clarity"] = {"available": False, "reason": "체험 모드: 외부 명료성 API를 호출하지 않았습니다."}
     if demo_panel():
@@ -155,21 +157,15 @@ def check_setup() -> dict:
         "problems": problems})
 
 
-EXAMPLES = ("subway-free-ride", "elderly-welfare-rule", "judge-attendance", "life-safety-decree", "rural-basic-income")
+from .archived_examples import EXAMPLES
 
 
 def try_example(example: str = "subway-free-ride") -> dict:
-    from . import service
+    from . import archived_examples, mcp_copy
 
     if example not in EXAMPLES:
-        raise SetupError("input_rejected", "내장 예시 이름을 찾지 못했습니다. 가능한 예시: " + ", ".join(EXAMPLES))
-    from . import mcp_copy
-    policy = mcp_copy.EXAMPLES[example]
-    token = _trial.set(True)
-    try:
-        result = service.run_policy(policy.title + "\n" + policy.text, sample=12,
-                                    credentials=service.Credentials(), limits={"max_cost_usd": 0})
-        return public_rules.envelope({"status": "completed", "mode": "mock", "result_label": TRIAL_LABEL,
-                                      "example": example, "cost_usd": 0, "result": result})
-    finally:
-        _trial.reset(token)
+        raise SetupError("input_rejected", "이 문안의 보관 결과는 없습니다. " + " / ".join(f"{key}({mcp_copy.EXAMPLES[key].title})" for key in EXAMPLES))
+    result = archived_examples.load(example)
+    return public_rules.envelope({"status": "completed", "mode": "archived", "result_label": result["result_label"],
+        "example": example, "cost_usd": 0, "result": result,
+        "available_examples": [{"id": key, "title": mcp_copy.EXAMPLES[key].title} for key in EXAMPLES]})

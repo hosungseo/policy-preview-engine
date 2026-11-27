@@ -282,7 +282,7 @@ def test_mcp_rejects_extra_arguments_before_execution(name, arguments, extra, mo
         result = asyncio.run(server.call_tool(name, {**arguments, extra: SECRET}))
         assert result.isError
         assert result.structuredContent["error"] == mcp_copy.error("extra_argument")
-        assert result.content[0].text.splitlines()[0] == NOTICE
+        assert NOTICE not in result.content[0].text
         assert result.structuredContent["notice"] == NOTICE
         captured = capsys.readouterr()
         assert SECRET not in result.model_dump_json() + captured.out + captured.err + caplog.text
@@ -315,21 +315,21 @@ def test_mcp_real_stdio_estimate_start_poll(fake_process_script):
                     rejected = await session.call_tool(name, {**arguments, extra: SECRET})
                     assert rejected.isError
                     assert rejected.structuredContent["error"] == mcp_copy.error("extra_argument")
-                    assert rejected.content[0].text.splitlines()[0] == NOTICE
+                    assert NOTICE not in rejected.content[0].text
                     assert rejected.structuredContent["notice"] == NOTICE
                     assert SECRET not in rejected.model_dump_json()
                 budget = await session.call_tool("estimate", {"policy_text": POLICY, "sample": 12})
                 assert not budget.isError
-                assert budget.content[0].text.splitlines()[0] == NOTICE
+                assert budget.content[0].text.startswith("비용·시간 견적")
                 started = await session.call_tool("start_run", {"policy_text": POLICY, "sample": 12})
                 assert not started.isError
-                assert started.content[0].text.splitlines()[0] == NOTICE
+                assert started.structuredContent["notice"] == NOTICE
                 run_id = started.structuredContent["id"]
                 async with asyncio.timeout(15):
                     while True:
                         response = await session.call_tool("get_run", {"id": run_id})
                         assert not response.isError
-                        assert response.content[0].text.splitlines()[0] == NOTICE
+                        assert response.structuredContent["notice"] == NOTICE
                         state = response.structuredContent
                         if state["status"] in {"completed", "failed"}:
                             break

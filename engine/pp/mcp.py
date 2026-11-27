@@ -1,4 +1,5 @@
 """MCP stdio tools. All protocol output belongs to the SDK; keys come only from env."""
+import json
 from mcp.server.fastmcp import FastMCP
 from mcp.types import CallToolResult, TextContent
 from typing import Literal
@@ -7,11 +8,21 @@ from pydantic import StrictBool, StrictInt
 
 from . import mcp_copy, mcp_guide, public_rules, service, mcp_setup, mcp_notices
 from .jobs import Jobs
+from .condition_schema import Conditions
 
 
-def tool_result(data: dict, *, error: bool = False) -> CallToolResult:
+def tool_result(data: dict, *, error: bool = False, context: str = "") -> CallToolResult:
     data = public_rules.envelope(data)
-    text = data["summary"]["text"] if "summary" in data else public_rules.NOTICE + "\n" + public_rules.dumps(data)
+    if "summary" in data:
+        text = data["summary"]["text"]
+    else:
+        result = data.get('result', {})
+        reaction = data.get('status') == 'completed' and bool(result)
+        prefix = (result.get('trial_notice') if result.get('mode') == 'mock' else public_rules.NOTICE) if reaction else context
+        # Keep the full safety notice in result files, but do not repeat it on lookups,
+        # estimates, setup checks, save confirmations or input errors.
+        visible = data if reaction else {k: v for k, v in data.items() if k != 'notice'}
+        text = (prefix + '\n' if prefix else '') + json.dumps(visible, ensure_ascii=False)
     return CallToolResult(content=[TextContent(type="text", text=text)],
                           structuredContent=data, isError=error)
 
@@ -39,6 +50,11 @@ class PublicMCP(FastMCP):
             if arguments.keys() - tool.inputSchema.get("properties", {}).keys():
                 # Never echo extra names or values: either may contain credentials.
                 return protocol_error("extra_argument")
+            if name in {'estimate', 'start_run'} and arguments.get('conditions') is not None:
+                try:
+                    service.normalize_conditions(arguments['conditions'])
+                except service.RequestError as exc:
+                    return tool_result(mcp_setup.error_payload(exc), error=True)
             return await super().call_tool(name, arguments)
         except Exception:
             # SDK validation errors must also retain notice and never echo arguments.
@@ -50,41 +66,41 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
     server = PublicMCP(mcp_copy.SERVER_NAME, instructions=mcp_copy.INSTRUCTIONS)
     mcp_guide.register(server)
 
-    def guarded(call):
+    def guarded(call, context=""):
         try:
             data = call()
-            return tool_result(data, error=data.get("status") == "failed")
+            return tool_result(data, error=data.get("status") == "failed", context=context)
         except Exception as exc:
             return tool_result(mcp_setup.error_payload(exc), error=True)
 
     @server.tool()
     def check_setup() -> CallToolResult:
         """무료 준비 점검: 키·합성 인물 패널·예시 자료·실행 모드를 확인합니다. 비밀값은 표시하지 않습니다."""
-        return guarded(mcp_setup.check_setup)
+        return guarded(mcp_setup.check_setup, "설정 확인이며 분석 결과가 아닙니다.")
 
     @server.tool()
     def try_example(example: str = "subway-free-ride") -> CallToolResult:
-        """키·패널 없이 내장 정책 예시를 무료로 끝까지 체험합니다. 모의 응답이며 외부 전송과 요금은 없습니다."""
+        """키·패널 없이 공개 예시의 보관 결과를 읽습니다. 새 분석이 아니며 외부 전송과 요금은 없습니다."""
         return guarded(lambda: jobs.try_example(example))
 
     @server.tool()
     def find_notice(query: str = "", page: StrictInt = 1) -> CallToolResult:
         """현재 의견을 받는 입법예고를 무료로 찾습니다. 검색어를 생략하면 최근 목록이며 키가 없으면 공개 페이지를 읽습니다."""
-        return guarded(lambda: mcp_notices.find_notice(query, page))
+        return guarded(lambda: mcp_notices.find_notice(query, page), "입법예고 조회이며 분석 결과가 아닙니다.")
 
     @server.tool()
     def get_notice(seq: str, mapping_lbic_id: str = "", announce_type: str = "") -> CallToolResult:
         """고른 입법예고의 이유·주요내용 원문과 estimate에 넣을 policy_text를 무료로 가져옵니다. 분석은 자동 시작하지 않습니다."""
-        return guarded(lambda: mcp_notices.get_notice(seq, mapping_lbic_id, announce_type))
+        return guarded(lambda: mcp_notices.get_notice(seq, mapping_lbic_id, announce_type), "입법예고 원문 조회이며 분석 결과가 아닙니다.")
 
     @server.tool()
-    def estimate(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, i_confirm_public: StrictBool = False, limits: dict | None = None, seed: StrictInt = 42, conditions: dict | list[dict] | None = None) -> CallToolResult:
+    def estimate(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, i_confirm_public: StrictBool = False, limits: dict | None = None, seed: StrictInt = 42, conditions: Conditions = None) -> CallToolResult:
         """Show approximate USD and duration before a paid run. No key needed."""
-        return guarded(lambda: jobs.estimate(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions))
+        return guarded(lambda: jobs.estimate(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions), "비용·시간 견적이며 분석 결과가 아닙니다.")
 
     @server.tool()
-    def start_run(policy_text: str | None = None, sample: StrictInt | None = None, seed: StrictInt | None = None, i_confirm_public: StrictBool | None = None, limits: dict | None = None, plan_id: str | None = None, conditions: dict | list[dict] | None = None) -> CallToolResult:
-        """견적의 plan_id로 확인한 조건을 실행합니다. 조건이 바뀌면 재견적하세요. 사용자 실행 의사를 먼저 확인하세요. 기존 직접 입력도 지원합니다."""
+    def start_run(policy_text: str | None = None, sample: StrictInt | None = None, seed: StrictInt | None = None, i_confirm_public: StrictBool | None = None, limits: dict | None = None, plan_id: str | None = None, conditions: Conditions = None) -> CallToolResult:
+        """견적의 plan_id로 실행합니다. 유료 실행은 비용 동의를 받고, 요청한 0원 체험은 바로 실행합니다. 조건이 바뀌면 재견적하세요."""
         return guarded(lambda: jobs.start_planned(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, plan_id=plan_id, conditions=conditions))
 
     @server.tool()
@@ -93,8 +109,8 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
         return guarded(lambda: jobs.get(id, view=view))
 
     @server.tool()
-    def save_review(id: str, path: str) -> CallToolResult:
-        """완료된 전체 결과를 고지·출처와 함께 서버 컴퓨터의 새 JSON 파일로 저장합니다. 기존 파일은 덮어쓰지 않습니다. 서버 재시작 전에 저장하세요."""
+    def save_review(id: str, path: str | None = None) -> CallToolResult:
+        """완료된 결과를 고지·출처와 함께 새 JSON 파일로 저장합니다. 기본은 홈 아래 결과 폴더, 상대 경로도 홈 기준이며 기존 파일은 덮어쓰지 않습니다."""
         return guarded(lambda: jobs.save_review(id, path))
 
     return server

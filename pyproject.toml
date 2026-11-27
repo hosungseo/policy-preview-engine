@@ -21,6 +21,7 @@ where = ["engine"]
 include = ["pp", "pp.*", "ppservice", "ppservice.*"]
 
 [tool.setuptools.package-data]
+pp = ["data/examples/*.json"]
 ppservice = ["data/persona-accuracy/*.json", "data/persona-context/*.json"]
 
 [tool.setuptools]

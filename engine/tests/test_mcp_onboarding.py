@@ -75,12 +75,11 @@ def test_try_example_completes_offline_even_in_real_mode(offline, monkeypatch, n
     assert dict(os.environ) == before
     assert response["status"] == "completed" and response["cost_usd"] == 0
     result = response["result"]
-    assert result["result_label"] == "체험(모의) 결과"
+    assert result["result_label"] == "공개 예시 · 보관 결과"
     assert result["budget"]["cost_usd"] == 0 and result["budget"]["cost_status"] == "known"
-    assert result["execution_inputs"]["models"]["provider"] == "mock"
-    assert result["conditions"]["model"] == "mock"
+    assert result["mode"] == "archived" and result["archive"]["sha256"]
     assert result["issues"] and result["who_to_ask"]
-    assert "NVIDIA" not in json.dumps(result, ensure_ascii=False)
+    assert "NVIDIA" in json.dumps(result, ensure_ascii=False)
     assert "must-not-use-or-show" not in json.dumps(result)
     assert not mcp_setup.mock_mode()
     assert mcp_setup.demo_panel() is None
@@ -190,7 +189,7 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 detail = await session.call_tool("get_notice", {"seq": notices.structuredContent["items"][0]["seq"]})
                 assert not detail.isError and "개정이유" in detail.structuredContent["policy_text"]
                 trial = await session.call_tool("try_example", {})
-                assert not trial.isError and trial.structuredContent["mode"] == "mock"
+                assert not trial.isError and trial.structuredContent["mode"] == "archived"
                 trial_id = trial.structuredContent["id"]
                 trial_full = await session.call_tool("get_run", {"id": trial_id, "view": "full"})
                 trial_saved = await session.call_tool("save_review", {"id": trial_id, "path": str(tmp_path / "trial.json")})

@@ -33,6 +33,8 @@ class Jobs(RunExperience):
         run_id = uuid4().hex
         initial = public_rules.envelope({
             "id": run_id, "status": "queued",
+            "mode": "mock" if mcp_setup.mock_mode() else "real",
+            **({"result_label": mcp_setup.TRIAL_LABEL, "trial_notice": mcp_setup.TRIAL_NOTICE} if mcp_setup.mock_mode() else {}),
             "estimate": service.estimate(policy_text, sample, i_confirm_public=i_confirm_public,
                                          limits=limits, conditions=conditions),
         })

@@ -55,7 +55,7 @@ def find_notice(query: str = "", page: int = 1) -> dict:
         "cost_usd": 0, "scope": "이번 검색 페이지에서 접수기간이 확인되고 오늘 의견을 받는 예고입니다.",
         "warnings": ["접수기간을 확인하지 못한 예고는 목록에서 제외했습니다."] if unverified else [],
         "next_action": "고른 항목의 seq와 API 메타정보가 있으면 함께 get_notice에 넣으세요." if items
-                       else "다른 검색어나 다음 페이지로 찾아보세요. 무료 예시는 try_example으로 볼 수 있습니다."})
+                       else "약칭을 줄여 정보공개법 대신 정보공개처럼 법령 제명 일부로 찾거나 다음 페이지를 확인하세요. 무료 예시는 try_example으로 볼 수 있습니다."})
 
 
 def get_notice(seq: str, mapping_lbic_id: str = "", announce_type: str = "") -> dict:

@@ -5,7 +5,7 @@ from . import attribution, public_rules
 
 MAX_CHARS = 3000
 SAVE_NOTICE = ('서버를 재시작하면 작업 ID와 결과가 사라집니다. 저장하려면 '
-               'save_review(id, path="result.json")을 호출하세요(서버 컴퓨터의 새 파일). '
+               'save_review(id)를 호출하세요(홈의 Documents/백번미리묻다에 저장). '
                '전체 결과·영수증·실행 기록은 get_run(id, view="full")로 조회하세요.')
 
 
@@ -22,6 +22,9 @@ def build(result: dict, run_id: str) -> dict:
     for row in result.get('who_to_ask', [])[:3]:
         iid = row.get('issue_id')
         clauses = [c for c in result.get('clauses', []) if iid in c.get('issues', [])]
+        if row.get('clause_ids'):
+            clause_order = {cid: n for n, cid in enumerate(row['clause_ids'])}
+            clauses.sort(key=lambda clause: clause_order.get(clause['id'], len(clause_order)))
         groups = row.get('groups', [])[:3]
         contacts = [o for o in result.get('outreach', []) if o.get('group') in groups][:2]
         cards.append({'issue_id': iid, 'groups': [clip(g, 65) for g in groups],
@@ -48,7 +51,12 @@ def build(result: dict, run_id: str) -> dict:
         conditions.get('reaction_failures') or conditions.get('unverified_quotes')) else '현장 확인이 필요한 AI 초안'
     credit = (result['attribution']['notice'] if result.get('mode') == 'mock' else attribution.short(result['attribution'])) if result.get('attribution') else '출처·이용 조건은 전체 결과에서 확인하세요.'
     trial = {k: result[k] for k in ('mode', 'result_label', 'trial_notice') if k in result}
-    lines = [public_rules.NOTICE, *[str(trial[k]) for k in ('result_label', 'trial_notice') if k in trial], '현장에서 확인할 질문 초안', quality, '찾아갈 곳 · 먼저 물을 질문']
+    lines = ([trial['trial_notice'], public_rules.NOTICE, trial.get('result_label', '')] if result.get('mode') == 'mock'
+             else [public_rules.NOTICE, *[str(trial[k]) for k in ('result_label', 'trial_notice') if k in trial]])
+    if result.get('archive'):
+        archive = result['archive']
+        lines.append('보관 출처: ' + archive['path'] + ' · ' + archive['created_at'])
+    lines += ['현장에서 확인할 질문 초안', quality, '찾아갈 곳 · 먼저 물을 질문']
     for card in cards:
         lines.append('• ' + (' · '.join(card['groups']) or '확인할 집단 정보 없음'))
         if card['source_quote']:
@@ -69,13 +77,14 @@ def build(result: dict, run_id: str) -> dict:
             'missing_perspectives': missing, 'grouping': result.get('grouping', {}), **trial, 'result_quality': quality,
             'truncated': len(result.get('who_to_ask', [])) > 3 or len(result.get('missing_perspectives', [])) > 4 or len(body) > available,
             'text': text, 'attribution_summary': credit, 'full_result_available': True,
+            **({'archive': result['archive'], 'policy_source': result.get('policy_source')} if result.get('archive') else {}),
             'save_notice': SAVE_NOTICE}
 
 
 def response(state: dict) -> dict:
     """Do not leak large receipts into the default MCP response."""
     data = {k: state[k] for k in ('notice', 'id', 'status', 'stage', 'stage_label', 'progress', 'estimated_remaining_seconds',
-                                  'poll_after_ms', 'cost_usd', 'example', 'error', 'code', 'error_code', 'message', 'next_action', 'free_alternative', 'retryable') if k in state}
+                                  'poll_after_ms', 'cost_usd', 'example', 'available_examples', 'mode', 'result_label', 'trial_notice', 'error', 'code', 'error_code', 'message', 'next_action', 'free_alternative', 'retryable') if k in state}
     if state.get('status') == 'completed':
         data['summary'] = build(state['result'], state['id'])
         data.update({k: state['result'][k] for k in ('mode', 'result_label', 'trial_notice') if k in state['result']})

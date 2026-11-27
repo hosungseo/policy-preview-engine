@@ -55,9 +55,9 @@ def test_plan_conditions_survive_summary_full_and_export(offline, tmp_path):
 def test_trial_works_without_repository_policy_files(offline, monkeypatch, tmp_path):
     monkeypatch.setattr(config, "REPO_ROOT", tmp_path)
     assert mcp_setup.check_setup()["free_trial_available"]
-    result = mcp_setup.try_example("elderly-welfare-rule")
+    result = mcp_setup.try_example("subway-free-ride")
     assert result["status"] == "completed" and result["cost_usd"] == 0
-    assert result["result"]["mode"] == "mock"
+    assert result["result"]["mode"] == "archived"
 
 
 def test_collective_reaction_prose_survives_but_named_requests_stay_blocked():
