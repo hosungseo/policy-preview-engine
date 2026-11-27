@@ -21,7 +21,9 @@ save_review(id="실행에서 받은 id", path="/사용자가/정한/새파일.js
 
 첫 사용 권장은 합성 프로필 12개입니다. 기존 기본 sample=200은 유지합니다. 합성 프로필 수는 실제 응답자 수나 대표성의 근거가 아닙니다.
 
-기본 조회는 ‘찾아갈 곳 · 먼저 물을 질문 · 명단 밖 사람’ 카드입니다. MCP 요약 본문은 고지·출처·저장 안내를 포함해 최대 3,000자이며 별도 모델 호출 없이 기존 결과만 묶습니다. 문안 순서로 앞의 쟁점 세 개와 빠진 관점 네 개까지 보여 주며, 생략 여부는 `summary.truncated`에 표시합니다. 영수증·실행 입력·전체 반응은 `view="full"`로 확인합니다. full의 `result`와 저장 파일은 `pp.run/3`입니다. 문안 조건별 묶음과 찾아갈 곳·명단 밖 사람을 함께 보존합니다. HTTP와 CLI의 기존 전체 결과 계약도 유지합니다.
+기본 조회는 ‘찾아갈 곳 · 먼저 물을 질문 · 명단 밖 사람’ 카드입니다. MCP 요약 본문은 고지·출처·저장 안내를 포함해 최대 3,000자이며 별도 모델 호출 없이 기존 결과만 묶습니다. 문안 순서로 앞의 쟁점 세 개와 빠진 관점 네 개까지 보여 주며, 생략 여부는 `summary.truncated`에 표시합니다. 영수증·실행 입력·전체 반응은 `view="full"`로 확인합니다. full의 `result`와 저장 파일은 `pp.run/4`입니다. 문안 조건별 묶음과 찾아갈 곳·명단 밖 사람을 함께 보존합니다. HTTP와 CLI의 기존 전체 결과 계약도 유지합니다.
+
+결과에 엔진 집계(`overall`·`by_group`·`highlights`·`baseline`·`slice_results`)가 있으면 카드 맨 위에 규모·대표 패널 찬반 비율·흔들림 폭·'여론조사 아님' 배너를 먼저 두고, 집단별 마크다운 표와 카드별 `숫자 근거:` 줄을 붙입니다. 같은 3,000자 안에서 명단 밖 사람은 항상 남깁니다. 문구·소집단 규칙·금지 표현은 [numbers-copy.md](numbers-copy.md)에 있습니다.
 
 조회 응답은 `stage`·한국어 `stage_label`, `progress.completed_stages/total_stages`, `estimated_remaining_seconds`, `poll_after_ms`를 줍니다. 진행 수치는 실제로 끝난 단계 수이며 작업량 백분율이 아닙니다. 예상 시간은 기존 견적 범위에서 실행 경과 시간을 뺀 값이므로 보장 시간이 아니고 대기열 지연을 예측하지 않습니다.
 
@@ -33,7 +35,7 @@ save_review(id="실행에서 받은 id", path="/사용자가/정한/새파일.js
 
 - `engine/pp/mcp.py`: `tool_result`의 카드 text, `estimate`의 Jobs 계획 생성, `start_run`의 선택 plan_id, `get_run`의 기본 summary/명시 full, 새 `save_review` 등록.
 - `engine/pp/jobs.py`: `RunExperience` 믹스인, 계획·시간 상태 초기화, `_run`의 진행 context 및 시작 시각, `get`의 view 변환과 진행 snapshot. Jobs.get 기본은 기존 full.
-- `engine/pp/service.py`: `run_progress` import와 preparing/reactions/questions/finalizing 단계 알림 네 곳. `policy_groups`·`visit_shared` 기반 `pp.run/3` 출력과 무료 체험을 연결.
+- `engine/pp/service.py`: `run_progress` import와 preparing/reactions/questions/finalizing 단계 알림 네 곳. `policy_groups`·`visit_shared` 기반 `pp.run/4` 출력과 무료 체험을 연결.
 - 새 모듈: `summary_card.py`, `run_progress.py`, `run_plans.py`, `run_experience.py`, `review_export.py`.
 - 기존 시험의 MCP 도구 집합·estimate seed·full 조회 기대값을 갱신. `test_result_experience.py`에 무료 회귀 시험 추가.
 
@@ -44,3 +46,5 @@ save_review(id="실행에서 받은 id", path="/사용자가/정한/새파일.js
 키를 비우고 `PP_LLM_PROVIDER=mock PP_JEV_PROVIDER=mock`으로 엔진 전체 시험을 실행했습니다. 통합 후 결과는 **897 passed, 28 skipped**입니다. skip은 로컬 2만 명 패널 파일이 필요한 시험입니다. 조건 계획·체험 출처·설치 예시 회귀와 실제 stdio MCP 시험을 포함하며, 모델 응답은 mock 또는 네트워크를 차단한 가짜 전송기를 사용했습니다.
 
 2026-11-27 재시험 후 네 항목 수정: **913 passed, 28 skipped**. `test_retest_fixes.py`와 실제 stdio 시험에서 담당자 질문·보관 인용 분리, 모든 카드의 접점 표시, 체험 첫 줄 고지·비서 전달 안내, 견적 번호 오입력과 복구를 확인했습니다. 별도 wheel 설치본을 저장소 밖 작업 폴더 `/`에서 실행해 같은 흐름과 저장을 확인했고, 웹 타입 검사도 통과했습니다. 유료 모델·실제 입법예고 사이트·AI 비서의 답변 재시험은 이번 검증에 포함하지 않았습니다.
+
+무료 재집계는 `slice_results(id=실행번호, filters={"age_band":"60대"})`로 합니다. `filters.panel`로 대표·영향권을 분리하며, 보관 결과의 재집계는 저장된 이유 소표본에 한정됩니다.

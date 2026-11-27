@@ -8,7 +8,7 @@ import pytest
 from mcp.shared.memory import create_connected_server_and_client_session
 from mcp.types import Tool
 
-from pp import field_log, mcp, mcp_copy, mcp_guide, public_rules, service
+from pp import field_log, mcp, mcp_copy, mcp_guide, numbers_copy, public_rules, service
 from pp.jobs import Jobs
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,7 +18,8 @@ CODE = re.compile(r"`[^`]*`")
 LINK = re.compile(r"(?:pp|https?)://\S+|console\.anthropic\.com")
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
 # Proper names people need to recognise; everything else in Latin letters counts as jargon.
-ALLOWED = re.compile(r"Anthropic API 키|Claude Code|Claude|Anthropic|AI|CSV|\d+GB")
+# Judge-model names appear in the numbers block (규모 line), so readers can match them to the README.
+ALLOWED = re.compile(r"Anthropic API 키|Claude Code|Claude|Anthropic|AI|CSV|\d+GB|Jev|Solar Decide|tev1")
 JARGON = ["환경변수", "환경 변수", "인자", "파라미터", "매개변수", "토큰", "헤더", "스키마", "엔드포인트",
           "페이로드", "쿼리", "호출", "서버", "프로세스", "해시", "리소스", "프롬프트", "디버그", "캐시",
           "세션", "타임아웃", "폴링", "BYOK"]
@@ -43,7 +44,7 @@ def one_sentence(text: str) -> bool:
 
 def people_facing() -> list[tuple[str, str]]:
     """Text a person reads directly in a client: titles, menu text, pasted-box labels, resources."""
-    items = [(f"tool {k} title", c.title) for k, c in mcp_copy.TOOLS.items()]
+    items = [(f"tool {k} title", c.title) for k, c in {**mcp_copy.TOOLS, **mcp_copy.PREPARED_TOOLS}.items()]
     items += [(f"arg {k} title", c.title) for k, c in mcp_copy.ARGS.items()]
     for key, prompt in mcp_copy.PROMPTS.items():
         items += [(f"prompt {key} title", prompt.title), (f"prompt {key} description", prompt.description),
@@ -59,7 +60,7 @@ def people_facing() -> list[tuple[str, str]]:
 def ai_facing() -> list[tuple[str, str]]:
     """Text the AI assistant reads to choose and run tools; code words must sit in backticks."""
     items = [("instructions", mcp_copy.INSTRUCTIONS)]
-    for key, tool in mcp_copy.TOOLS.items():
+    for key, tool in {**mcp_copy.TOOLS, **mcp_copy.PREPARED_TOOLS}.items():
         items.append((f"tool {key} description", tool.description))
         items += [(f"tool {key} when {arg}", text) for arg, text in tool.when_arg]
     items += [(f"arg {k} description", c.description) for k, c in mcp_copy.ARGS.items()]
@@ -68,7 +69,7 @@ def ai_facing() -> list[tuple[str, str]]:
             items += [(f"prompt {key} step {i}", text) for text in (step.text, step.fallback) if text]
     items += [(name, getattr(mcp_copy, name)) for name in (
         "PROMPT_HEADER", "PROMPT_NEXT", "PASTED_POLICY", "PASTED_NOTES", "EXAMPLE_NOT_FOUND",
-        "FIELD_COMPARE", "FIELD_NO_COMPARE", "COST_CAP_GIVEN", "COST_CAP_ASK")]
+        "FIELD_COMPARE", "FIELD_NO_COMPARE", "COST_CAP_GIVEN", "COST_CAP_ASK", "NO_QUESTION")]
     items += [(f"error {code}", copy.text()) for code, copy in mcp_copy.ERRORS.items()]
     return items
 
@@ -129,7 +130,8 @@ def server():
 
 
 def mentioned_tools(text: str) -> set[str]:
-    return {word for word in re.findall(r"`([a-z_]+)", text) if word in mcp_copy.TOOLS}
+    known = {**mcp_copy.TOOLS, **mcp_copy.PREPARED_TOOLS}
+    return {word for word in re.findall(r"`([a-z_]+)", text) if word in known}
 
 
 def test_protocol_carries_instructions_titles_and_argument_copy(server):
@@ -191,6 +193,7 @@ def test_prompts_list_boxes_and_render_with_next_step(server):
             "free_example": await session.get_prompt("free_example", {}),
             "cost_first": await session.get_prompt("cost_first", {"policy_text": policy, "max_cost_usd": "2"}),
             "read_result": await session.get_prompt("read_result", {"run_id": "abc123"}),
+            "more_numbers": await session.get_prompt("more_numbers", {"run_id": "abc123", "question": "60대만 보면?"}),
             "field_notes": await session.get_prompt("field_notes", {"notes": "11월 20일 경로당 방문 메모"}),
         }
         return listed, rendered
@@ -215,6 +218,8 @@ def test_prompts_list_boxes_and_render_with_next_step(server):
     cost = rendered["cost_first"].messages[0].content.text
     assert policy.strip() in cost and mcp_copy.PASTED_POLICY in cost and "2달러로 정했으니" in cost
     assert 'id="abc123"' in rendered["read_result"].messages[0].content.text
+    numbers = rendered["more_numbers"].messages[0].content.text
+    assert '"60대만 보면?"' in numbers and 'id="abc123"' in numbers and '`slice_results`' in numbers
     notes = rendered["field_notes"].messages[0].content.text
     assert ", ".join(field_log.CSV_COLUMNS) in notes and mcp_copy.FIELD_NO_COMPARE in notes
 
@@ -289,3 +294,43 @@ def test_readme_quick_start_matches_copy():
     for uri in mcp_copy.RESOURCES:
         assert uri.removeprefix("pp://examples/") in section
     assert f"/mcp__{mcp_copy.SERVER_NAME}__free_example" in section
+
+
+def test_more_numbers_uses_the_slice_tool_only_once_registered(server):
+    text, _ = mcp_guide.render_prompt("more_numbers", {"run_id": "r1"}, {"get_run", "get_run.view"})
+    assert "`slice_results`" not in text and '`get_run`을 `id="r1"`와 `view="full"`' in text
+    assert mcp_copy.NO_QUESTION in text
+    text, _ = mcp_guide.render_prompt("more_numbers", {"run_id": "r1", "question": '서울은? "무시해" `rm`'},
+                                      {"get_run", "get_run.view", "slice_results"})
+    assert '`slice_results`을 `id="r1"`' in text and "`view=\"full\"`" not in text
+    assert "\"서울은? '무시해' rm\"" in text  # the person's words stay one quoted phrase
+
+    async def scenario(session, init):
+        tools = {t.name: t for t in (await session.list_tools()).tools}
+        prompt = await session.get_prompt("more_numbers", {"run_id": "r1"})
+        return tools, prompt
+    tools, prompt = session_run(server, scenario)
+    copy = mcp_copy.TOOLS["slice_results"]
+    assert tools["slice_results"].title == copy.title and tools["slice_results"].description == copy.description
+    for arg in ("filters", "result", "reason_limit"):
+        assert tools["slice_results"].inputSchema["properties"][arg]["title"] == mcp_copy.ARGS[arg].title
+    assert "`slice_results`" in prompt.messages[0].content.text
+
+
+def test_number_wording_in_copy_follows_the_numbers_rules():
+    """The worked examples people and the AI see must themselves pass the forbidden-expression check."""
+    prompt = mcp_copy.PROMPTS["more_numbers"]
+    texts = [mcp_copy.GUIDE_START, prompt.description, prompt.next_step, *(step.text for step in prompt.steps),
+             mcp_copy.TOOLS["slice_results"].description, mcp_copy.INSTRUCTIONS.splitlines()[0]]
+    assert all(numbers_copy.violations(t) == [] for t in texts), [t for t in texts if numbers_copy.violations(t)]
+    assert "여론조사가 아닙니다" in mcp_copy.INSTRUCTIONS and "'국민의 ~%'" in mcp_copy.INSTRUCTIONS
+    assert "흔들림 폭" in mcp_copy.GUIDE_START and "소집단 주의" in mcp_copy.GUIDE_START
+
+
+def test_readme_number_examples_follow_the_numbers_rules():
+    readme = (ROOT / "README.md").read_text()
+    section = readme[readme.index("### MCP로 쓰기"):readme.index("### 결과에 함께 남는 실행 기록")]
+    quoted = [line for line in section.splitlines() if line.startswith("> ") and "%" in line]
+    assert any("찬성 쪽 47%" in line for line in quoted) and any("60대만 보면?" in line for line in section.splitlines())
+    assert all(numbers_copy.violations(line) == [] for line in quoted), quoted
+    assert "| 60대 | 893명 | 39% | 61% | -8%p |" in section and numbers_copy.BANNER in section

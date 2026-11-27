@@ -16,6 +16,8 @@ def tool_result(data: dict, *, error: bool = False, context: str = "") -> CallTo
     data = safety_gate.apply(public_rules.envelope(data))
     if "summary" in data:
         text = data["summary"]["text"]
+    elif data.get("schema") == "pp.slice/1" and "text" in data:
+        text = data["text"]
     else:
         result = data.get('result', {})
         reaction = data.get('status') == 'completed' and bool(result)
@@ -116,8 +118,14 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
             if (result is None) == (id is None):
                 raise service.RequestError("result 또는 id 중 하나만 넣으세요.")
             from .numbers import slice_results as aggregate
+            from . import numbers_copy
             try:
-                return aggregate(jobs.get(id, view="full") if id else result, filters, reason_limit)
+                source = jobs.get(id, view="full") if id else result
+                sliced = aggregate(source, filters, reason_limit)
+                source_result = source.get("result", source)
+                prefix = (sliced["trial_notice"] + "\n" if sliced.get("trial_notice") else "") + numbers_copy.BANNER
+                sliced["text"] = prefix + "\n" + numbers_copy.slice_text(sliced, numbers_copy.view(source_result))
+                return sliced
             except (ValueError, TypeError, KeyError):
                 raise service.RequestError("전체 결과의 slice_data와 연령·권역·시도·성별·찬반 필터를 확인하세요.") from None
         return guarded(slice_local)

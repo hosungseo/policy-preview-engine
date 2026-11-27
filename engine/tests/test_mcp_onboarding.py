@@ -196,6 +196,12 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 assert "보관 결과 인용:" in trial.content[0].text
                 assert trial.content[0].text.count("찾아갈 곳: 해당 집단의 찾아갈 곳 자료 없음") == 2
                 trial_id = trial.structuredContent["id"]
+                assert "숫자로 먼저 보기" in trial.content[0].text and "5,000명 추정" in trial.content[0].text
+                assert "| 60대 | 893명 | 39% | 61% | -8%p |" in trial.content[0].text
+                sliced = await session.call_tool("slice_results", {"id": trial_id, "filters": {"age_band": "60대"}})
+                assert not sliced.isError and sliced.structuredContent["cost_usd"] == sliced.structuredContent["model_calls"] == 0
+                assert sliced.structuredContent["source_scope"] == "archived_reason_sample"
+                assert "[대표 패널] 60대" in sliced.content[0].text and "Jev 전체 분포가 아닙니다" in sliced.content[0].text
                 trial_full = await session.call_tool("get_run", {"id": trial_id, "view": "full"})
                 trial_saved = await session.call_tool("save_review", {"id": trial_id, "path": str(tmp_path / "trial.json")})
                 assert not trial_full.isError and not trial_saved.isError
@@ -221,6 +227,12 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 assert "실제 여론이 아닙니다" in state.content[0].text.splitlines()[0]
                 assert state.content[1].text == summary["assistant_guidance"]
                 assert summary["assistant_guidance"].endswith(summary["trial_notice"])
+                assert summary["summary"]["overall"]["n"] == 3000
+                assert summary["summary"]["numbers"]["pool"] == 3000
+                assert "숫자로 먼저 보기" in state.content[0].text
+                mock_slice = await session.call_tool("slice_results", {"id": started.structuredContent["id"], "filters": {"age_band": "60대"}})
+                assert not mock_slice.isError and mock_slice.structuredContent["model_calls"] == 0
+                assert mock_slice.content[0].text.splitlines()[0] == summary["trial_notice"]
                 full = await session.call_tool("get_run", {"id": started.structuredContent["id"], "view": "full"})
                 assert full.structuredContent["result"]["budget"]["cost_usd"] == 0
                 saved = await session.call_tool("save_review", {"id": started.structuredContent["id"], "path": str(tmp_path / "review.json")})

@@ -243,6 +243,8 @@ def from_archive(data):
     reasons = reaction_rows(data["personas"], data["reactions"])
     result = build(reasons, population=data.get("population", {}).get("total"), reason_n=len(reasons),
                    decision={"available": bool(analysis.get("jev")), "model": "Jev", "archived": True})
+    result["overall"]["reasons_by_panel"] = {panel: sum(r["panel"] == panel for r in reasons)
+                                              for panel in ("representative", "affected")}
     quant = analysis.get("jev")
     if quant:
         original = quant["overall"]
@@ -254,11 +256,14 @@ def from_archive(data):
         for key, groups in quant.get("by_group", {}).items():
             affected = [g for g in result["by_group"].get(key, []) if g["panel"] == "affected"]
             result["by_group"][key] = [{"group": g["group"], "panel": "representative", "n": g["n"],
+                # The archive retains oppose + unknown mass, but not its two components.
+                "favor": 1 - g["reserve"] if g["n"] >= 5 and "reserve" in g else None,
+                "reserve": g.get("reserve") if g["n"] >= 5 else None,
                 "counts": None, "rates": None, "delta_pp": None, "count_kind": "unavailable",
                 "variability": variability([]), "comparison_threshold_pp": None,
                 "rates_hidden": True, "small_group": g["n"] < 100, "highlight": False,
                 "warning": "해석 불가(표본 극소)" if g["n"] < 5 else "소집단 주의" if g["n"] < 30 else "표본 여유 부족" if g["n"] < 100 else None,
-                "availability_notice": "보관 집단별 평균 점수만으로 찬반 분포를 복원할 수 없습니다.",
+                "availability_notice": "보관된 반대·유보 합계만 표시하며 반대·모름을 따로 복원하지 않습니다.",
                 "archived_mean": g.get("mean")} for g in groups] + affected
     result["overall"]["variability"] = {"available": False, "width_pp": None, "control_pp": None, "order_pp": None,
         "unstable": False, "notice": "보관된 반복·배치·쟁점 순서 지표는 전체 찬반의 대조 문장·선택지 순서 흔들림 측정값이 아닙니다."}

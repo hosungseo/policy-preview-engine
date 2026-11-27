@@ -273,6 +273,8 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
     numeric_rows = (quant_rows + [r for r in reason_rows if r["panel"] == "affected"]) if quant_rows is not None else reason_rows
     numeric = numbers.build(numeric_rows, population=sampled["source"].get("population"), decision=decision, reason_n=len(reactions), baseline=baseline)
     numeric["slice_data"]["reason_rows"] = reason_rows
+    numeric["overall"]["reasons_by_panel"] = {panel: sum(r["panel"] == panel for r in reason_rows)
+                                               for panel in ("representative", "affected")}
     numeric["overall"]["distribution_selection"] = quant_selection
     diag["scope"] = "qualitative_reasons"
     diag["numeric_variability"] = numeric["overall"]["variability"]
