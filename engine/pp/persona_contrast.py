@@ -18,9 +18,10 @@ import json
 import os
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Callable
 
-from . import diagnostics, jev
+from . import budget, diagnostics, jev
 
 NOISE_FLOOR_PP = 3.0
 UNDECIDED_TOKENS = ("모르", "모름", "의견 없", "무응답")
@@ -289,6 +290,8 @@ def run_contrast(
     context: dict[str, dict] | None = None,
     include_reversed: bool = True,
     review_minutes: dict[str, int] | None = None,
+    limits: budget.Limits | None = None,
+    budget_path: Path | None = None,
 ) -> dict:
     """Execute the 3-arm comparison (a) no persona, (b) manual conditions, (c) synthetic personas.
 
@@ -299,6 +302,15 @@ def run_contrast(
     manual_conditions: list of hand-written condition dicts (`id`, `label`, `profile`); defaults to starter set
     evaluate: callable matching `pp.jev.evaluate` signature; defaults to `pp.jev.evaluate`
     """
+    if budget.current() is None:
+        ledger = budget.Budget(limits or budget.Limits(), budget_path)
+        with ledger.scope():
+            return run_contrast(
+                spec, synthetic_people, manual_conditions=manual_conditions, evaluate=evaluate,
+                no_persona_issues=no_persona_issues, manual_issues=manual_issues,
+                synthetic_issues=synthetic_issues, context=context, include_reversed=include_reversed,
+                review_minutes=review_minutes,
+            )
     options = [o.strip() for o in spec["options"] if o and o.strip()]
     if len(options) < 2:
         raise ValueError("options must contain at least 2 items")
@@ -497,6 +509,7 @@ def run_contrast(
         "issue_comparison": issue_cmp,
         "diagnostics": diag,
         "expansion_decision": decision,
+        "budget": budget.current().snapshot(),
     }
 
 

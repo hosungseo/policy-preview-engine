@@ -9,7 +9,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import (analyze_jev, analyze_llm, analyze_stats, budget, config, export, hearing, jev, jev_panel, llm, panel, personas,
+from . import (analyze_jev, analyze_llm, analyze_stats, budget, config, diagnostics, export, hearing, jev, jev_panel, llm, panel, personas,
                plan_doc, prompts, react, segment, semantic, selection)
 
 STAGES = ("segment", "clarity", "panel", "react", "issues", "jev", "alternatives", "review", "analyze", "hearing",
@@ -382,6 +382,7 @@ class Run:
         quant_rows = [rows[u] for u in quant_people if u in rows]
         return {
             "n": len(quant_rows),
+            "diagnostics": diagnostics.diagnose_jev_rows(quant_rows, quant_people),
             "overall": analyze_jev.overall(quant_rows),
             "by_group": analyze_jev.by_group(quant_rows, quant_people),
             "clauses": analyze_jev.clause_matrix(quant_rows, quant_people, segments),
@@ -450,6 +451,8 @@ class Run:
         analysis["outreach"] = analyze_llm.outreach_text(candidates, by_uuid, title)
         analysis["outreach_source"] = "jev" if jev_part else "llm"
         analysis["jev"] = jev_part
+        if jev_part:
+            analysis["diagnostics"] = jev_part["diagnostics"]
         analysis["alternatives"] = self._alternatives_analysis()
         if review.get("available"):
             analysis["quality"] = {k: review[k] for k in ("order", "batching", "repeat", "occupations")}

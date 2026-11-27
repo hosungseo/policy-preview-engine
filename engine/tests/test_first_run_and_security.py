@@ -34,6 +34,7 @@ def test_api_config_does_not_require_numpy(tmp_path, monkeypatch):
     """Docker service image omits numpy; /api/config and pp.life_history import must still work."""
     bundle = _write_tiny_panel(tmp_path / "panel.jsonl.gz")
     monkeypatch.setattr(panel, "BUNDLE", bundle)
+    monkeypatch.setattr(panel, "CONTEXT", tmp_path / "missing-life-context.jsonl.gz")
     monkeypatch.setattr(panel, "_cache", {})
     monkeypatch.setenv("PP_SERVICE_DATA", str(tmp_path / "svc"))
     monkeypatch.setenv("PP_WEB_OUT", str(tmp_path / "noweb"))
@@ -98,6 +99,7 @@ def test_missing_web_out_returns_503_korean_html_instead_of_404(tmp_path, monkey
 def test_bad_env_and_missing_api_key_return_korean_guidance(tmp_path, monkeypatch):
     bundle = _write_tiny_panel(tmp_path / "panel.jsonl.gz")
     monkeypatch.setattr(panel, "BUNDLE", bundle)
+    monkeypatch.setattr(panel, "CONTEXT", tmp_path / "missing-life-context.jsonl.gz")
     monkeypatch.setattr(panel, "_cache", {})
     monkeypatch.setattr(config, "REPO_ROOT", tmp_path)
     monkeypatch.setenv("PP_SERVICE_DATA", str(tmp_path / "svc"))

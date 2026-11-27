@@ -31,6 +31,7 @@ python engine/scripts/compare_persona_baseline.py \
 ```
 
 - 별도 옵션을 주지 않으면 항상 `PP_JEV_PROVIDER=mock`으로 실행됩니다. 실제 유료 모델을 쓸 때만 `--allow-paid`를 명시합니다.
+- 인물 없는 대조군부터 합성 인물까지 같은 비용 장부와 한도를 사용합니다. `--max-calls`, `--max-output-tokens`, `--max-cost-usd`로 한도를 정하며, 금액 한도는 API 단가를 설정해야 지킬 수 있습니다. 결과 파일 옆 `.budget.json` 장부는 재실행 때도 이어져 한도를 초기화하지 않습니다. 파일로 저장하지 않으면 한도는 해당 실행에만 적용됩니다.
 - 직접 만든 수작업 조건 목록을 쓰려면 `--manual 조건파일.json`을, 세 조건에서 찾은 문제 목록을 함께 비교하려면 `--issues 문제목록.json`을 넘깁니다.
 - 관련 코드: [`engine/pp/persona_contrast.py`](../engine/pp/persona_contrast.py), [`engine/scripts/compare_persona_baseline.py`](../engine/scripts/compare_persona_baseline.py)
 

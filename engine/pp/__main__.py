@@ -77,7 +77,6 @@ def main(argv: list[str] | None = None) -> None:
             parser.error(str(exc))
         print(json.dumps(result, ensure_ascii=False, indent=2))
     elif args.cmd == "run":
-
         job = pipeline.Run(args.policy, n_rep=args.n_rep, n_aff=args.n_aff, n_jev=args.n_jev, n_alt=args.n_alt,
                            workers=args.workers,
                            seed=args.seed, allow_mock=args.allow_mock, run_dir=args.run_dir, limits=limits)

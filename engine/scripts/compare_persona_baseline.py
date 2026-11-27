@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pp import jev, persona_contrast  # noqa: E402
+from pp import budget, jev, persona_contrast  # noqa: E402
 from ppservice.survey import panel  # noqa: E402
 
 
@@ -67,6 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seed", type=int, default=42, help="표본 추출 시드(기본 42)")
     ap.add_argument("--no-reversed", action="store_true", help="선택지 순서 뒤집기 생략")
     ap.add_argument("--allow-paid", action="store_true", help="유료 판단 모델 호출 허용(미지정 시 mock만 허용)")
+    ap.add_argument("--max-calls", type=int, default=100_000)
+    ap.add_argument("--max-output-tokens", type=int, default=16_384)
+    ap.add_argument("--max-cost-usd", type=float, default=10.0)
     ap.add_argument("--out-json", type=Path, default=None, help="결과 JSON 저장 경로")
     ap.add_argument("--out-md", type=Path, default=None, help="결과 마크다운 보고서 저장 경로")
     args = ap.parse_args(argv)
@@ -81,6 +84,10 @@ def main(argv: list[str] | None = None) -> int:
     synthetic = _load_synthetic(args.n, args.seed, args.personas)
 
     issue_data = json.loads(args.issues.read_text(encoding="utf-8")) if args.issues else {}
+    output_path = args.out_json or args.out_md
+    ledger_path = output_path.with_suffix(output_path.suffix + ".budget.json") if output_path else None
+    if ledger_path:
+        ledger_path.parent.mkdir(parents=True, exist_ok=True)
     report = persona_contrast.run_contrast(
         spec,
         synthetic,
@@ -90,6 +97,9 @@ def main(argv: list[str] | None = None) -> int:
         synthetic_issues=issue_data.get("synthetic"),
         include_reversed=not args.no_reversed,
         review_minutes=issue_data.get("review_minutes"),
+        limits=budget.Limits(max_calls=args.max_calls, max_output_tokens=args.max_output_tokens,
+                             max_cost_usd=args.max_cost_usd),
+        budget_path=ledger_path,
     )
     md = persona_contrast.render_markdown_report(report)
 

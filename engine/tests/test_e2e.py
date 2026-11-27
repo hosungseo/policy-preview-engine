@@ -3,7 +3,7 @@ import json
 import pytest
 
 from pp import __main__ as cli
-from pp import export
+from pp import attribution, export
 
 POLICY = {
     "id": "e2e", "title": "무임승차 연령 조정(테스트)", "kind": "가상 정책안", "agency": "테스트부",
@@ -26,6 +26,13 @@ def test_full_pipeline_with_mock(persona_db, tmp_path, monkeypatch):
     cli.main(["export", "e2e", "--allow-mock"])
     bundle = json.loads((tmp_path / "dev" / "e2e.json").read_text(encoding="utf-8"))
     assert export.validate_bundle(bundle, allow_mock=True) == []
+    assert len(bundle["meta"]["input_hash"]) == 64
+    assert bundle["meta"]["budget"]["calls"] > 0
+    assert attribution.validate(bundle["attribution"]) == []
+    assert attribution.validate(bundle["plan"]["attribution"]) == []
+    assert bundle["plan"]["diagnostics"] == bundle["analysis"]["diagnostics"]
+    assert bundle["analysis"]["diagnostics"]["n"] == 60
+    assert bundle["plan"]["warnings"]
     assert bundle["analysis"]["overall"]["n"] == 30
     assert sum(p["panel"] == "aff" for p in bundle["personas"]) == 10
     assert len(bundle["hearing"]["turns"]) == 21

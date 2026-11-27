@@ -6,7 +6,7 @@ from ppservice import profile
 SETUPS = {
     "mock": {"PP_LLM_PROVIDER": "mock", "PP_JEV_PROVIDER": "mock"},
     "korean": {"PP_LLM_PROVIDER": "exaone", "PP_JEV_PROVIDER": "upstage", "PP_UPSTAGE_REGION": "kr"},
-    "local": {"PP_LLM_PROVIDER": "openai", "PP_LLM_BASE_URL": "http://10.10.10.2:8321/v1", "PP_LLM_MODEL": "locals/gemma",
+    "local": {"PP_LLM_PROVIDER": "openai", "PP_LLM_BASE_URL": "http://127.0.0.1:8321/v1", "PP_LLM_MODEL": "locals/gemma",
               "PP_JEV_PROVIDER": "api", "PP_JEV_URL": "http://127.0.0.1:11434/v1/systemone", "PP_JEV_MODEL": "tev1:4b"},
     "global": {"PP_LLM_PROVIDER": "cli", "PP_JEV_PROVIDER": "api"},
     "mixed": {"PP_LLM_PROVIDER": "exaone", "PP_JEV_PROVIDER": "api"},

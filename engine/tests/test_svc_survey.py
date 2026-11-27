@@ -292,17 +292,22 @@ def test_retry_keeps_future_and_reuses_answers(env, monkeypatch):
 
 
 @pytest.mark.needs_panel
-def test_restart_resumes_without_repaying(env):
+def test_restart_resumes_without_repaying(env, monkeypatch):
     settings, db = env
     uid = new_user(db)
     sid = new_survey(db, uid)
     run, _ = jobs.submit(db, settings, uid, sid, QUESTION, OPTIONS)
     runner = jobs.JobRunner(db, settings, FakeJev())
     run_id, attempt = runner._claim()
-    r = jobs.Runner(db, settings, run_id, attempt, uid, threading.Event())
-    people = panel.sample(panel.load()[0], 1200, jobs.json.loads(db.one("SELECT spec FROM runs").__getitem__("spec"))["seed"])
-    for p in people[:250]:
-        r.save_answer("main", p["uuid"], [0.5, 0.25, 0.25], 900)
+    def interrupt_after_partial(r, spec, people, *args, **kwargs):
+        for p in people[:250]:
+            r.save_answer("main", p["uuid"], [0.5, 0.25, 0.25], 900)
+        raise jobs.Cancelled()
+
+    # Let the real startup record the input identity before simulating interruption.
+    with monkeypatch.context() as interrupted:
+        interrupted.setattr(jobs, "execute", interrupt_after_partial)
+        runner.run_one(run_id, attempt)
     assert runner.recover() == 1
     fake = FakeJev()
     drain(jobs.JobRunner(db, settings, fake))
