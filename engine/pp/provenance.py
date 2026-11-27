@@ -70,10 +70,10 @@ def code_version() -> str:
                        for folder in ("pp", "ppservice/survey") for p in sorted((root / folder).glob("*.py"))})
 
 
-def execution_inputs(policy, source, sampling, limits) -> dict:
+def execution_inputs(policy, source, sampling, limits, *, models=None) -> dict:
     from . import prompts
     return {"schema": 1, "policy": input_hash(policy), "source": source, "sampling": sampling,
-            "models": model_settings(), "code": code_version(), "limits": limits,
+            "models": model_settings() if models is None else models, "code": code_version(), "limits": limits,
             "prompts": input_hash({k: v for k, v in vars(prompts).items() if k.isupper() and isinstance(v, str)})}
 
 

@@ -15,6 +15,8 @@ import urllib.parse
 import threading
 import time
 from datetime import datetime, timezone
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 from . import budget, config, net
 
@@ -29,6 +31,18 @@ UPSTAGE_PRICE_PER_M_INPUT = 0.1  # Solar Decide USD per million input tokens; ou
 
 _usage_lock = threading.Lock()
 _usage: dict[str, dict] = {}
+
+_request_key = ContextVar("pp_jev_key", default=None)
+
+
+@contextmanager
+def use_key(key):
+    """Request-local TypeSafe credentials, without environment or disk fallback."""
+    token = _request_key.set(key)
+    try:
+        yield
+    finally:
+        _request_key.reset(token)
 
 
 class RateLimiter:
@@ -71,7 +85,7 @@ _cache_path = None
 
 
 def cache_enabled() -> bool:
-    return _env("PP_JEV_CACHE", "1") != "0"
+    return _request_key.get() is None and _env("PP_JEV_CACHE", "1") != "0"
 
 
 def _cache():
@@ -105,6 +119,8 @@ class JevError(RuntimeError):
 
 
 def provider() -> str:
+    if _request_key.get() is not None:
+        return "api"
     explicit = _env("PP_JEV_PROVIDER")
     if explicit:
         return explicit.lower()
@@ -117,6 +133,8 @@ def model() -> str:
 
 def custom_endpoint() -> bool:
     """A custom endpoint is a legacy TypeSafe-compatible endpoint, never an Upstage override."""
+    if _request_key.get() is not None:
+        return False
     return provider() == "api" and bool(_env("PP_JEV_URL"))
 
 
@@ -202,6 +220,8 @@ def _env_or_repo_key(name: str) -> str | None:
 
 def api_key() -> str | None:
     """Return only the key belonging to the selected hosted provider."""
+    if _request_key.get() is not None:
+        return _request_key.get() or None
     if provider() == "upstage":
         return _env_or_repo_key("UPSTAGE_API_KEY")
     return _env_or_repo_key("TYPESAFE_API_KEY")

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "policy-preview-engine"
+version = "0.2.0"
+description = "Synthetic policy consultation planning with local CLI, HTTP and MCP interfaces"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+dependencies = ["numpy>=2", "fastapi>=0.162,<1", "uvicorn>=0.54,<1", "mcp>=1.30,<2", "defusedxml>=0.7", "pyyaml>=6"]
+
+[project.optional-dependencies]
+test = ["pytest>=9", "httpx>=0.28", "pyarrow>=26", "huggingface_hub>=2", "shapely>=2"]
+
+[project.scripts]
+pp = "pp.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["engine"]
+include = ["pp", "pp.*", "ppservice", "ppservice.*"]
+
+[tool.setuptools.package-data]
+ppservice = ["data/persona-accuracy/*.json", "data/persona-context/*.json"]
+
+[tool.setuptools]
+license-files = ["LICENSE", "NOTICE"]

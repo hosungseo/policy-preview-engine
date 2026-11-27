@@ -16,6 +16,104 @@ REPO_URL=https://github.com/hosungseo/policy-preview-engine
 
 인물 없이 묻기·손으로 적은 소수 조건·합성 인물의 차이를 비교하고, 실제 현장에서 들은 결과를 기록해 예측과 맞춰 볼 수 있습니다. 시험 카드는 실행 결과에 자동으로 붙거나 답을 자동 채점하는 기능이 아니며, 모의 시험 결과는 실제 여론이나 지원 자격의 증거가 아닙니다. 사용법은 [시험 카드](docs/scenarios.md), [재실행·비용 한도](docs/rerun-cost.md), [인물 대조·현장 확인](docs/baseline-contrast-and-field-log.md)을 참고하세요.
 
+## 엔진 경로: CLI·HTTP API·MCP
+
+공개·가상 문안으로 집단별 예상 반응과 현장에서 물을 질문을 만드는 빠른 실행 경로입니다.
+기본 200개 합성 프로필이며 `sample`은 1~5,000개입니다. 실제 사람 응답 수가 아닙니다.
+기존 심층 분석·웹 서비스 명령은 아래 사용법대로 유지합니다.
+
+Python 3.12 이상에서 저장소 루트에 설치합니다.
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r engine/requirements-mcp.txt -e .
+```
+
+패널 원본은 배포 파일에 포함하지 않습니다. 아래 **4-3. 패널 만들기**에 따라 공개 NVIDIA 자료에서
+`engine/ppservice/data/panel-20k.jsonl.gz`를 만들거나 기존 DB를 `PP_PERSONA_DB`로 지정하세요.
+기존 공개 엔진의 `PP_DATA_DIR` 캐시를 사용하며, 데이터 출처·CC BY 4.0 조건은 [data/SOURCES.md](data/SOURCES.md)를 따릅니다.
+
+키는 자기 계정의 환경변수로 준비합니다(BYOK). 셸 기록에 키를 직접 적지 않고 입력하세요.
+Jev 명료성 점검은 선택이며, 키가 없으면 `clarity.available=false`와 이유가 나옵니다.
+
+```sh
+# bash에서 숨김 입력; zsh에서는 read -rs 'ANTHROPIC_API_KEY?Anthropic key: ' 사용
+read -rs ANTHROPIC_API_KEY
+export ANTHROPIC_API_KEY
+# 선택: 같은 방법으로 TYPESAFE_API_KEY를 입력하고 export
+pp estimate policy.md
+pp run policy.md --sample 200 --max-cost-usd 2 --max-calls 1000 --out result.json
+```
+
+CLI는 실행 전 stderr에 비용 미리보기를 표시합니다. 추정은 청구액·완료 시간 보장이 아닙니다.
+빠른 경로는 Anthropic 문장 모델과 선택적 TypeSafe 점검을 사용하며, 큰 정량 조사·수정안 비교·가상 공청회를 실행하지 않습니다.
+문안은 UTF-8 텍스트/Markdown, 최대 30,000자이며 자동으로 자르지 않습니다.
+
+### HTTP API로 쓰기
+
+```sh
+pp api --port 8765
+# 다른 터미널에서 먼저 비용을 확인한 뒤 작업을 시작합니다.
+curl -s http://127.0.0.1:8765/estimate -H 'Content-Type: application/json' \
+  -d '{"policy_text":"도시철도 이용 지원 정책안","sample":12,"limits":{"max_cost_usd":2}}'
+curl -s http://127.0.0.1:8765/runs -H 'Content-Type: application/json' \
+  -d '{"policy_text":"도시철도 이용 지원 정책안","sample":12,"limits":{"max_cost_usd":2}}'
+```
+
+`POST /runs`는 HTTP 202와 `id`·`estimate`를 반환합니다. `GET /runs/{id}`를 조회하면
+`queued → running → completed` 또는 `failed` 상태와 결과를 받습니다.
+키는 서버 환경변수 또는 `X-Anthropic-Api-Key`·`X-Typesafe-Api-Key` 헤더로만 받습니다.
+JSON 본문의 키와 정의되지 않은 인자는 거절하며 제출값을 오류에 되비추지 않습니다.
+서버는 **localhost 전용**입니다. 공개 호스팅·인증 서버로 사용하지 마세요.
+
+### MCP로 쓰기
+
+위 설치를 마친 뒤, 키 환경변수를 설정한 터미널에서 Claude Code에 등록합니다.
+아래 실행 파일 경로는 실제 설치한 절대 경로로 바꾸세요.
+
+```sh
+claude mcp add --transport stdio policy-preview -- /absolute/path/policy-preview-engine/.venv/bin/pp mcp
+claude
+# estimate → start_run → get_run(id) 순서로 호출
+```
+
+도구는 `estimate`·`start_run`·`get_run` 세 개입니다. **비용 미리보기 estimate를 먼저 호출**하고
+같은 `sample`·`limits`로 `start_run`을 호출하세요. 키는 클라이언트가 물려받는 환경변수로만
+설정합니다(BYOK). `api_key` 등 추가 인자는 모든 도구에서 거절하며, 키를 설정 파일이나 도구 인자에 적지 않습니다.
+MCP는 stdio로만 통신하고 HTTP API는 localhost만 사용합니다.
+API·MCP는 한 프로세스에서 작업을 순서대로 실행하고 **재시작하면 작업 id와 결과가 사라집니다**.
+완료 전 클라이언트를 끄지 말고, 필요한 결과는 별도로 저장하세요.
+
+### 결과에 함께 남는 실행 기록
+
+세 경로는 같은 실행 함수를 사용합니다. 결과의 `budget`에는 공유 호출·비용 장부,
+`input_hash`·`execution_inputs`에는 문안·자료·시드·모델·한도의 지문,
+`selection`에는 실제 선택 조건과 UUID·보충 추출 기록,
+`attribution`에는 출처와 이용 조건, `diagnostics`·`warnings`에는 점검 경고를 담습니다.
+선택 영수증의 건수는 샘플링 기록이며 찬반 통계가 아닙니다.
+이 정성 경로는 정량 확률 응답을 수집하지 않으므로 분산·학력/소득 차이 진단은 계산하지 않았다고 표시합니다.
+
+기본 공유 상한은 비용 $10, 호출 100,000회, 호출당 출력 16,384토큰, 재시도 2회, 동시 호출 8개입니다.
+CLI의 `--max-calls`·`--max-output-tokens`·`--max-retries`·`--max-concurrency`·`--max-cost-usd` 또는
+API·MCP의 `limits` 안 같은 이름(밑줄 사용)으로 조절합니다. 비용 상한을 없애는 `null`은 거절합니다.
+추정에는 선택적 명료성 점검 비용이 포함되지 않지만 실제 실행의 공유 상한에는 포함됩니다.
+응답 사용량이 없거나 호출이 실패하면 예약 비용을 유지하며, 실패한 API·MCP 작업도 `budget`을 남깁니다.
+
+결과·오류의 첫 필드 `notice`와 MCP 텍스트 첫 줄에는 합성 결과 고지를 붙입니다.
+찬반 비율·순위·개인별 점수를 제공하지 않고 집단별 반응과 현장 질문을 제공합니다.
+실명 개인·선거·공약 문안은 거절하며, 비공개 표시가 남은 실제 공개 문안만
+`--i-confirm-public`(API·MCP: `i_confirm_public=true`)로 공개 사실을 확인할 수 있습니다.
+규칙 검사는 우회 표현을 놓칠 수 있으므로 사람이 확인해야 합니다.
+
+모델 키는 디스크·결과·로그에 저장하지 않습니다. 실행 문안과 합성 프로필은 이용자의 키로 Anthropic에,
+선택적 명료성 점검 문안은 TypeSafe에 전송합니다. 실행 중 임시 반응 파일은 처리 후 삭제하며,
+CLI의 `--out`은 사용자가 지정한 결과 파일을 남깁니다.
+
+개발 검증: `pip install -r engine/requirements.txt -e '.[test]'` 후
+`python -m pytest -o addopts='' engine/tests -q`.
+인터페이스 시험은 모델 응답만 모의 처리하고 MCP stdio 실제 기동·API 계약·키 거절·공유 예산과 실행 기록을 검사합니다.
+
 ## 1. 개요
 
 정책 문안과 질문 하나를 넣으면, 공공 통계 분포로 만든 합성 인물(NVIDIA Nemotron-Personas-Korea)에게 같은 질문을 여러 방식으로 묻습니다. 그 결과로 다음을 보여 줍니다.

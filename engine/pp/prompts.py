@@ -196,14 +196,20 @@ def summary_prompt(title: str, transcript: str) -> str:
 JSON 형식: {{"agreements": ["..."], "disagreements": ["..."], "missing": ["..."]}}"""
 
 
-def qa_prompt(title: str, issue_lines: str) -> str:
+def qa_prompt(title: str, issue_lines: str, *, consultation: bool = False) -> str:
+    task = ("실제 의견수렴에서 담당자가 당사자에게 물을 열린 질문을 쟁점마다 하나 이상 써라. "
+            "질문에 결론을 미리 넣거나 찬반을 유도하지 말라. answer에는 당사자 답변을 지어내지 말고 "
+            "현장에서 확인·기록할 항목을 써라." if consultation else
+            "설명회나 공청회에서 나올 예상 질문 5개와, 담당 부서가 준비할 답변 방향을 써라.")
+    question_note = "담당자가 당사자에게 직접 묻는 말" if consultation else "국민이 실제로 물을 법한 말투의 질문"
+    answer_note = "현장에서 확인·기록할 항목" if consultation else "답변 방향 한두 문장(사실을 지어내지 말고 무엇을 설명·확인해야 하는지 쓴다)"
     return f"""정책: {title}
 아래는 합성 인물 반응에서 나온 쟁점이다. 한 줄 형식은 id|쟁점|요약이다.
 {issue_lines}
 
-설명회나 공청회에서 나올 예상 질문 5개와, 담당 부서가 준비할 답변 방향을 써라.
-· question: 국민이 실제로 물을 법한 말투의 질문
-· answer: 답변 방향 한두 문장(사실을 지어내지 말고 무엇을 설명·확인해야 하는지 쓴다)
+{task}
+· question: {question_note}
+· answer: {answer_note}
 · issue_id: 관련 쟁점 id
 JSON 형식: {{"items": [{{"question": "...", "answer": "...", "issue_id": "i1"}}]}}"""
 

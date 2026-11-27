@@ -35,6 +35,7 @@ class Limits:
 
 
 _current = contextvars.ContextVar("pp_budget", default=None)
+_prices = contextvars.ContextVar("pp_prices", default=None)
 _receipt = contextvars.ContextVar("pp_budget_receipt", default=None)
 
 
@@ -75,9 +76,20 @@ def check_output(raw):
         raise BudgetExceeded("model output exceeded the run output length limit")
 
 
+@contextmanager
+def use_prices(rates):
+    token = _prices.set(rates)
+    try:
+        yield
+    finally:
+        _prices.reset(token)
+
+
 def prices(role, mock=False):
     if mock:
         return (0.0, 0.0)
+    if _prices.get() is not None:
+        return _prices.get()[role]
     if role == "jev":
         from . import jev
         if not jev.custom_endpoint():
@@ -204,9 +216,9 @@ class Budget:
                         out = usage.get("output_tokens", usage.get("completion_tokens"))
                         if inp is not None and (out is not None or rate[1] == 0):
                             cost = (max(0, int(inp)) * rate[0] + max(0, int(out or 0)) * rate[1]) / 1e6
-                            self.spent += cost - (reserved or 0)
                             self.unknown -= 1
                             entry.update(status="known", cost_usd=cost, usage=usage)
+                            self.spent = math.fsum(e.get("cost_usd", e["reserved_usd"]) or 0 for e in self.entries)
                             if self.limits.max_cost_usd is not None and self.spent >= self.limits.max_cost_usd and cost:
                                 self.stopped = True
                     self._save(index)

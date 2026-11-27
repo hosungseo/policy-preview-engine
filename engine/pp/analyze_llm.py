@@ -42,6 +42,15 @@ def validate_clusters(data: dict, known_ids: set[str], max_k: int = 8, min_valid
 
 
 def cluster_issues(reactions: list[dict], title: str, model: str | None = None) -> list[dict]:
+    if len(reactions) > 160:
+        # Bound prompt size for optional large panels; retain original membership IDs through every merge.
+        partial = [c for start in range(0, len(reactions), 160)
+                   for c in cluster_issues(reactions[start:start + 160], title, model)]
+        members = {f"r{i + 1}": c["member_ids"] for i, c in enumerate(partial)}
+        summaries = [{"rid": rid, "support": 0, "reason": c["summary"], "concerns": [c["title"]]}
+                     for rid, c in zip(members, partial)]
+        merged = cluster_issues(summaries, title, model)
+        return [{**c, "member_ids": [rid for mid in c["member_ids"] for rid in members[mid]]} for c in merged]
     known = {r["rid"] for r in reactions}
     lines = "\n".join(f"{r['rid']}|지지 {r['support']}|{r['reason']}|우려: {', '.join(r['concerns']) or '없음'}"
                       for r in reactions)
@@ -106,6 +115,16 @@ def cluster_suggestions(reactions: list[dict], title: str, model: str | None = N
     if len(items) < 5:
         return [{"title": r["suggestion"][:30], "stance": "혼재", "summary": "", "member_ids": [r["rid"]],
                  "n": 1, "example": r["suggestion"]} for r in items]
+    if len(items) > 160:
+        partial = [c for start in range(0, len(items), 160)
+                   for c in cluster_suggestions(items[start:start + 160], title, model)]
+        members = {f"r{i + 1}": c["member_ids"] for i, c in enumerate(partial)}
+        summaries = [{"rid": rid, "suggestion": f"{c['title']}: {c['summary']}"}
+                     for rid, c in zip(members, partial)]
+        merged = cluster_suggestions(summaries, title, model)
+        expanded = [{**c, "member_ids": [rid for mid in c["member_ids"] for rid in members[mid]]} for c in merged]
+        return [{**c, "n": len(c["member_ids"]), "example": by_rid[c["member_ids"][0]]["suggestion"]}
+                for c in sorted(expanded, key=lambda c: -len(c["member_ids"]))]
     known = set(by_rid)
     lines = "\n".join(f"{r['rid']}|{r['suggestion']}" for r in items)
     clusters = llm.complete_json(
@@ -213,7 +232,7 @@ def outreach_text(cands: list[dict], reactions_by_uuid: dict[str, dict], title: 
     return [{**e, "suggestion": s} for e, s in zip(enriched, items)]
 
 
-def plan_qa(issues: list[dict], title: str, model: str | None = None) -> list[dict]:
+def plan_qa(issues: list[dict], title: str, model: str | None = None, *, consultation: bool = False) -> list[dict]:
     if not issues:
         return []
     ids = {it["id"] for it in issues}
@@ -230,5 +249,6 @@ def plan_qa(issues: list[dict], title: str, model: str | None = None) -> list[di
             raise ValueError("no valid qa items")
         return {"items": out[:6]}
 
-    return llm.complete_json("qa", prompts.QA_SYSTEM, prompts.qa_prompt(title, lines),
+    return llm.complete_json("qa", prompts.OUTREACH_SYSTEM if consultation else prompts.QA_SYSTEM,
+                             prompts.qa_prompt(title, lines, consultation=consultation),
                              model=model or config.SYNTH_MODEL, validate=validate)["items"]

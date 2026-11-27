@@ -48,3 +48,7 @@ engine/ppservice/data/persona-context/*
 !engine/ppservice/data/persona-context/report-v2.json
 !engine/ppservice/data/persona-context/addons-v2.json
 !engine/ppservice/data/persona-context/report-history-v1.json
+
+*.egg-info/
+build/
+dist/

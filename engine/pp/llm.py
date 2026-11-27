@@ -17,6 +17,8 @@ import re
 import subprocess
 import time
 from typing import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 from . import budget, config, net
 
@@ -33,6 +35,23 @@ LEAN_FLAGS = [
 CLI_ENV = {"MAX_THINKING_TOKENS": "0"}
 MOCK: dict[str, Callable[[str, str], dict]] = {}
 
+_transport = ContextVar("pp_llm_transport", default=None)
+_transport_rules = ContextVar("pp_llm_transport_rules", default="")
+_transport_identity = ContextVar("pp_llm_transport_identity", default=None)
+
+
+@contextmanager
+def use_transport(transport, *, system_rules="", provider_name="request", model=None):
+    token = _transport.set(transport)
+    rules_token = _transport_rules.set(system_rules)
+    identity_token = _transport_identity.set((provider_name, model))
+    try:
+        yield
+    finally:
+        _transport.reset(token)
+        _transport_rules.reset(rules_token)
+        _transport_identity.reset(identity_token)
+
 
 class LLMError(RuntimeError):
     pass
@@ -44,6 +63,8 @@ def _env(name: str, default: str = "") -> str:
 
 
 def provider() -> str:
+    if _transport_identity.get() is not None:
+        return _transport_identity.get()[0]
     return _env("PP_LLM_PROVIDER", "cli").lower()
 
 
@@ -174,6 +195,9 @@ def _http(system: str, prompt: str, model: str, timeout: int) -> str:
 
 
 def _call(task: str, system: str, prompt: str, model: str, timeout: int) -> str:
+    transport = _transport.get()
+    if transport is not None:
+        return transport(task, system, prompt, model, timeout)
     kind = provider()
     if kind == "mock":
         return _mock(task, system, prompt)
@@ -186,6 +210,8 @@ def _call(task: str, system: str, prompt: str, model: str, timeout: int) -> str:
 
 def model_label(model: str) -> str:
     """The model actually used for a slot, for the run's record."""
+    if _transport_identity.get() is not None and _transport_identity.get()[1]:
+        return _transport_identity.get()[1]
     if provider() == "openai":
         return http_model(model)
     if provider() == "exaone":
@@ -205,11 +231,12 @@ def complete_json(task: str, system: str, prompt: str, *, model: str,
                   validate: Callable[[dict], dict] | None = None,
                   retries: int = 2, timeout: int = 300) -> dict:
     """Call the model, parse one JSON object, validate it; retry on any failure."""
+    system += _transport_rules.get()
     last: Exception | None = None
     retries = budget.retries_limit(retries)
     for attempt in range(retries + 1):
         try:
-            with budget.attempt(f"llm:{task}", [system, prompt], mock=provider() == "mock", cli=provider() == "cli"):
+            with budget.attempt(f"llm:{task}", [system, prompt], mock=provider() == "mock" and _transport.get() is None, cli=provider() == "cli" and _transport.get() is None):
                 raw = _call(task, system, prompt, model, timeout)
             budget.check_output(raw)
             data = extract_json(raw)
