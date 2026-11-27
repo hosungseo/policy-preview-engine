@@ -103,7 +103,7 @@ def test_fast_path_replaces_hardcoded_outreach_and_connects_always_missing_and_p
         assert "where" in row and "method" in row and "question" in row
 
 
-# ---- 2. Policy-condition targeting, grouping, folding & schema pp.run/3 ----
+# ---- 2. Policy-condition targeting, grouping, folding & schema pp.run/4 ----
 
 def test_confirmed_conditions_target_affected_and_group_by_exact_names(fake_models):
     conds = [
@@ -125,7 +125,7 @@ def test_confirmed_conditions_target_affected_and_group_by_exact_names(fake_mode
         },
     ]
     result = service.run_policy(SUBWAY_POLICY, sample=24, conditions=conds)
-    assert result["schema"] == "pp.run/3"
+    assert result["schema"] == "pp.run/4"
     assert result["conditions"]["grouping_basis"] == "confirmed_conditions"
     assert result["conditions"]["confirmed_conditions"] is True
     assert result["grouping"]["basis"] == "confirmed_conditions"
@@ -205,7 +205,7 @@ def test_schema_v3_preserves_backwards_compatible_fields_and_safeguards(fake_mod
         "outreach", "questions", "group_reactions", "clarity", "limits",
     }
     assert legacy_keys <= set(result)
-    assert result["schema"] == "pp.run/3"
+    assert result["schema"] == "pp.run/4"
 
     # Requirement 3: Anti-overconfidence markers (흔들림 · 대표/영향권 분리 · 출처 · 진단 경고).
     assert next(iter(result)) == "notice"
@@ -260,7 +260,7 @@ def test_conditions_work_across_mcp_http_and_cli_and_update_input_hash(fake_mode
         assert run_resp.status_code == 202
         state = wait_job(lambda rid: client.get(f"/runs/{rid}").json(), run_resp.json()["id"])
         assert state["status"] == "completed"
-        assert state["result"]["schema"] == "pp.run/3"
+        assert state["result"]["schema"] == "pp.run/4"
         assert "70세 이상 어르신" in [g["group"] for g in state["result"]["group_reactions"]]
         assert state["result"]["input_hash"] == provenance.input_hash(state["result"]["execution_inputs"])
 
@@ -278,7 +278,7 @@ def test_conditions_work_across_mcp_http_and_cli_and_update_input_hash(fake_mode
             got = await server.call_tool("get_run", {"id": done["id"], "view": "full"})
             assert not got.isError
             res = got.structuredContent["result"]
-            assert res["schema"] == "pp.run/3"
+            assert res["schema"] == "pp.run/4"
             assert "70세 이상 어르신" in [g["group"] for g in res["group_reactions"]]
             # Bad condition key with secret never echoes secret
             bad = await server.call_tool("estimate", {"policy_text": POLICY, "conditions": {"api_key": SECRET}})
@@ -299,5 +299,5 @@ def test_conditions_work_across_mcp_http_and_cli_and_update_input_hash(fake_mode
     assert cli_est["input_hash"] == est_cond["input_hash"]
     assert cli.main(["run", str(draft), "--sample", "12", "--conditions", f"@{cond_file}", "--out", str(out)]) == 0
     cli_res = json.loads(out.read_text(encoding="utf-8"))
-    assert cli_res["schema"] == "pp.run/3"
+    assert cli_res["schema"] == "pp.run/4"
     assert "70세 이상 어르신" in [g["group"] for g in cli_res["group_reactions"]]

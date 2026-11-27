@@ -120,6 +120,8 @@ def test_transport_token_limit_usage_and_full_system_reservation(monkeypatch):
 
 
 def test_optional_clarity_cannot_swallow_shared_budget_stop(fake_models, monkeypatch):
+    # This test targets the optional clarity stage; distribution transport has its own budget tests.
+    monkeypatch.setattr(service.numbers, "judge", lambda *args: [])
     def clarity(*args, **kwargs):
         with budget.attempt("jev:clarity", [], mock=True):
             pytest.fail("shared cap must stop before clarity transport")

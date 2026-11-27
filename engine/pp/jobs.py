@@ -24,10 +24,12 @@ class Jobs(RunExperience):
 
     def start(self, policy_text: str, sample: int = service.DEFAULT_SAMPLE, seed: int = 42,
               credentials: service.Credentials | None = None, i_confirm_public: bool = False, limits=None,
-              conditions=None) -> dict:
+              conditions=None, decision_sample=None, baseline=None) -> dict:
         service.validate(policy_text, sample, seed, i_confirm_public)
         limits = service.normalize_limits(limits)
         service.normalize_conditions(conditions)
+        decision_sample = service.normalize_decision_sample(decision_sample)
+        baseline = service.normalize_baseline(policy_text, baseline)
         credentials = credentials or service.Credentials.from_env()
         mcp_setup.preflight(credentials)
         run_id = uuid4().hex
@@ -36,21 +38,21 @@ class Jobs(RunExperience):
             "mode": "mock" if mcp_setup.mock_mode() else "real",
             **({"result_label": mcp_setup.TRIAL_LABEL, "trial_notice": mcp_setup.TRIAL_NOTICE} if mcp_setup.mock_mode() else {}),
             "estimate": service.estimate(policy_text, sample, i_confirm_public=i_confirm_public,
-                                         limits=limits, conditions=conditions),
+                                         limits=limits, conditions=conditions, decision_sample=decision_sample, credentials=credentials, baseline=baseline),
         })
         with self._lock:
             self._runs[run_id] = initial
         self._pool.submit(self._run, run_id, policy_text, sample, seed, credentials, i_confirm_public,
-                          limits, deepcopy(conditions))
+                          limits, deepcopy(conditions), decision_sample, deepcopy(baseline))
         return deepcopy(initial)
 
-    def _run(self, run_id, policy_text, sample, seed, credentials, i_confirm_public, limits, conditions=None):
+    def _run(self, run_id, policy_text, sample, seed, credentials, i_confirm_public, limits, conditions=None, decision_sample=None, baseline=None):
         with self._lock:
             self._runs[run_id] = {**self._runs[run_id], "status": "running", "stage": "preparing"}
             self._started_at[run_id] = monotonic()
         try:
             with run_progress.track(lambda stage: self._stage(run_id, stage)):
-                result = service.run_policy(policy_text, sample=sample, seed=seed, credentials=credentials, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
+                result = service.run_policy(policy_text, sample=sample, seed=seed, credentials=credentials, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions, decision_sample=decision_sample, baseline=baseline)
             update = {"status": "completed", "result": result}
         except Exception as exc:
             update = {"status": "failed", **mcp_setup.error_payload(exc)}

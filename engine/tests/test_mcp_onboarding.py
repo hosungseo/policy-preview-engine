@@ -224,7 +224,7 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 full = await session.call_tool("get_run", {"id": started.structuredContent["id"], "view": "full"})
                 assert full.structuredContent["result"]["budget"]["cost_usd"] == 0
                 saved = await session.call_tool("save_review", {"id": started.structuredContent["id"], "path": str(tmp_path / "review.json")})
-                assert not saved.isError and saved.structuredContent["format"] == "pp.run/3"
+                assert not saved.isError and saved.structuredContent["format"] == "pp.run/4"
                 assert json.loads((tmp_path / "review.json").read_text()) == full.structuredContent["result"]
 
     asyncio.run(scenario())

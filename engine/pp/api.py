@@ -22,6 +22,8 @@ class PolicyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     policy_text: str = Field(min_length=1, max_length=service.MAX_CHARS)
     sample: StrictInt = Field(default=service.DEFAULT_SAMPLE, ge=1, le=service.MAX_SAMPLE)
+    decision_sample: StrictInt | None = Field(default=None, ge=1, le=5000)
+    baseline: dict | None = None
     i_confirm_public: StrictBool = False
     limits: dict | None = None
     conditions: dict | list[dict] | None = None
@@ -63,14 +65,14 @@ def create_app(jobs: Jobs | None = None) -> FastAPI:
     @app.exception_handler(RequestValidationError)
     async def invalid(request, exc):
         # Do not echo submitted values (including misplaced keys) in validation errors.
-        return PublicJSONResponse(status_code=422, content={"detail": "Invalid request; use policy_text, sample, seed, i_confirm_public, limits, conditions only. "
+        return PublicJSONResponse(status_code=422, content={"detail": "Invalid request; use policy_text, sample, decision_sample, baseline, seed, i_confirm_public, limits, conditions only. "
                                                      "API keys belong in headers or environment variables."})
 
     @app.post("/estimate")
     def estimate(body: PolicyRequest):
         try:
             return service.estimate(body.policy_text, body.sample, i_confirm_public=body.i_confirm_public,
-                                    limits=body.limits, conditions=body.conditions)
+                                    limits=body.limits, conditions=body.conditions, decision_sample=body.decision_sample, baseline=body.baseline)
         except service.RequestError as e:
             raise HTTPException(400, str(e)) from None
 
@@ -82,7 +84,7 @@ def create_app(jobs: Jobs | None = None) -> FastAPI:
                                    env.typesafe if x_typesafe_api_key is None else x_typesafe_api_key)
         try:
             return jobs.start(body.policy_text, body.sample, body.seed, keys, body.i_confirm_public,
-                              body.limits, body.conditions)
+                              body.limits, body.conditions, body.decision_sample, body.baseline)
         except service.RequestError as e:
             raise HTTPException(400, str(e)) from None
 
@@ -92,5 +94,16 @@ def create_app(jobs: Jobs | None = None) -> FastAPI:
             return jobs.get(run_id)
         except KeyError:
             raise HTTPException(404, "Unknown run id; runs are lost on restart") from None
+
+    @app.post("/slice-results")
+    def slice_results(body: dict):
+        from .numbers import slice_results as aggregate
+        try:
+            if body.keys() - {"result", "id", "filters", "reason_limit"} or ("result" in body) == ("id" in body):
+                raise ValueError("invalid slice request")
+            result = jobs.get(body["id"], view="full") if "id" in body else body["result"]
+            return aggregate(result, body.get("filters"), body.get("reason_limit", 3))
+        except (ValueError, TypeError, KeyError):
+            raise HTTPException(400, "Invalid slice request; use full result or run id and supported filters") from None
 
     return app

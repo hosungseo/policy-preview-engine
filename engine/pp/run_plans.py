@@ -11,6 +11,7 @@ RECOMMENDATION = {'sample': 12, 'reason': '처음에는 합성 프로필 12개�
 
 def environment(credentials):
     return {'model': service.MODEL, 'clarity_enabled': bool(credentials.typesafe),
+            'decision_enabled': service.numbers.enabled(credentials),
             'providers': {k: os.environ.get(k) for k in ('PP_LLM_PROVIDER', 'PP_JEV_PROVIDER', 'PP_JEV_MODEL', 'PP_PERSONA_DB', 'PP_PERSONA_SOURCE', 'PP_DATA_DIR')}}
 
 
@@ -19,13 +20,14 @@ class Plans:
     def __init__(self):
         self.items = {}
 
-    def estimate(self, policy_text, sample, seed, i_confirm_public, limits, conditions=None):
+    def estimate(self, policy_text, sample, seed, i_confirm_public, limits, conditions=None, decision_sample=None, baseline=None):
         service.validate(policy_text, sample, seed, i_confirm_public)
         normalized = asdict(service.normalize_limits(limits))
-        quote = service.estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=normalized, conditions=deepcopy(conditions))
+        decision_sample = service.normalize_decision_sample(decision_sample)
+        quote = service.estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=normalized, conditions=deepcopy(conditions), decision_sample=decision_sample, baseline=deepcopy(baseline))
         plan_id = uuid4().hex
         settings = dict(policy_text=policy_text, sample=sample, seed=seed,
-                        i_confirm_public=i_confirm_public, limits=normalized, conditions=deepcopy(conditions))
+                        i_confirm_public=i_confirm_public, limits=normalized, conditions=deepcopy(conditions), decision_sample=decision_sample, baseline=deepcopy(baseline))
         self.items[plan_id] = {'settings': settings, 'environment': environment(service.Credentials.from_env()), 'run_id': None}
         return {**quote, 'plan_id': plan_id, 'seed': seed, 'recommended_sample': RECOMMENDATION,
                 'plan_notice': '이 계획은 서버 재시작 때 사라집니다. 조건이 바뀌면 다시 estimate하세요. plan_id는 사용자의 유료 실행 승인 자체가 아닙니다.'}

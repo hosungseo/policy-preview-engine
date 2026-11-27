@@ -41,7 +41,7 @@ def fake_models(persona_db, monkeypatch):
 
 
 def assert_result(result, sample=12):
-    assert result["schema"] == "pp.run/3"
+    assert result["schema"] == "pp.run/4"
     assert result["estimate"]["sample"] == sample
     assert not result["conditions"]["reaction_failures"]
     assert result["group_reactions"]
@@ -209,6 +209,8 @@ def test_jev_key_reaches_clarity_threads_without_disk_fallback(fake_models, monk
     def evaluate(state, questions, **kwargs):
         seen.append(jev.api_key())
         assert not jev.cache_enabled()
+        if kwargs.get("label") == "fast_distribution":
+            return {"answers": {k: {"probabilities": {"support": .5, "oppose": .3, "unknown": .2}} for k in questions}}
         return {"answers": {k: {"noul": .2} for k in questions}}
     monkeypatch.setattr(jev, "evaluate", evaluate)
     result = service.run_policy(POLICY, sample=12, credentials=service.Credentials(SECRET, "request-jev-key"))
@@ -216,7 +218,7 @@ def test_jev_key_reaches_clarity_threads_without_disk_fallback(fake_models, monk
     assert "threshold" not in result["clarity"]
     assert "values" not in json.dumps(result["clarity"])
     assert "document_questions" in result["clarity"]
-    assert len(seen) == len(result["clauses"]) + 1
+    assert len(seen) == result["overall"]["n"] + len(result["clauses"]) + 1
     assert set(seen) == {"request-jev-key"}
     assert "request-jev-key" not in json.dumps(result)
 

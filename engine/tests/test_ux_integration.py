@@ -33,7 +33,7 @@ def test_plan_conditions_survive_summary_full_and_export(offline, tmp_path):
         full = jobs.get(started["id"])
         assert full["status"] == "completed", full
         result = full["result"]
-        assert result["schema"] == "pp.run/3"
+        assert result["schema"] == "pp.run/4"
         assert result["estimate"]["target_conditions"][0]["age_min"] == 65
         summary = jobs.get(started["id"], view="summary")
         assert summary["mode"] == "mock" and summary["trial_notice"] in summary["summary"]["text"]
@@ -46,7 +46,7 @@ def test_plan_conditions_survive_summary_full_and_export(offline, tmp_path):
             assert card["panel_scope"] == row["panel_scope"]
         assert any(row["route"] for row in summary["summary"]["missing_perspectives"])
         saved = jobs.save_review(started["id"], str(tmp_path / "review.json"))
-        assert saved["format"] == "pp.run/3"
+        assert saved["format"] == "pp.run/4"
         assert json.loads((tmp_path / "review.json").read_text()) == result
     finally:
         jobs.close()

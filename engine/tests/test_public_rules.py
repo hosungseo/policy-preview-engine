@@ -155,7 +155,7 @@ def test_public_shape_has_no_vote_fields_counts_or_frequency_order(fake_models):
             for item in value:
                 walk(item)
     # Counts and IDs in execution/selection receipts describe sampling, never votes.
-    walk({k: v for k, v in result.items() if k not in {"selection", "execution_inputs"}})
+    walk({k: v for k, v in result.items() if k not in {"selection", "execution_inputs", "estimate", "overall", "by_group", "highlights", "slice_data", "baseline"}})
     clause_order = {c["id"]: i for i, c in enumerate(result["clauses"])}
     positions = [min((clause_order.get(r["segment_id"], len(clause_order)) for r in group["reactions"]),
                      default=len(clause_order)) for group in result["group_reactions"]]

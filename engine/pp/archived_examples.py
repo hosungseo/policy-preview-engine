@@ -1,7 +1,7 @@
 """Offline views of existing public runs, never fresh model output.
 
 Packaged excerpts retain the original qualitative fields and a hash of their source.
-No historic opinion counts, probabilities or named personas enter this view.
+Stored probability means are retained; missing group distributions are never invented.
 """
 import json
 from importlib.resources import files
@@ -71,7 +71,8 @@ def load(example):
     for group in data["missing"]:
         missing.append({"group": group, "reason": "보관된 가상 공청회에서 빠진 관점입니다.", "route": "관련 기관·현장 간담회에서 직접 확인하세요."})
     return public_rules.envelope({
-        "schema": "pp.run/3", "mode": "archived", "result_label": LABEL, "trial_notice": NOTICE,
+        "schema": "pp.run/4", "mode": "archived", "result_label": LABEL, "trial_notice": NOTICE,
+        **data.get("numbers", {}),
         "example": example, "title": data["title"], "clauses": clauses,
         "issues": [{k: i[k] for k in ("id", "title", "summary")} for i in issues],
         "who_to_ask": who, "questions": data["questions"], "outreach": data["outreach"],

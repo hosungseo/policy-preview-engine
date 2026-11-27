@@ -37,6 +37,17 @@ _usage_lock = threading.Lock()
 _usage: dict[str, dict] = {}
 
 _request_key = ContextVar("pp_jev_key", default=None)
+_force_mock = ContextVar("pp_jev_force_mock", default=False)
+
+
+@contextmanager
+def use_mock(enabled=False):
+    """Request-local trial guard: explicit provider settings cannot cause a paid trial call."""
+    token = _force_mock.set(enabled)
+    try:
+        yield
+    finally:
+        _force_mock.reset(token)
 
 
 @contextmanager
@@ -123,6 +134,8 @@ class JevError(RuntimeError):
 
 
 def provider() -> str:
+    if _force_mock.get():
+        return "mock"
     if _request_key.get() is not None:
         return "api"
     explicit = _env("PP_JEV_PROVIDER")

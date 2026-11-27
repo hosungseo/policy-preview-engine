@@ -20,11 +20,11 @@ SERVER_NAME = "policy-preview"
 # The server's first message to the AI: what this is, what people say, what to never do. Three lines.
 INSTRUCTIONS = "\n".join([
     "백번 미리 묻다는 공개·가상 정책 문안을 받아 실제로 누구를 찾아가 무엇을 물을지 정하도록 돕습니다. "
-    "합성 인물(실제 사람 아님)의 반응을 AI로 상상할 뿐 여론조사나 찬반 집계가 아닙니다.",
+    "합성 인물(실제 사람 아님)의 모의 분포와 이유를 AI로 추정하며 실제 여론조사가 아닙니다.",
     "사용자는 \"무료 예시 보여 줘\", \"이 문안 비용부터 알려 줘\", \"결과 읽고 누구부터 만날지 정리해 줘\"처럼 말하면 됩니다. "
     "처음 묻는 사람에게는 `check_setup`으로 현재 모드를 한 줄로 알려 주세요. 처음 쓰는 사람에게는 '무료 예시 보기'부터 권하세요(사용법 한 장: `pp://guide/start`).",
     "돈이 드는 `start_run` 전에는 `estimate`로 예상 비용을 보여 주고 동의를 받으세요. "
-    "반응 결과에만 고지 한 줄을 붙이고, 0원 체험은 도구 결과의 `assistant_guidance`에 있는 문장을 그대로 답변 첫 줄에 쓰세요. 실제 여론이 아니라는 고지를 생략하거나 끝으로 미루지 마세요. 결과에서 비율·순위·\"대부분\" 같은 말은 쓰지 마세요.",
+    "반응 결과에만 고지 한 줄을 붙이고, 0원 체험은 도구 결과의 `assistant_guidance`에 있는 문장을 그대로 답변 첫 줄에 쓰세요. 실제 여론이 아니라는 고지를 생략하거나 끝으로 미루지 마세요. 계산된 `overall`·`by_group`의 인원·비율과 흔들림·소집단 경고를 함께 표시하고 문장에서 새 숫자나 순위를 만들지 마세요.",
 ])
 
 
@@ -96,12 +96,18 @@ TOOLS: dict[str, ToolCopy] = {
 }
 
 TOOLS.update({
+    "slice_results": ToolCopy("결과 다시 자르기(무료)", "받은 전체 `result` 또는 실행 `id`를 `filters`로 연령·권역·시도·성별·찬반에 따라 다시 집계합니다. 모델을 다시 쓰지 않아 비용은 0입니다. `panel`은 대표 또는 영향권으로 분리하며 소집단 경고를 유지하세요."),
     "find_notice": ToolCopy("의견 받는 입법예고 찾기(무료)", "현재 의견을 받는 입법예고를 법령 제명 일부로 검색합니다. 약칭 정보공개법 대신 정보공개로 찾아보세요. 고른 항목은 `get_notice`로 읽으세요. 분석은 시작하지 않습니다."),
     "get_notice": ToolCopy("입법예고 원문 읽기(무료)", "고른 입법예고의 이유와 주요내용을 원문 그대로 가져옵니다. 받은 `policy_text`로 `estimate`를 부르세요. 긴 문안은 사용자가 범위를 고릅니다."),
     "save_review": ToolCopy("전체 결과 파일로 저장", "완료한 결과를 고지·출처와 함께 새 파일에 저장합니다. 기존 파일은 덮어쓰지 않습니다. 프로그램을 끄기 전에 저장할지 한 번 물어보세요."),
 })
 
 ARGS: dict[str, ArgCopy] = {
+    "baseline": ArgCopy("과거 공개 기준선", "`pp trend` 결과와 `definition`을 함께 넣습니다. 문안·선택지·모집단·집단 경계를 정확히 대조한 경우만 `confirmed=true`로 표시하세요. 같은 문항 기준선이 없으면 생략하세요."),
+    "decision_sample": ArgCopy("분포 판단 인물 수", "판단 모델 분포는 기본 3,000명, 상한 5,000명입니다. 문장 모델 이유 수는 `sample`로 별도 설정합니다. 판단 모델 키가 없으면 소표본 대체 사실과 한계를 표시합니다."),
+    "result": ArgCopy("받은 전체 결과", "`slice_data`가 포함된 전체 결과를 넣으세요. 실행 `id`로도 무료 재집계할 수 있습니다."),
+    "filters": ArgCopy("재집계 조건", "`age_min`, `age_max`, `age_band`, `region`, `province`, `sex`, `stance`, `panel`을 씁니다. `stance`는 `support`, `oppose`, `unknown`, `panel`은 `representative` 또는 `affected`입니다."),
+    "reason_limit": ArgCopy("이유 예시 수", "받은 문장 모델 이유에서 최대 10개까지 보여 줍니다. 기본값은 3개이며 새 문장을 생성하지 않습니다."),
     "query": ArgCopy("검색어", "법령 제명 일부를 쓰세요. 예: 정보공개법 대신 정보공개. 비워 두면 최근 입법예고를 봅니다."),
     "page": ArgCopy("목록 쪽", "확인할 쪽 번호입니다. 기본값은 1입니다."),
     "seq": ArgCopy("입법예고 번호", "`find_notice`가 돌려준 `seq`를 그대로 넣으세요."),

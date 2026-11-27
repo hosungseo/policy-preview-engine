@@ -100,14 +100,27 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
         return guarded(lambda: mcp_notices.get_notice(seq, mapping_lbic_id, announce_type), "입법예고 원문 조회이며 분석 결과가 아닙니다.")
 
     @server.tool()
-    def estimate(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, i_confirm_public: StrictBool = False, limits: dict | None = None, seed: StrictInt = 42, conditions: Conditions = None) -> CallToolResult:
+    def estimate(policy_text: str, sample: StrictInt = service.DEFAULT_SAMPLE, i_confirm_public: StrictBool = False, limits: dict | None = None, seed: StrictInt = 42, conditions: Conditions = None, decision_sample: StrictInt | None = None, baseline: dict | None = None) -> CallToolResult:
         """Show approximate USD and duration before a paid run. No key needed."""
-        return guarded(lambda: jobs.estimate(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions), "비용·시간 견적이며 분석 결과가 아닙니다.")
+        return guarded(lambda: jobs.estimate(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions, decision_sample=decision_sample, baseline=baseline), "비용·시간 견적이며 분석 결과가 아닙니다.")
 
     @server.tool()
-    def start_run(policy_text: str | None = None, sample: StrictInt | None = None, seed: StrictInt | None = None, i_confirm_public: StrictBool | None = None, limits: dict | None = None, plan_id: str | None = None, conditions: Conditions = None) -> CallToolResult:
+    def start_run(policy_text: str | None = None, sample: StrictInt | None = None, seed: StrictInt | None = None, i_confirm_public: StrictBool | None = None, limits: dict | None = None, plan_id: str | None = None, conditions: Conditions = None, decision_sample: StrictInt | None = None, baseline: dict | None = None) -> CallToolResult:
         """견적의 plan_id로 실행합니다. 유료 실행은 비용 동의를 받고, 요청한 0원 체험은 바로 실행합니다. 조건이 바뀌면 재견적하세요."""
-        return guarded(lambda: jobs.start_planned(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, plan_id=plan_id, conditions=conditions))
+        return guarded(lambda: jobs.start_planned(policy_text, sample, seed, i_confirm_public=i_confirm_public, limits=limits, plan_id=plan_id, conditions=conditions, decision_sample=decision_sample, baseline=baseline))
+
+    @server.tool()
+    def slice_results(result: dict | None = None, id: str | None = None, filters: dict | None = None, reason_limit: StrictInt = 3) -> CallToolResult:
+        """받은 전체 결과 또는 실행 id를 연령·권역·시도·성별·찬반으로 다시 집계합니다. 대표/영향권을 분리하며 모델 호출과 비용은 0입니다."""
+        def slice_local():
+            if (result is None) == (id is None):
+                raise service.RequestError("result 또는 id 중 하나만 넣으세요.")
+            from .numbers import slice_results as aggregate
+            try:
+                return aggregate(jobs.get(id, view="full") if id else result, filters, reason_limit)
+            except (ValueError, TypeError, KeyError):
+                raise service.RequestError("전체 결과의 slice_data와 연령·권역·시도·성별·찬반 필터를 확인하세요.") from None
+        return guarded(slice_local)
 
     @server.tool()
     def get_run(id: str, view: Literal["summary", "full"] = "summary") -> CallToolResult:

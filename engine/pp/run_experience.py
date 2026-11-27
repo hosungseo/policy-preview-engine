@@ -13,18 +13,18 @@ class RunExperience:
             self._runs[state["id"]] = state
         return self.get(state["id"], view="summary")
 
-    def estimate(self, policy_text, sample=service.DEFAULT_SAMPLE, seed=42, i_confirm_public=False, limits=None, conditions=None):
+    def estimate(self, policy_text, sample=service.DEFAULT_SAMPLE, seed=42, i_confirm_public=False, limits=None, conditions=None, decision_sample=None, baseline=None):
         with self._lock:
-            return self._plans.estimate(policy_text, sample, seed, i_confirm_public, limits, conditions)
+            return self._plans.estimate(policy_text, sample, seed, i_confirm_public, limits, conditions, decision_sample, baseline)
 
-    def start_planned(self, policy_text=None, sample=None, seed=None, i_confirm_public=None, limits=None, plan_id=None, conditions=None):
+    def start_planned(self, policy_text=None, sample=None, seed=None, i_confirm_public=None, limits=None, plan_id=None, conditions=None, decision_sample=None, baseline=None):
         credentials = service.Credentials.from_env()
         overrides = dict(policy_text=policy_text, sample=sample, seed=seed,
-                         i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
+                         i_confirm_public=i_confirm_public, limits=limits, conditions=conditions, decision_sample=decision_sample, baseline=baseline)
         if plan_id is None:  # Existing callers may still use the legacy direct-start contract.
             return self.start(policy_text, service.DEFAULT_SAMPLE if sample is None else sample,
                               42 if seed is None else seed, credentials,
-                              False if i_confirm_public is None else i_confirm_public, limits, conditions)
+                              False if i_confirm_public is None else i_confirm_public, limits, conditions, decision_sample, baseline)
         with self._lock:
             settings, previous = self._plans.resolve(plan_id, overrides, credentials)
             if previous:
@@ -38,11 +38,11 @@ class RunExperience:
                 "mode": "mock" if mcp_setup.mock_mode() else "real",
                 **({"result_label": mcp_setup.TRIAL_LABEL, "trial_notice": mcp_setup.TRIAL_NOTICE} if mcp_setup.mock_mode() else {}),
                 "estimate": service.estimate(settings["policy_text"], settings["sample"],
-                    i_confirm_public=settings["i_confirm_public"], limits=settings["limits"], conditions=settings["conditions"])})
+                    i_confirm_public=settings["i_confirm_public"], limits=settings["limits"], conditions=settings["conditions"], decision_sample=settings["decision_sample"], baseline=settings["baseline"])})
             self._runs[run_id] = initial
             self._plans.items[plan_id]["run_id"] = run_id
             self._pool.submit(self._run, run_id, settings["policy_text"], settings["sample"],
-                              settings["seed"], credentials, settings["i_confirm_public"], settings["limits"], deepcopy(settings["conditions"]))
+                              settings["seed"], credentials, settings["i_confirm_public"], settings["limits"], deepcopy(settings["conditions"]), settings["decision_sample"], deepcopy(settings["baseline"]))
             return deepcopy(initial)
 
     def _stage(self, run_id, stage):

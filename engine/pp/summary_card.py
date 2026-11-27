@@ -15,6 +15,14 @@ def clip(value, limit=180):
     return text if len(text) <= limit else text[:limit - 1] + '…'
 
 
+def rate_text(rate):
+    if 0 < rate < .001:
+        return '<0.1%'
+    if .999 < rate < 1:
+        return '>99.9%'
+    return f'{rate * 100:.1f}%'
+
+
 def build(result: dict, run_id: str) -> dict:
     """Join existing clause/issue/question fields, keeping their source order."""
     warnings = list(result.get('warnings', []))
@@ -59,6 +67,20 @@ def build(result: dict, run_id: str) -> dict:
     if result.get('archive'):
         archive = result['archive']
         lines.append('보관 출처: ' + archive['path'] + ' · ' + archive['created_at'])
+    overall = result.get('overall')
+    if overall:
+        lines.insert(1, result.get('numeric_notice', public_rules.NOTICE))
+        lines.append(f"대표 합성 인물 {overall['n']:,}명 · 이유 수집 {overall.get('reason_sample_n', 0):,}명(별도)")
+        if overall.get('rates'):
+            rates = overall['rates']
+            lines.append('모의 분포: ' + ' · '.join(f'{label} {rate_text(rates[key])}' for key, label in (('support', '찬성 쪽'), ('oppose', '반대 쪽'), ('unknown', '모름·유보'))))
+        wobble = overall.get('variability', {})
+        lines.append(f"흔들림 폭 ±{wobble['width_pp']:.1f}%p (대조 문장·순서 기준)" if wobble.get('available') else '흔들림 폭 미측정')
+        if wobble.get('unstable'):
+            lines.append(wobble['notice'])
+        decision = overall.get('decision') or {}
+        if decision.get('fallback'):
+            lines.append(decision['notice'])
     lines += ['현장에서 확인할 질문 초안', quality, '찾아갈 곳 · 먼저 물을 질문']
     for card in cards:
         lines.append('• ' + (' · '.join(card['groups']) or '확인할 집단 정보 없음'))
@@ -78,6 +100,8 @@ def build(result: dict, run_id: str) -> dict:
     available = MAX_CHARS - len(footer) - 2
     text = body[:available] + ('…' if len(body) > available else '') + '\n' + footer
     return {'schema': 'pp.summary/1', 'run_id': run_id, 'cards': cards,
+            **{k: ({field: value for field, value in result[k].items() if field != 'distribution_selection'} if k == 'overall' else result[k])
+               for k in ('numeric_notice', 'overall', 'by_group', 'highlights', 'baseline') if k in result},
             'missing_perspectives': missing, 'grouping': result.get('grouping', {}), **trial, 'result_quality': quality,
             'truncated': len(result.get('who_to_ask', [])) > 3 or len(result.get('missing_perspectives', [])) > 4 or len(body) > available,
             'text': text, 'attribution_summary': credit, 'full_result_available': True,

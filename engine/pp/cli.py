@@ -32,6 +32,8 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("policy", type=Path, help="UTF-8 policy text (Markdown or plain text)")
         p.add_argument("--i-confirm-public", action="store_true", help="Confirm the text is already public despite draft markers")
         p.add_argument("--sample", type=int, default=service.DEFAULT_SAMPLE)
+        p.add_argument("--baseline", type=Path, help="pp trend JSON with an exact confirmed definition")
+        p.add_argument("--decision-sample", type=int, default=None, help="Judgment distribution size (default 3000, maximum 5000); --sample controls reasons")
         p.add_argument("--max-calls", type=int, default=100000)
         p.add_argument("--max-output-tokens", type=int, default=16384)
         p.add_argument("--max-retries", type=int, default=2)
@@ -45,6 +47,10 @@ def main(argv: list[str] | None = None) -> int:
     api = sub.add_parser("api")
     api.add_argument("--port", type=int, default=8765)
     sub.add_parser("mcp")
+    sliced = sub.add_parser("slice-results", help="저장한 전체 결과 무료 재집계")
+    sliced.add_argument("result", type=Path)
+    sliced.add_argument("--filters", default="{}", help="JSON: age_min, age_max, age_band, region, province, sex, stance, panel")
+    sliced.add_argument("--reason-limit", type=int, default=3)
     trend = sub.add_parser("trend", help="공개 집계로 과거 추세 기준선 계산 (모델 호출 0회)")
     trend.add_argument("--history", type=Path, required=True)
     trend.add_argument("--question-id", required=True)
@@ -55,6 +61,14 @@ def main(argv: list[str] | None = None) -> int:
     trend.add_argument("--method", choices=("last", "linear"), default="last")
     args = parser.parse_args(argv)
     try:
+        if args.cmd == "slice-results":
+            from .numbers import slice_results
+            try:
+                result = slice_results(json.loads(args.result.read_text(encoding="utf-8")), json.loads(args.filters), args.reason_limit)
+            except (ValueError, TypeError, KeyError):
+                raise service.RequestError("전체 결과와 재집계 필터 형식을 확인하세요.") from None
+            print(public_rules.dumps(result))
+            return 0
         if args.cmd == "trend":
             from .trend_baseline import predict
             try:
@@ -80,15 +94,16 @@ def main(argv: list[str] | None = None) -> int:
         limits = service.normalize_limits({k: getattr(args, k) for k in (
             "max_calls", "max_output_tokens", "max_retries", "max_concurrency", "max_cost_usd")})
         conditions = _load_conditions(args.conditions)
+        baseline = json.loads(args.baseline.read_text(encoding="utf-8")) if args.baseline else None
         text = args.policy.read_text(encoding="utf-8")
         preview = service.estimate(text, args.sample, i_confirm_public=args.i_confirm_public,
-                                   limits=limits, conditions=conditions)
+                                   limits=limits, conditions=conditions, decision_sample=args.decision_sample, baseline=baseline)
         if args.cmd == "estimate":
             print(public_rules.dumps(preview))
             return 0
         print(public_rules.NOTICE + "\n실행 전 예상: " + public_rules.dumps(preview), file=sys.stderr, flush=True)
         result = service.run_policy(text, sample=args.sample, seed=args.seed,
-                                    i_confirm_public=args.i_confirm_public, limits=limits, conditions=conditions)
+                                    i_confirm_public=args.i_confirm_public, limits=limits, conditions=conditions, decision_sample=args.decision_sample, baseline=baseline)
         body = public_rules.dumps(result) + "\n"
         if args.out:
             args.out.write_text(body, encoding="utf-8")

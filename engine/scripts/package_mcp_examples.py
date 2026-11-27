@@ -6,8 +6,11 @@ The regression tests require every packaged source hash and question to match.
 import hashlib
 import json
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "engine"))
+from pp.numbers import from_archive
 
 
 def main():
@@ -21,6 +24,7 @@ def main():
         plan = data['plan']
         source_path = source.relative_to(ROOT).as_posix()
         excerpt = {
+            'numbers': from_archive(data),
             'title': data['title'], 'source': data['source'], 'policy_text': data['policy_text'],
             'segments': [{k: row[k] for k in ('id', 'text')} for row in data['segments']],
             'issues': [{**{k: row[k] for k in ('id', 'title', 'summary', 'segments')},
@@ -34,7 +38,7 @@ def main():
             'archive': {'path': source_path, 'sha256': hashlib.sha256(raw).hexdigest(),
                         'created_at': data['meta']['created_at'],
                         'url': 'https://github.com/hosungseo/policy-preview-engine/blob/main/' + source_path,
-                        'changes': '기존 실행에서 정성 쟁점·질문·접점·문안·빠진 관점만 발췌했습니다. 원래 빈도·확률 순서는 사용하지 않습니다.'},
+                        'changes': '기존 실행의 쟁점·질문·접점과 실제 저장된 Jev 확률 평균 분포를 발췌했습니다. 개별 찬반이 없는 집단 분포와 측정하지 않은 흔들림은 복원하지 않습니다.'},
         }
         (destination / source.name).write_text(json.dumps(excerpt, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 

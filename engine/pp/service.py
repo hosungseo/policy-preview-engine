@@ -13,6 +13,7 @@ from tempfile import TemporaryDirectory
 from . import analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, policy_groups, public_rules, provenance, react, segment, visit_shared
 from . import mcp_setup
 from . import run_progress
+from . import numbers
 
 DEFAULT_SAMPLE = 200
 MAX_SAMPLE = panel_provider.MAX_N
@@ -76,22 +77,43 @@ def normalize_conditions(conditions=None) -> list[dict]:
         raise RequestError(str(exc)) from None
 
 
+def normalize_decision_sample(value=None):
+    try:
+        return numbers.decision_sample(value)
+    except ValueError as exc:
+        raise RequestError(str(exc)) from None
+
+
+def normalize_baseline(policy_text, baseline=None):
+    try:
+        return numbers.baseline_for(policy_text, baseline)
+    except ValueError as exc:
+        raise RequestError(str(exc)) from None
+
+
 def estimate(policy_text: str, sample: int = DEFAULT_SAMPLE, *, i_confirm_public: bool = False,
-             limits=None, conditions=None) -> dict:
+             limits=None, conditions=None, decision_sample=None, credentials=None, baseline=None) -> dict:
     """Transparent planning assumptions, never a quote or a measured runtime guarantee."""
     validate(policy_text, sample, i_confirm_public=i_confirm_public)
     limits = normalize_limits(limits)
     norm_conditions = normalize_conditions(conditions)
+    decision_sample = normalize_decision_sample(decision_sample)
+    decision = numbers.plan(policy_text, sample, decision_sample, credentials or Credentials.from_env())
+    baseline = normalize_baseline(policy_text, baseline)
     # Budget all reaction prompts and an upper bound for grouping, outreach and QA.
     input_tokens = sample * (len(policy_text) + 1200) + sample * 1400 + 16000
     output_tokens = sample * 550 + 16000
     usd = 0 if mcp_setup.mock_mode() else (input_tokens * 1.0 + output_tokens * 5.0) / 1_000_000
     mock = mcp_setup.mock_mode()
-    seconds = 1 if mock else math.ceil(sample / 8) * 6 + 90
+    distribution_seconds = 0 if mock or not decision["available"] else math.ceil(decision["n"] / 18)
+    seconds = 1 if mock else math.ceil(sample / 8) * 6 + 90 + distribution_seconds
     credit = ({"schema": attribution.SCHEMA, "sources": [attribution.generated()],
                "notice": "0원 체험의 가상 인물·모의 응답입니다. 실제 분석 결과가 아닙니다."}
               if mock and not mcp_setup.panel_ready() else attribution.build())
     hash_inputs = {"policy": policy_text, "sample": sample, "limits": asdict(limits)}
+    hash_inputs["decision_sample"] = decision_sample
+    if baseline:
+        hash_inputs["baseline"] = baseline
     if norm_conditions:
         hash_inputs["conditions"] = norm_conditions
     return public_rules.envelope({"sample": sample, "policy_chars": len(policy_text), "model": "mock" if mcp_setup.mock_mode() else MODEL,
@@ -100,14 +122,19 @@ def estimate(policy_text: str, sample: int = DEFAULT_SAMPLE, *, i_confirm_public
             "mode": "mock" if mock else "real", "requires_consent": not mock,
             **({"result_label": mcp_setup.TRIAL_LABEL, "trial_notice": mcp_setup.TRIAL_NOTICE} if mock else {}),
             "target_conditions": norm_conditions,
+            "decision_sample": decision_sample,
+            "baseline": baseline or {"available": False, "notice": "동일 문항 과거 공개 기준선 없음"},
+            "stages": {"distribution": decision,
+                       "reasons": {"n": sample, "model": "mock" if mock else MODEL,
+                                   "estimated_cost_usd": {"low": round(usd * .5, 4), "high": round(usd * 2, 4)}}},
             "missing_people": visit_shared.missing_people(policy_text),
-            "estimated_cost_usd": {"low": round(usd * .5, 4), "high": round(usd * 2, 4)},
+            "estimated_cost_usd": {"low": round(usd * .5 + decision["estimated_cost_usd"]["low"], 4), "high": round(usd * 2 + decision["estimated_cost_usd"]["high"], 4)},
             "estimated_seconds": {"low": seconds, "high": seconds * 3},
             "assumptions": {"input_usd_per_million": 1, "output_usd_per_million": 5,
                             "input_tokens": input_tokens, "output_tokens": output_tokens, "workers": min(8, limits.max_concurrency)},
             "warnings": [public_rules.WARNING],
             "budget_notice": "계획용 추정이며 청구액·완료 시간을 보장하지 않습니다. 재시도·문안 길이에 따라 늘어납니다. "
-                      "선택적 Jev 명료성 점검 비용은 포함하지 않습니다."})
+                      "분포 판단과 이유 수집 비용을 분리했으며 선택적 Jev 명료성 점검 비용은 포함하지 않습니다."})
 
 
 def _api_transport(credentials: Credentials):
@@ -131,11 +158,14 @@ def _api_transport(credentials: Credentials):
 
 def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 42,
                credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None,
-               conditions=None) -> dict:
+               conditions=None, decision_sample=None, baseline=None) -> dict:
     """Text -> sampled reactions -> grounded issues -> consultation plan, using the existing engine."""
     validate(policy_text, sample, seed, i_confirm_public)
     norm_conditions = normalize_conditions(conditions)
     credentials = credentials or Credentials.from_env()
+    decision_sample = normalize_decision_sample(decision_sample)
+    decision = numbers.plan(policy_text, sample, decision_sample, credentials)
+    baseline = normalize_baseline(policy_text, baseline)
     mcp_setup.preflight(credentials)
     run_progress.report("preparing")
     title = policy_text.strip().splitlines()[0][:120]
@@ -158,14 +188,20 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         source = provenance.artifact(bundle_db.bundle_path(), compressed=True)
     panel_version = source["panel_version"]
     sampling_inputs = {"sample": sample, "affected": sample // 4, "seed": seed}
+    sampling_inputs["decision_sample"] = decision_sample
+    sampling_inputs["distribution_fallback"] = decision["fallback"]
     if norm_conditions:
         sampling_inputs["conditions"] = norm_conditions
     inputs = provenance.execution_inputs(
         {"text": policy_text, "public_confirmed": i_confirm_public},
         source, sampling_inputs, asdict(limits),
         models={"provider": "mock" if mcp_setup.mock_mode() else "anthropic", "model": "mock" if mcp_setup.mock_mode() else MODEL,
+                "distribution_provider": decision["provider"], "distribution_model": decision["model"],
+                "distribution_fallback": decision["fallback"],
                 "clarity_provider": "typesafe" if credentials.typesafe and not mcp_setup.mock_mode() else None,
                 "clarity_model": (os.environ.get("PP_JEV_MODEL") or "jev-latest") if credentials.typesafe and not mcp_setup.mock_mode() else None})
+    if baseline:
+        inputs["baseline"] = baseline
     selection_receipt = sampled["selection"]
     selection_receipt["data"] = source
     # Provider's public province labels are converted back to the engine's raw vocabulary.
@@ -183,7 +219,15 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         p["cultural_background"] = lines[10] if len(lines) > 10 else ""
     segments = segment.split_segments(policy_text)
     run_progress.report("reactions")
-    with mcp_setup.model_transport(credentials, _api_transport), jev.use_key(None if mcp_setup.mock_mode() else credentials.typesafe):
+    # Solar Decide must retain its provider-owned credential; an empty request key disables TypeSafe disk fallback.
+    with mcp_setup.model_transport(credentials, _api_transport), jev.use_key(None if mcp_setup.mock_mode() or jev.provider() in {"upstage", "mock"} else credentials.typesafe), jev.use_mock(mcp_setup.mock_mode()):
+        quant_rows = None
+        quant_selection = None
+        if decision["available"]:
+            quant = panel_provider.provide({"n": decision_sample, "affected": 0, "seed": seed}, db)
+            quant_selection = quant["selection"]
+            quant_rows = numbers.judge(policy_text, quant["people"])
+            decision["n"] = len(quant_rows)
         # Existing reaction code is resumable on disk; its private temporary output is deleted on exit.
         with TemporaryDirectory(prefix="pp-") as folder:
             reactions, failures = react.run_reactions(people, policy_text, Path(folder) / "reactions.jsonl")
@@ -225,32 +269,52 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
     public, warnings, diag, limits_notes = policy_groups.build_consultation_views(
         policy_text, segments, people, reactions, issues, qa, clarity, active_conditions, grouping_basis
     )
-    return public_rules.envelope({"schema": policy_groups.SCHEMA, "synthetic": True,
+    reason_rows = numbers.reaction_rows(people, reactions)
+    numeric_rows = (quant_rows + [r for r in reason_rows if r["panel"] == "affected"]) if quant_rows is not None else reason_rows
+    numeric = numbers.build(numeric_rows, population=sampled["source"].get("population"), decision=decision, reason_n=len(reactions), baseline=baseline)
+    numeric["slice_data"]["reason_rows"] = reason_rows
+    numeric["overall"]["distribution_selection"] = quant_selection
+    diag["scope"] = "qualitative_reasons"
+    diag["numeric_variability"] = numeric["overall"]["variability"]
+    old_note = diag.get("variability_note")
+    if old_note:
+        diag["variability_note"] = "정성 이유 수집: " + old_note
+        warnings = [diag["variability_note"] if warning == old_note else warning for warning in warnings]
+    limits_notes = ["찬반 숫자는 계산된 overall·by_group에서만 제공합니다. 문장 모델의 이유에서 새 비율이나 순위를 만들지 않습니다."
+                    if note.startswith("반응의 비율·건수·순위는 제공하지 않습니다.") else note for note in limits_notes]
+    if decision["fallback"]:
+        warnings.append(decision["notice"])
+    return public_rules.envelope({"schema": numbers.SCHEMA, "synthetic": True,
             "warnings": warnings, "diagnostics": diag,
             "input_hash": provenance.input_hash(inputs), "execution_inputs": inputs,
             "selection": selection_receipt, "attribution": attribution.build(source),
             "budget": budget.current().snapshot(),
             "conditions": {"model": "mock" if mcp_setup.mock_mode() else MODEL, "seed": seed, "panel_version": panel_version,
+                           "distribution_model": decision["model"], "distribution_provider": decision["provider"],
+                           "distribution_fallback": decision["fallback"],
                            "source": sampled["source"], "public_confirmed": i_confirm_public,
                            "reaction_failures": bool(failures), "unverified_quotes": bool(mismatches),
                            "grouping_basis": grouping_basis, "confirmed_conditions": bool(norm_conditions),
                            "panel_separation": True},
             "estimate": estimate(policy_text, sample, i_confirm_public=i_confirm_public, limits=limits,
-                                 conditions=conditions),
+                                 conditions=conditions, decision_sample=decision_sample, credentials=credentials, baseline=baseline),
             **public,
+            **numeric,
             "limits": limits_notes})
 
 
 def run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 42,
                credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None,
-               conditions=None) -> dict:
+               conditions=None, decision_sample=None, baseline=None) -> dict:
     validate(policy_text, sample, seed, i_confirm_public)
     limits = normalize_limits(limits)
+    decision_sample = normalize_decision_sample(decision_sample)
+    baseline = normalize_baseline(policy_text, baseline)
     ledger = budget.Budget(limits)
-    with ledger.scope(), budget.use_prices({"llm": (1.0, 5.0), "jev": (jev.PRICE_PER_M_INPUT, 0.0)}), mcp_setup.runtime(sample):
+    with ledger.scope(), budget.use_prices({"llm": (1.0, 5.0), "jev": (jev.price_per_m_input(), 0.0)}), mcp_setup.runtime(max(sample, decision_sample) if mcp_setup.mock_mode() else sample):
         try:
             return mcp_setup.mark_result(_run_policy(policy_text, sample=sample, seed=seed, credentials=credentials,
-                               i_confirm_public=i_confirm_public, limits=limits, conditions=conditions))
+                               i_confirm_public=i_confirm_public, limits=limits, conditions=conditions, decision_sample=decision_sample, baseline=baseline))
         except Exception as exc:
             exc.budget_snapshot = ledger.snapshot()
             raise
