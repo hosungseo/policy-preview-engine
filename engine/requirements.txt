@@ -1,0 +1,31 @@
+# Exact dependency closure for Python 3.12, universal platforms.
+# Security review 2026-11-10: all 80 distinct versions across the three files matched zero OSV advisories.
+# Service, base, and optional semantic environments remain separate.
+anyio==4.16.0
+certifi==2026.10.23
+click==8.5.1
+colorama==0.4.6 ; sys_platform == 'win32'
+defusedxml==0.7.1
+filelock==4.2.10
+fsspec==2026.9.0
+h11==0.16.0
+hf-xet==1.8.0 ; platform_machine == 'AMD64' or platform_machine == 'ARM64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'
+httpcore==1.0.9
+httpcore2==2.16.0 ; sys_platform != 'emscripten'
+httpx==0.28.1
+httpx2==2.16.0
+httpx2-jsfetch==1.0 ; sys_platform == 'emscripten'
+huggingface-hub==2.4.0
+idna==3.20
+iniconfig==2.3.1
+numpy==2.5.4
+packaging==26.3
+pluggy==1.7.0
+pyarrow==26.0.1
+pygments==2.21.0
+pytest==9.2.0
+pyyaml==6.0.3
+shapely==2.2.0
+tqdm==4.70.1
+truststore==0.10.5 ; sys_platform != 'emscripten'
+typing-extensions==4.16.0

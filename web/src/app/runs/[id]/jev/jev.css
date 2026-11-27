@@ -1,0 +1,15 @@
+.pp-jev-intro { max-width: 88rem; }
+.pp-jev-asked { margin: 8px 0 0; padding-left: 20px; list-style: disc; }
+.pp-jev-asked li { margin-bottom: 6px; }
+.pp-jev-asked code { font-size: 1.25rem; background: var(--pp-bg-2); padding: 0 4px; border-radius: 4px; }
+.pp-jev-tiles { margin-top: 20px; }
+.pp-heat-stack { display: grid; gap: 16px; }
+.pp-rate-table { width: 100%; border-collapse: collapse; font-size: 1.4rem; }
+.pp-rate-table th, .pp-rate-table td { padding: 6px 8px; border-bottom: 1px solid var(--pp-line-2); text-align: left; vertical-align: middle; }
+.pp-rate-table th { font-size: 1.3rem; color: var(--pp-ink-3); font-weight: 500; }
+.pp-rate-cell { display: grid; grid-template-columns: minmax(60px, 1fr) 44px; gap: 8px; align-items: center; }
+.pp-rate-track { height: 8px; background: var(--pp-primary-5); border-radius: 999px; overflow: hidden; }
+.pp-rate-fill { height: 100%; background: var(--pp-primary); }
+.pp-rate-cell b { text-align: right; font-variant-numeric: tabular-nums; }
+.pp-rate-small td, .pp-rate-small th { color: var(--pp-ink-3); }
+.pp-channel-row { display: grid; grid-template-columns: minmax(140px, 260px) minmax(0, 1fr) 52px; gap: 10px; align-items: center; padding: 5px 0; font-size: 1.4rem; }

@@ -1,0 +1,350 @@
+{
+ "version": "life-context-v2",
+ "panel": 20000,
+ "note": "기본 = NVIDIA Nemotron-Personas-Korea 프로필. 애드온 = 공표된 정부 조사·행정 통계로 배정한 생활 여건(통계적 가정).",
+ "addons": {
+  "housing": {
+   "title": "주거",
+   "attributes": [
+    "tenure"
+   ],
+   "sources": [
+    "2020 인구주택총조사(점유형태)",
+    "2024 주거실태조사",
+    "2024 주택소유통계"
+   ],
+   "covered_people": 16055,
+   "covered_share": 0.803,
+   "example_lines": [
+    "- 주거 점유: 자가"
+   ]
+  },
+  "finance": {
+   "title": "가계 살림",
+   "attributes": [
+    "income",
+    "debt",
+    "car"
+   ],
+   "sources": [
+    "2025 가계금융복지조사"
+   ],
+   "covered_people": 20000,
+   "covered_share": 1.0,
+   "example_lines": [
+    "- 가구 연소득(전년): 3천만~5천만 원",
+    "- 가구 부채: 없음",
+    "- 자동차: 가구에 없음"
+   ]
+  },
+  "assets": {
+   "title": "자산",
+   "attributes": [
+    "networth"
+   ],
+   "sources": [
+    "2025 가계금융복지조사(순자산 5분위)"
+   ],
+   "covered_people": 19765,
+   "covered_share": 0.988,
+   "example_lines": [
+    "- 가구 순자산: 전체 가구 중 하위 20~40%"
+   ]
+  },
+  "welfare": {
+   "title": "복지·연금",
+   "attributes": [
+    "livelihood",
+    "disability",
+    "nps",
+    "basic_pension"
+   ],
+   "sources": [
+    "2025 기초생활보장 수급자",
+    "2025 등록장애인",
+    "2025 국민연금 노령연금 수급자",
+    "2024 연금통계"
+   ],
+   "covered_people": 5466,
+   "covered_share": 0.273,
+   "example_lines": [
+    "- 등록 장애인"
+   ]
+  },
+  "work": {
+   "title": "일",
+   "attributes": [
+    "employment",
+    "nonregular",
+    "employment_insurance",
+    "dual_earner",
+    "commute",
+    "night_work",
+    "shift_work",
+    "union",
+    "retirement_pension",
+    "long_hours",
+    "worker_care",
+    "platform_self"
+   ],
+   "sources": [
+    "2020 인구주택총조사(종사상지위·통근)",
+    "경제활동인구조사 근로형태별 부가조사(비정규직·고용보험)",
+    "지역별고용조사(맞벌이)",
+    "2023 근로환경조사(밤·교대 근무·근무시간·가족 돌봄·플랫폼)·2025 고용형태별 근로실태조사(노조·퇴직연금)"
+   ],
+   "covered_people": 12610,
+   "covered_share": 0.63,
+   "example_lines": [
+    "- 일하는 형태: 임금근로자(정규직, 고용보험 가입)",
+    "- 출퇴근 수단: 시내·마을버스",
+    "- 퇴직연금 가입"
+   ]
+  },
+  "health": {
+   "title": "건강",
+   "attributes": [
+    "smoking",
+    "hypertension",
+    "diabetes"
+   ],
+   "sources": [
+    "2025 지역사회건강조사",
+    "2024 국민건강영양조사"
+   ],
+   "covered_people": 19816,
+   "covered_share": 0.991,
+   "example_lines": [
+    "- 흡연: 비흡연"
+   ]
+  },
+  "habits": {
+   "title": "생활습관",
+   "attributes": [
+    "drinking",
+    "obesity",
+    "walking",
+    "breakfast_skip"
+   ],
+   "sources": [
+    "2025 지역사회건강조사",
+    "2024 국민건강영양조사",
+    "2024 국민건강영양조사(아침 결식)"
+   ],
+   "covered_people": 15317,
+   "covered_share": 0.766,
+   "example_lines": [
+    "- 비만(체질량지수 25 이상)"
+   ]
+  },
+  "mind": {
+   "title": "마음 건강",
+   "attributes": [
+    "stress",
+    "depression",
+    "lonely",
+    "sleep_trouble"
+   ],
+   "sources": [
+    "2025 지역사회건강조사",
+    "2024 국민건강영양조사",
+    "2025 사회통합실태조사(외로움)·2023 근로환경조사(수면)"
+   ],
+   "covered_people": 7444,
+   "covered_share": 0.372,
+   "example_lines": [
+    "- 외로움을 느끼는 편"
+   ]
+  },
+  "elder": {
+   "title": "고령 돌봄",
+   "attributes": [
+    "function",
+    "care",
+    "senior_job"
+   ],
+   "sources": [
+    "2023 노인실태조사",
+    "2023 노인실태조사(노인일자리)"
+   ],
+   "covered_people": 1029,
+   "covered_share": 0.051,
+   "example_lines": [
+    "- 혼자 장보기·식사 준비·외출 같은 일상 관리에 도움이 필요함 — 도와주는 사람 없음"
+   ]
+  },
+  "digital": {
+   "title": "디지털",
+   "attributes": [
+    "digital",
+    "kiosk_hard"
+   ],
+   "sources": [
+    "2025 스마트폰 과의존 실태조사",
+    "2025 디지털정보격차 실태조사",
+    "2025 디지털 역량 조사(키오스크)"
+   ],
+   "covered_people": 20000,
+   "covered_share": 1.0,
+   "example_lines": [
+    "- 인터넷·스마트폰으로 필요한 정보를 잘 찾음"
+   ]
+  },
+  "culture": {
+   "title": "여가·문화",
+   "attributes": [
+    "reading",
+    "arts",
+    "travel_abroad"
+   ],
+   "sources": [
+    "2025 국민독서실태조사",
+    "2025 문화향수실태조사",
+    "2025 해외여행 경험률"
+   ],
+   "covered_people": 19909,
+   "covered_share": 0.995,
+   "example_lines": [
+    "- 지난 1년 공연·전시·영화 관람: 함",
+    "- 최근 1년 해외여행을 다녀옴"
+   ]
+  },
+  "pet": {
+   "title": "반려동물",
+   "attributes": [
+    "pet"
+   ],
+   "sources": [
+    "2025 반려동물 양육 실태조사"
+   ],
+   "covered_people": 5711,
+   "covered_share": 0.286,
+   "example_lines": [
+    "- 집에서 반려동물을 키움"
+   ]
+  },
+  "belief": {
+   "title": "종교",
+   "attributes": [
+    "religion"
+   ],
+   "sources": [
+    "2015 인구주택총조사(종교)"
+   ],
+   "covered_people": 19413,
+   "covered_share": 0.971,
+   "example_lines": [
+    "- 종교: 종교 없음"
+   ]
+  },
+  "civic": {
+   "title": "시민 참여",
+   "attributes": [
+    "voted_general",
+    "petition",
+    "online_voice",
+    "contacted_official",
+    "community_group",
+    "volunteer",
+    "protest",
+    "boycott"
+   ],
+   "sources": [
+    "2025 사회통합실태조사",
+    "2025 국민여가활동조사(자원봉사)"
+   ],
+   "covered_people": 13328,
+   "covered_share": 0.666,
+   "example_lines": [
+    "- 지난 1년 서명운동에 참여한 적 있음",
+    "- 지난 1년 온라인에 정치·사회 의견을 올린 적 있음",
+    "- 지역사회 공공모임(주민자치회 등)에 소속됨",
+    "- 지난 1년 불매운동에 참여한 적 있음"
+   ]
+  },
+  "medical": {
+   "title": "의료 이용",
+   "attributes": [
+    "private_insurance",
+    "unmet_care"
+   ],
+   "sources": [
+    "2023 한국의료패널"
+   ],
+   "covered_people": 19748,
+   "covered_share": 0.987,
+   "example_lines": [
+    "- 민간의료보험(실손 등) 가입"
+   ]
+  },
+  "youth": {
+   "title": "청년 생활",
+   "attributes": [
+    "youth_no_help_sick",
+    "youth_mental_unmet",
+    "youth_move"
+   ],
+   "sources": [
+    "2024 청년 삶 실태조사"
+   ],
+   "covered_people": 1469,
+   "covered_share": 0.073,
+   "example_lines": [
+    "- 정신건강 진료가 필요했지만 받지 못한 적 있음",
+    "- 지금 사는 시도를 떠나 다른 지역으로 이사하고 싶음"
+   ]
+  },
+  "mobility": {
+   "title": "이동",
+   "attributes": [
+    "driving_license"
+   ],
+   "sources": [
+    "2024 운전면허 소지자(경찰청)·주민등록인구"
+   ],
+   "covered_people": 4134,
+   "covered_share": 0.207,
+   "example_lines": [
+    "- 운전면허 없음"
+   ]
+  }
+ },
+ "sources_detail": {
+  "population": "행정안전부 주민등록인구 2025-12, KOSIS 101 DT_1B04005N(시군구×5세×성)",
+  "disability": "보건복지부 등록장애인 2025, KOSIS 101 DT_1DP2040(연령 및 성별 장애인 인구 - 시군구)",
+  "livelihood": "보건복지부 국민기초생활보장 일반수급자 2025, KOSIS 117 DT_11714_N002(시도×성×연령)",
+  "religion": "통계청 2015 인구주택총조사(표본), KOSIS 101 DT_1PM1502(성·연령·종교, 시도) — 종교 문항은 2015가 마지막",
+  "commute": "통계청 2020 인구주택총조사(표본), KOSIS 101 DT_1PA2003(성·연령·교통수단별 통근, 시군구)",
+  "smoking": "질병관리청 지역사회건강조사 2025, KOSIS 177 DT_H_SM·DT_H_SM_MALE(시군구 현재흡연율 조율)",
+  "health_good": "질병관리청 지역사회건강조사 2025 주관적 건강수준 인지율, KOSIS 101 DT_1YL21011E(시군구)",
+  "knhanes": "질병관리청 국민건강영양조사 2024, KOSIS 177 DT_11702_N001(현재흡연율)·DT_11702_N121(주관적 건강인지율) 성×연령",
+  "chronic": "질병관리청 지역사회건강조사 2025 고혈압·당뇨병 진단 경험률(30세 이상), KOSIS 177 DT_HYPER_DOCTOR·DT_DIA_DOCTOR(시군구) + 국민건강영양조사 2024 유병률 성×연령, DT_11702_N105·N102",
+  "employment": "통계청 2020 인구주택총조사(표본), KOSIS 101 DT_1PC2006(성·연령·종사상지위별 취업인구, 시도)",
+  "nps_oldage": "국민연금공단 2025 노령연금 연령별·성별·지역별 수급자, KOSIS 322 DT_32202_B049",
+  "basic_pension": "통계청 연금통계 2024 연금종류별 수급률(기초·장애인연금, 65세 이상 연령대별), KOSIS 101 DT_1PEN_006",
+  "networth": "가계금융복지조사 2025 순자산 5분위, KOSIS 101 DT_1HDAAA12 + DT_1HDAAB03(순자산 분위별 소득구간)",
+  "dual_earner": "통계청 지역별고용조사 가구주 연령계층별 맞벌이 가구 비율, KOSIS 101 DT_1ES4F03S",
+  "contract": "통계청 경제활동인구조사 근로형태별 부가조사, KOSIS 101 DT_1DE7006S(성·연령별 비정규직)",
+  "digital": "과기정통부·NIA 스마트폰 과의존 실태조사 2025 디지털 사용 역량(DT_120019N_2021_027) + 디지털정보격차 실태조사 2025 고령층 역량 지수(DT_12017N0014), KOSIS 127",
+  "elder": "보건복지부 노인실태조사 2023 기능상태 제한(DT_117071_C003)·돌봄 수급률(DT_117071_C004), KOSIS 117",
+  "habits": "질병관리청 지역사회건강조사 2025 고위험음주율(DT_117075_H_DR_HIGH_WH)·자가보고 비만율(DT_H_OBE_OBE)·걷기 실천율(DT_H_EX_WALK) 시군구 + 국민건강영양조사 2024 성×연령(DT_11702_N018·N101·N054), KOSIS 177",
+  "mind": "질병관리청 지역사회건강조사 2025 스트레스 인지율(DT_H_MENTAL_STRESS)·우울감 경험률(DT_H_MENTAL_DEPRESS) 시군구 + 국민건강영양조사 2024 스트레스 인지율 성×연령(DT_11702_N061), KOSIS 177",
+  "reading": "문화체육관광부 국민독서실태조사 2025 성인 종합 독서율, KOSIS 113 DT_113_STBL_1029672",
+  "arts": "문화체육관광부 문화향수실태조사 2025 문화예술행사 관람률, KOSIS 113 DT_113_STBL_1026886",
+  "pet": "농림축산식품부 2025 반려동물 양육 실태조사 현재 양육 여부, KOSIS 114 DT_114063_001",
+  "social_insurance": "통계청 경제활동인구조사 근로형태별 부가조사 2026-08 사회보험 가입률, KOSIS 101 DT_1DE7081S",
+  "survey_civic": "한국행정연구원 2025 사회통합실태조사(의견 피력·선거 투표·사회단체·사회적 고립감), KOSIS 417 DT_417001_0027/0028/0021/0035",
+  "survey_volunteer": "문화체육관광부 2025 국민여가활동조사 계열 자원봉사 참여 경험, KOSIS 113 DT_113_STBL_1028450",
+  "survey_travel_abroad": "문화체육관광부 2025 해외여행 경험률, KOSIS 113 DT_113_STBL_1029566",
+  "survey_breakfast_skip": "질병관리청 2024 국민건강영양조사 아침식사 결식률(19세 이상), KOSIS 177 DT_11702_N033",
+  "survey_medical": "한국보건사회연구원·국민건강보험공단 2023 한국의료패널(민간의료보험 가입·병의원 미충족 의료), KOSIS 331 DT_920012N_1072/2056",
+  "survey_worklife": "안전보건공단 2023 제7차 근로환경조사(밤 근무·교대근무·입면 곤란), KOSIS 380 DT_380002_A0561/A0815/A0971_7TH",
+  "survey_kiosk": "2025 디지털 역량(키오스크 이용) 조사, KOSIS 164 DT_164004_2025273",
+  "survey_senior_job": "보건복지부 2023 노인실태조사 노인일자리사업 참여, KOSIS 117 DT_117071_G004",
+  "survey_youth": "국무조정실 2024 청년 삶 실태조사(19~34세: 아플 때 도움받을 곳, 정신건강 미충족 의료, 타 시도 이주 의향), KOSIS 170 DT_170002_F001/C017/B034",
+  "survey_worklife2": "안전보건공단 2023 제7차 근로환경조사(주업 근무시간·가족 돌봄·자영업 플랫폼), KOSIS 380 DT_380002_A08401/A1002/A0044_7TH",
+  "survey_driving_license": "경찰청 2024 운전면허 소지자(연령·성·지역) ÷ 2025-12 주민등록인구(20세 이상), KOSIS 132 DT_13201_A002/A004/A005",
+  "survey_union_pension": "고용노동부 2025 고용형태별 근로실태조사(노조 가입·퇴직연금 가입, 특수형태 제외), KOSIS 118 DT_118N_LCE310",
+  "finance": "통계청·금융감독원·한국은행 가계금융복지조사 2025, KOSIS 101 DT_1HDAAB03(가구특성별 소득구간)·DT_1HDAAD01(가구특성별 부채 보유)·DT_1HDAAA06/03/04/09/01(연령·입주형태·가구원수·종사상지위·지역별)"
+ }
+}

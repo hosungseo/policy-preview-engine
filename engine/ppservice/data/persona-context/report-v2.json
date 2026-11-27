@@ -1,0 +1,656 @@
+{
+ "addon_rake_gap": {
+  "networth": 0.036486781785378765,
+  "elder": 0.019111665366553066,
+  "digital": 0.041493482755521005,
+  "drinking": 5.3207067055471846e-05,
+  "obesity": 7.017363483291517e-05,
+  "walking": 1.9294953028770045e-05,
+  "stress": 1.92314104089375e-05,
+  "depression": 2.220446049250313e-16,
+  "reading": 0.033011706399893925,
+  "arts": 0.05543679413542285,
+  "pet": 0.01239250876801945,
+  "voted_general": 0.004582726111824309,
+  "petition": 0.003319387691206488,
+  "online_voice": 0.0007554722067175668,
+  "contacted_official": 0.0009669863119058375,
+  "community_group": 0.002312943057863004,
+  "volunteer": 0.003342126444584037,
+  "lonely": 0.023894226501994797,
+  "sleep_trouble": 0.001992027442178801,
+  "breakfast_skip": 0.006736263561433531,
+  "private_insurance": 0.14793209965206539,
+  "unmet_care": 0.001716680259947645,
+  "night_work": 0.0020358179723380943,
+  "shift_work": 0.002807176554795024,
+  "union": 2.220446049250313e-16,
+  "retirement_pension": 1.1102230246251565e-16,
+  "long_hours": 0.00791043934500113,
+  "worker_care": 0.0018241885059097074,
+  "platform_self": 0.013507610118150715,
+  "protest": 0.0013305512261821972,
+  "boycott": 0.001197994297416849,
+  "youth_no_help_sick": 0.0008803800503879716,
+  "youth_mental_unmet": 0.004052241497654041,
+  "youth_move": 0.0010552725709884747,
+  "driving_license": 0.008145961075159802,
+  "kiosk_hard": 0.048821045572688515,
+  "senior_job": 0.0031394261585164784,
+  "travel_abroad": 0.029259677738027845
+ },
+ "version": "life-context-v2",
+ "people": 20000,
+ "rake_gap": {
+  "income": 0.03556570881503196,
+  "debt": 0.03530458177115764,
+  "car": 0.008076972617383937,
+  "smoking": 1.0181282732085739e-05,
+  "health_good": 9.350825253662265e-06,
+  "hypertension": 6.37213788600155e-05,
+  "diabetes": 3.76968124592425e-05
+ },
+ "skipped_by_profile_text": {
+  "obesity": 383,
+  "reading": 1452,
+  "smoking": 239,
+  "employment": 1573,
+  "tenure": 3945,
+  "walking": 2697,
+  "mind": 2032,
+  "pet": 419,
+  "arts": 714,
+  "drinking": 2054,
+  "commute": 306,
+  "disability": 110,
+  "car": 274,
+  "religion": 587,
+  "health": 690,
+  "finance": 235,
+  "shift": 51,
+  "travel": 226,
+  "insurance": 292,
+  "livelihood": 84,
+  "volunteer": 332,
+  "civic": 88,
+  "pension": 37,
+  "breakfast": 2
+ },
+ "panel_vs_official": {
+  "income_band": {
+   "panel": {
+    "lt10": 0.0344,
+    "10_30": 0.1988,
+    "30_50": 0.1946,
+    "50_70": 0.1621,
+    "70_100": 0.1714,
+    "ge100": 0.2388
+   },
+   "official_households": {
+    "lt10": 0.03716,
+    "10_30": 0.20424,
+    "30_50": 0.1919,
+    "50_70": 0.1593,
+    "70_100": 0.16827,
+    "ge100": 0.23913
+   }
+  },
+  "debt": {
+   "panel": 0.6009,
+   "official_households": 0.5892
+  },
+  "car": {
+   "panel": 0.6623,
+   "official_households": 0.6603
+  },
+  "livelihood_19plus": {
+   "panel": 0.053
+  },
+  "disability_19plus": {
+   "panel": 0.054
+  },
+  "religion": {
+   "panel": {
+    "none": 10889,
+    "buddhist": 3021,
+    "other": 158,
+    "protestant": 3814,
+    "catholic": 1531
+   }
+  },
+  "commute": {
+   "panel": {
+    "car": 6529,
+    "walk": 1826,
+    "bus": 1460,
+    "subway": 1165,
+    "multi": 665,
+    "shuttle": 414,
+    "bike": 188,
+    "other": 134,
+    "intercity_bus": 40,
+    "taxi": 33,
+    "rail": 13
+   }
+  },
+  "smoking": {
+   "panel": 0.1639,
+   "panel_male": 0.2913,
+   "panel_female": 0.04
+  },
+  "health_good_not_shown": {
+   "panel": 0.5066
+  },
+  "hypertension_30plus": {
+   "panel": 0.2822
+  },
+  "diabetes_30plus": {
+   "panel": 0.1312
+  },
+  "employment": {
+   "panel": {
+    "wage": 8782,
+    "family": 445,
+    "self_alone": 1711,
+    "employer": 551
+   }
+  },
+  "nps_65plus": {
+   "panel": 0.4898,
+   "official_65plus_2024": 0.521
+  },
+  "networth_quintile": {
+   "panel": {
+    "1": 4521,
+    "2": 4119,
+    "3": 3613,
+    "4": 3237,
+    "5": 4275
+   },
+   "official": "각 20%(가구 기준)"
+  },
+  "nonregular_of_wage": {
+   "panel": 0.3777,
+   "official_2026_08": "38%(임금근로자 중)"
+  },
+  "dual_earner_of_married": {
+   "panel": 0.4987,
+   "official_2025": 0.486
+  },
+  "elder_function_65plus": {
+   "panel": {
+    "none": 3642,
+    "iadl": 441,
+    "adl": 354
+   },
+   "official_2023": {
+    "none": 0.814,
+    "iadl": 0.098,
+    "adl": 0.087
+   }
+  },
+  "elder_care_of_limited": {
+   "panel": 0.4604,
+   "official_2023": 0.472
+  },
+  "digital": {
+   "panel_by_age": {
+    "19-59": {
+     "good": 5450,
+     "fair": 6785,
+     "poor": 1157
+    },
+    "60-69": {
+     "good": 590,
+     "fair": 1637,
+     "poor": 1346
+    },
+    "70+": {
+     "poor": 2169,
+     "good": 229,
+     "fair": 637
+    }
+   }
+  },
+  "basic_pension_65plus": {
+   "panel": 0.6733,
+   "official_65plus_2024": 0.676
+  },
+  "drinking_kchs": {
+   "panel": 0.1016,
+   "kchs_district_mean": 0.1083
+  },
+  "obesity_kchs": {
+   "panel": 0.3191,
+   "kchs_district_mean": 0.3296
+  },
+  "walking_kchs": {
+   "panel": 0.527,
+   "kchs_district_mean": 0.4938
+  },
+  "stress_kchs": {
+   "panel": 0.2196,
+   "kchs_district_mean": 0.2099
+  },
+  "depression_kchs": {
+   "panel": 0.0642,
+   "kchs_district_mean": 0.0608
+  },
+  "reading": {
+   "panel": 0.3699,
+   "official_2025": 0.385
+  },
+  "arts": {
+   "panel": 0.586,
+   "official_2025": 0.602
+  },
+  "pet": {
+   "panel_people": 0.2917,
+   "official_households_2025": 0.292
+  },
+  "employment_insurance_of_wage": {
+   "panel": 0.7825,
+   "official_2026_08": 0.77
+  },
+  "voted_general": {
+   "panel": 0.8437,
+   "official": 0.843
+  },
+  "petition": {
+   "panel": 0.138,
+   "official": 0.137
+  },
+  "online_voice": {
+   "panel": 0.109,
+   "official": 0.106
+  },
+  "contacted_official": {
+   "panel": 0.0859,
+   "official": 0.085
+  },
+  "community_group": {
+   "panel": 0.245,
+   "official": 0.247
+  },
+  "volunteer": {
+   "panel": 0.0616,
+   "official": 0.063
+  },
+  "lonely": {
+   "panel": 0.1719,
+   "official": 0.169
+  },
+  "sleep_trouble": {
+   "panel": 0.0348,
+   "official": 0.031
+  },
+  "breakfast_skip": {
+   "panel": 0.3057,
+   "official": 0.311
+  },
+  "private_insurance": {
+   "panel": 0.796,
+   "official": 0.752
+  },
+  "unmet_care": {
+   "panel": 0.1076,
+   "official": 0.109
+  },
+  "night_work": {
+   "panel": 0.0661,
+   "official": 0.066
+  },
+  "shift_work": {
+   "panel": 0.0657,
+   "official": 0.069
+  },
+  "union": {
+   "panel": 0.0934,
+   "official": 0.102
+  },
+  "retirement_pension": {
+   "panel": 0.4998,
+   "official": 0.528
+  },
+  "long_hours": {
+   "panel": 0.1482,
+   "official": 0.149
+  },
+  "worker_care": {
+   "panel": 0.0172,
+   "official": 0.019
+  },
+  "platform_self": {
+   "panel": 0.0438,
+   "official": 0.04
+  },
+  "protest": {
+   "panel": 0.129,
+   "official": 0.129
+  },
+  "boycott": {
+   "panel": 0.1036,
+   "official": 0.103
+  },
+  "youth_no_help_sick": {
+   "panel": 0.0573,
+   "official": 0.056
+  },
+  "youth_mental_unmet": {
+   "panel": 0.0604,
+   "official": 0.063
+  },
+  "youth_move": {
+   "panel": 0.2479,
+   "official": 0.243
+  },
+  "driving_license": {
+   "panel": 0.7882,
+   "official": 0.792
+  },
+  "kiosk_hard": {
+   "panel": 0.0512,
+   "official": 0.05
+  },
+  "senior_job": {
+   "panel": 0.0634,
+   "official": 0.067
+  },
+  "travel_abroad": {
+   "panel": 0.2118,
+   "official": 0.215
+  }
+ },
+ "held_out": {
+  "(가구주 성) 남자": {
+   "n": 8045,
+   "panel": {
+    "lt10": 0.023,
+    "10_30": 0.1861,
+    "30_50": 0.2026,
+    "50_70": 0.171,
+    "70_100": 0.1797,
+    "ge100": 0.2375
+   },
+   "official": {
+    "lt10": 0.02095,
+    "10_30": 0.14304,
+    "30_50": 0.18017,
+    "50_70": 0.17058,
+    "70_100": 0.19559,
+    "ge100": 0.28967
+   },
+   "max_gap": 0.0522,
+   "panel_mean": 7551,
+   "official_mean": 8340
+  },
+  "(가구주 성) 여자": {
+   "n": 8758,
+   "panel": {
+    "lt10": 0.0564,
+    "10_30": 0.2681,
+    "30_50": 0.1877,
+    "50_70": 0.1555,
+    "70_100": 0.1452,
+    "ge100": 0.187
+   },
+   "official": {
+    "lt10": 0.08268,
+    "10_30": 0.37603,
+    "30_50": 0.22481,
+    "50_70": 0.12765,
+    "70_100": 0.09156,
+    "ge100": 0.09727
+   },
+   "max_gap": 0.1079,
+   "panel_mean": 6481,
+   "official_mean": 4801
+  },
+  "(가구주 혼인상태) 미혼": {
+   "n": 2113,
+   "panel": {
+    "lt10": 0.045,
+    "10_30": 0.3199,
+    "30_50": 0.3521,
+    "50_70": 0.1552,
+    "70_100": 0.0805,
+    "ge100": 0.0473
+   },
+   "official": {
+    "lt10": 0.04598,
+    "10_30": 0.26945,
+    "30_50": 0.31538,
+    "50_70": 0.19856,
+    "70_100": 0.12033,
+    "ge100": 0.05031
+   },
+   "max_gap": 0.0504,
+   "panel_mean": 4448,
+   "official_mean": 4847
+  },
+  "(가구주 혼인상태) 배우자 있음": {
+   "n": 11833,
+   "panel": {
+    "lt10": 0.016,
+    "10_30": 0.1447,
+    "30_50": 0.1778,
+    "50_70": 0.1824,
+    "70_100": 0.2022,
+    "ge100": 0.2769
+   },
+   "official": {
+    "lt10": 0.0038,
+    "10_30": 0.084,
+    "30_50": 0.14078,
+    "50_70": 0.16481,
+    "70_100": 0.22677,
+    "ge100": 0.37983
+   },
+   "max_gap": 0.1029,
+   "panel_mean": 8254,
+   "official_mean": 9727
+  },
+  "(가구주 혼인상태) 사별": {
+   "n": 1673,
+   "panel": {
+    "lt10": 0.1781,
+    "10_30": 0.5702,
+    "30_50": 0.1118,
+    "50_70": 0.0616,
+    "70_100": 0.0371,
+    "ge100": 0.0412
+   },
+   "official": {
+    "lt10": 0.15188,
+    "10_30": 0.5223,
+    "30_50": 0.15328,
+    "50_70": 0.07295,
+    "70_100": 0.05453,
+    "ge100": 0.04506
+   },
+   "max_gap": 0.0479,
+   "panel_mean": 3039,
+   "official_mean": 3371
+  },
+  "(가구주 혼인상태) 이혼": {
+   "n": 1184,
+   "panel": {
+    "lt10": 0.0819,
+    "10_30": 0.4248,
+    "30_50": 0.2019,
+    "50_70": 0.1258,
+    "70_100": 0.0785,
+    "ge100": 0.087
+   },
+   "official": {
+    "lt10": 0.07375,
+    "10_30": 0.37175,
+    "30_50": 0.27297,
+    "50_70": 0.15141,
+    "70_100": 0.07426,
+    "ge100": 0.05586
+   },
+   "max_gap": 0.0711,
+   "panel_mean": 4521,
+   "official_mean": 4313
+  }
+ },
+ "arts_by_work_and_disability": {
+  "고용원이 없는 자영업자": {
+   "n": 1670,
+   "panel": 0.479,
+   "official": 0.428
+  },
+  "고용원이 있는 자영업자": {
+   "n": 539,
+   "panel": 0.605,
+   "official": 0.57
+  },
+  "무급가족종사자": {
+   "n": 440,
+   "panel": 0.411,
+   "official": 0.374
+  },
+  "상용근로자": {
+   "n": 5262,
+   "panel": 0.764,
+   "official": 0.723
+  },
+  "임시근로자": {
+   "n": 3174,
+   "panel": 0.549,
+   "official": 0.491
+  },
+  "장애등록": {
+   "n": 1055,
+   "panel": 0.223,
+   "official": 0.21
+  },
+  "해당사항없음": {
+   "n": 18231,
+   "panel": 0.607,
+   "official": 0.606
+  },
+  "해당없음(무직)": {
+   "n": 7113,
+   "panel": 0.442,
+   "official": 0.394
+  }
+ },
+ "used_as_targets": {
+  "mean_income_by_province": {
+   "rows": [
+    [
+     "강원",
+     6540,
+     6479
+    ],
+    [
+     "경기",
+     8480,
+     8488
+    ],
+    [
+     "경상남",
+     6240,
+     6392
+    ],
+    [
+     "경상북",
+     6531,
+     6490
+    ],
+    [
+     "광주",
+     6528,
+     6708
+    ],
+    [
+     "대구",
+     6388,
+     6537
+    ],
+    [
+     "대전",
+     7546,
+     7588
+    ],
+    [
+     "부산",
+     6371,
+     6349
+    ],
+    [
+     "서울",
+     8232,
+     8164
+    ],
+    [
+     "세종",
+     9800,
+     9482
+    ],
+    [
+     "울산",
+     8215,
+     8207
+    ],
+    [
+     "인천",
+     6312,
+     6335
+    ],
+    [
+     "전라남",
+     6863,
+     6764
+    ],
+    [
+     "전북",
+     6751,
+     6587
+    ],
+    [
+     "제주",
+     7062,
+     6855
+    ],
+    [
+     "충청남",
+     6818,
+     6882
+    ],
+    [
+     "충청북",
+     6943,
+     6980
+    ]
+   ],
+   "pearson": 0.993
+  },
+  "mean_income_by_tenure": {
+   "rows": [
+    [
+     "free",
+     4293,
+     4330
+    ],
+    [
+     "jeonse",
+     7464,
+     7626
+    ],
+    [
+     "monthly",
+     4999,
+     5009
+    ],
+    [
+     "own",
+     8494,
+     8640
+    ]
+   ]
+  }
+ }
+}

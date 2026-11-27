@@ -1,0 +1,2904 @@
+{
+ "version": "life-history-v1",
+ "assumptions": {
+  "panel_age_year": 2025,
+  "income_quintile": "personal labour + business income quintile among two-year earners, followed in employed years; independent of the household income band (v1)",
+  "smoking_c_lam": [
+   0.985,
+   0.8
+  ],
+  "employment_c_lam": [
+   0.95,
+   0.6
+  ],
+  "forward_kernels": "2024 income transitions re-fitted to 2024 margins on the baseline (frozen for scenarios), 2025 employment level (panel), 2025 migration flows, 2025 marriage/divorce rates, 2024 life table"
+ },
+ "employment": {
+  "yearly": [
+   {
+    "year": 2017,
+    "n": 18013,
+    "panel": 64.8,
+    "official_rate_same_people": 65.1
+   },
+   {
+    "year": 2018,
+    "n": 18316,
+    "panel": 64.4,
+    "official_rate_same_people": 64.6
+   },
+   {
+    "year": 2019,
+    "n": 18605,
+    "panel": 64.0,
+    "official_rate_same_people": 64.5
+   },
+   {
+    "year": 2020,
+    "n": 18842,
+    "panel": 62.4,
+    "official_rate_same_people": 63.4
+   },
+   {
+    "year": 2021,
+    "n": 19077,
+    "panel": 62.0,
+    "official_rate_same_people": 63.4
+   },
+   {
+    "year": 2022,
+    "n": 19326,
+    "panel": 63.4,
+    "official_rate_same_people": 64.6
+   },
+   {
+    "year": 2023,
+    "n": 19557,
+    "panel": 63.5,
+    "official_rate_same_people": 65.1
+   },
+   {
+    "year": 2024,
+    "n": 19791,
+    "panel": 63.2,
+    "official_rate_same_people": 65.0
+   },
+   {
+    "year": 2025,
+    "n": 20000,
+    "panel": 63.1,
+    "official_rate_same_people": 65.1
+   }
+  ],
+  "working_still_working_next_year": 93.1,
+  "note": "Personas work more often than the survey (2025 level = panel); the change over years follows the published rates, so the panel - official gap should stay roughly constant."
+ },
+ "income": {
+  "model": "Markov on published 5x5 transitions by year x sex x prior-year age, mover-stayer mix, transitions re-fitted each year to the published margins; stayers lapse at 65",
+  "stayers": {
+   "1": 0.25,
+   "5": 0.55
+  },
+  "persistence_since_2017": {
+   "fitted": {
+    "1": {
+     "1": 1.0,
+     "2": 0.6461,
+     "3": 0.4698,
+     "4": 0.3772,
+     "5": 0.3305,
+     "6": 0.3007,
+     "7": 0.284,
+     "8": 0.2731
+    },
+    "5": {
+     "1": 1.0,
+     "2": 0.8738,
+     "3": 0.7828,
+     "4": 0.7158,
+     "5": 0.6665,
+     "6": 0.6255,
+     "7": 0.5979,
+     "8": 0.5735
+    }
+   },
+   "pure_markov": {
+    "1": {
+     "1": 1.0,
+     "2": 0.6483,
+     "3": 0.4344,
+     "4": 0.2929,
+     "5": 0.2017,
+     "6": 0.1428,
+     "7": 0.1057,
+     "8": 0.0766
+    },
+    "5": {
+     "1": 1.0,
+     "2": 0.8701,
+     "3": 0.7614,
+     "4": 0.6627,
+     "5": 0.5717,
+     "6": 0.4887,
+     "7": 0.4219,
+     "8": 0.3694
+    }
+   },
+   "target": {
+    "1": {
+     "1": 1.0,
+     "2": 0.674852,
+     "3": 0.517112,
+     "4": 0.417628,
+     "5": 0.351797,
+     "6": 0.306618,
+     "7": 0.274561,
+     "8": 0.248875
+    },
+    "5": {
+     "1": 1.0,
+     "2": 0.873633,
+     "3": 0.794783,
+     "4": 0.730696,
+     "5": 0.68072,
+     "6": 0.636766,
+     "7": 0.59809,
+     "8": 0.560075
+    }
+   }
+  },
+  "rejected_gaussian_copula": {
+   "one_year_corr": {
+    "19~39세": 0.9013,
+    "40~64세": 0.9441,
+    "65세 이상": 0.9467
+   },
+   "lambda": 0.75,
+   "persistence": {
+    "fitted": {
+     "1": {
+      "1": 1.0,
+      "2": 0.7812,
+      "3": 0.6578,
+      "4": 0.5754,
+      "5": 0.5147,
+      "6": 0.4639,
+      "7": 0.4272,
+      "8": 0.3958
+     },
+     "5": {
+      "1": 1.0,
+      "2": 0.8052,
+      "3": 0.6868,
+      "4": 0.6055,
+      "5": 0.5486,
+      "6": 0.4999,
+      "7": 0.4582,
+      "8": 0.4251
+     }
+    },
+    "target": {
+     "1": {
+      "1": 1.0,
+      "2": 0.674852,
+      "3": 0.517112,
+      "4": 0.417628,
+      "5": 0.351797,
+      "6": 0.306618,
+      "7": 0.274561,
+      "8": 0.248875
+     },
+     "5": {
+      "1": 1.0,
+      "2": 0.873633,
+      "3": 0.794783,
+      "4": 0.730696,
+      "5": 0.68072,
+      "6": 0.636766,
+      "7": 0.59809,
+      "8": 0.560075
+     }
+    }
+   }
+  },
+  "checks": {
+   "margins_max_gap_pp": 7.0,
+   "margins": [
+    {
+     "year": 2017,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2736,
+     "max_gap_pp": 0.7
+    },
+    {
+     "year": 2017,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1737,
+     "max_gap_pp": 1.85
+    },
+    {
+     "year": 2017,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3649,
+     "max_gap_pp": 0.7
+    },
+    {
+     "year": 2017,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2915,
+     "max_gap_pp": 0.59
+    },
+    {
+     "year": 2017,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 356,
+     "max_gap_pp": 7.0
+    },
+    {
+     "year": 2017,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 284,
+     "max_gap_pp": 2.6
+    },
+    {
+     "year": 2018,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2806,
+     "max_gap_pp": 0.5
+    },
+    {
+     "year": 2018,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1893,
+     "max_gap_pp": 1.06
+    },
+    {
+     "year": 2018,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3557,
+     "max_gap_pp": 0.58
+    },
+    {
+     "year": 2018,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2881,
+     "max_gap_pp": 1.67
+    },
+    {
+     "year": 2018,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 348,
+     "max_gap_pp": 3.58
+    },
+    {
+     "year": 2018,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 280,
+     "max_gap_pp": 2.69
+    },
+    {
+     "year": 2019,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2778,
+     "max_gap_pp": 0.96
+    },
+    {
+     "year": 2019,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1885,
+     "max_gap_pp": 0.73
+    },
+    {
+     "year": 2019,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3566,
+     "max_gap_pp": 0.98
+    },
+    {
+     "year": 2019,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2884,
+     "max_gap_pp": 1.2
+    },
+    {
+     "year": 2019,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 407,
+     "max_gap_pp": 1.7
+    },
+    {
+     "year": 2019,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 339,
+     "max_gap_pp": 1.92
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2703,
+     "max_gap_pp": 1.21
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1794,
+     "max_gap_pp": 0.83
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3553,
+     "max_gap_pp": 1.04
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2857,
+     "max_gap_pp": 1.2
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 459,
+     "max_gap_pp": 2.16
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 358,
+     "max_gap_pp": 2.78
+    },
+    {
+     "year": 2021,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2679,
+     "max_gap_pp": 0.9
+    },
+    {
+     "year": 2021,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1782,
+     "max_gap_pp": 1.87
+    },
+    {
+     "year": 2021,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3574,
+     "max_gap_pp": 0.29
+    },
+    {
+     "year": 2021,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2892,
+     "max_gap_pp": 0.73
+    },
+    {
+     "year": 2021,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 474,
+     "max_gap_pp": 2.48
+    },
+    {
+     "year": 2021,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 379,
+     "max_gap_pp": 2.09
+    },
+    {
+     "year": 2022,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2719,
+     "max_gap_pp": 1.2
+    },
+    {
+     "year": 2022,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1863,
+     "max_gap_pp": 1.26
+    },
+    {
+     "year": 2022,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3688,
+     "max_gap_pp": 0.84
+    },
+    {
+     "year": 2022,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2982,
+     "max_gap_pp": 0.65
+    },
+    {
+     "year": 2022,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 430,
+     "max_gap_pp": 3.61
+    },
+    {
+     "year": 2022,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 559,
+     "max_gap_pp": 1.33
+    },
+    {
+     "year": 2023,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2692,
+     "max_gap_pp": 1.09
+    },
+    {
+     "year": 2023,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1885,
+     "max_gap_pp": 1.33
+    },
+    {
+     "year": 2023,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3656,
+     "max_gap_pp": 0.55
+    },
+    {
+     "year": 2023,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 3020,
+     "max_gap_pp": 0.72
+    },
+    {
+     "year": 2023,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 635,
+     "max_gap_pp": 2.19
+    },
+    {
+     "year": 2023,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 503,
+     "max_gap_pp": 1.39
+    },
+    {
+     "year": 2024,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2632,
+     "max_gap_pp": 0.72
+    },
+    {
+     "year": 2024,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1907,
+     "max_gap_pp": 1.56
+    },
+    {
+     "year": 2024,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3678,
+     "max_gap_pp": 0.9
+    },
+    {
+     "year": 2024,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 3002,
+     "max_gap_pp": 0.97
+    },
+    {
+     "year": 2024,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 699,
+     "max_gap_pp": 1.47
+    },
+    {
+     "year": 2024,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 567,
+     "max_gap_pp": 1.29
+    }
+   ],
+   "direction_mean_abs_gap_pp": 1.65,
+   "directions": [
+    {
+     "year": 2018,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2617,
+     "up": [
+      22.5,
+      23.0
+     ],
+     "stay": [
+      59.9,
+      59.8
+     ],
+     "down": [
+      17.6,
+      17.3
+     ]
+    },
+    {
+     "year": 2018,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1625,
+     "up": [
+      25.7,
+      23.7
+     ],
+     "stay": [
+      56.4,
+      57.0
+     ],
+     "down": [
+      17.9,
+      19.3
+     ]
+    },
+    {
+     "year": 2018,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3427,
+     "up": [
+      12.9,
+      13.9
+     ],
+     "stay": [
+      67.4,
+      68.2
+     ],
+     "down": [
+      19.7,
+      17.9
+     ]
+    },
+    {
+     "year": 2018,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2676,
+     "up": [
+      14.1,
+      16.8
+     ],
+     "stay": [
+      66.9,
+      65.4
+     ],
+     "down": [
+      19.1,
+      17.8
+     ]
+    },
+    {
+     "year": 2018,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 308,
+     "up": [
+      10.7,
+      11.2
+     ],
+     "stay": [
+      69.8,
+      68.8
+     ],
+     "down": [
+      19.5,
+      20.1
+     ]
+    },
+    {
+     "year": 2018,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 237,
+     "up": [
+      9.3,
+      7.7
+     ],
+     "stay": [
+      77.2,
+      80.6
+     ],
+     "down": [
+      13.5,
+      11.7
+     ]
+    },
+    {
+     "year": 2019,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2531,
+     "up": [
+      18.6,
+      23.0
+     ],
+     "stay": [
+      61.2,
+      60.1
+     ],
+     "down": [
+      20.3,
+      17.0
+     ]
+    },
+    {
+     "year": 2019,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1661,
+     "up": [
+      22.3,
+      23.7
+     ],
+     "stay": [
+      57.2,
+      57.1
+     ],
+     "down": [
+      20.5,
+      19.2
+     ]
+    },
+    {
+     "year": 2019,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3456,
+     "up": [
+      16.3,
+      14.1
+     ],
+     "stay": [
+      68.4,
+      68.4
+     ],
+     "down": [
+      15.2,
+      17.6
+     ]
+    },
+    {
+     "year": 2019,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2689,
+     "up": [
+      20.0,
+      16.4
+     ],
+     "stay": [
+      65.7,
+      66.0
+     ],
+     "down": [
+      14.4,
+      17.5
+     ]
+    },
+    {
+     "year": 2019,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 349,
+     "up": [
+      17.2,
+      11.3
+     ],
+     "stay": [
+      67.0,
+      69.2
+     ],
+     "down": [
+      15.8,
+      19.5
+     ]
+    },
+    {
+     "year": 2019,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 273,
+     "up": [
+      6.6,
+      8.7
+     ],
+     "stay": [
+      78.4,
+      80.0
+     ],
+     "down": [
+      15.0,
+      11.4
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2480,
+     "up": [
+      19.4,
+      23.2
+     ],
+     "stay": [
+      61.1,
+      59.8
+     ],
+     "down": [
+      19.4,
+      17.0
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1604,
+     "up": [
+      23.5,
+      23.8
+     ],
+     "stay": [
+      57.5,
+      56.6
+     ],
+     "down": [
+      19.0,
+      19.6
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3432,
+     "up": [
+      16.3,
+      14.6
+     ],
+     "stay": [
+      66.7,
+      68.1
+     ],
+     "down": [
+      17.0,
+      17.3
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2687,
+     "up": [
+      16.7,
+      16.8
+     ],
+     "stay": [
+      67.0,
+      65.4
+     ],
+     "down": [
+      16.3,
+      17.8
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 401,
+     "up": [
+      12.0,
+      11.4
+     ],
+     "stay": [
+      66.1,
+      70.2
+     ],
+     "down": [
+      21.9,
+      18.3
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 305,
+     "up": [
+      6.6,
+      7.6
+     ],
+     "stay": [
+      78.4,
+      79.9
+     ],
+     "down": [
+      15.1,
+      12.5
+     ]
+    },
+    {
+     "year": 2021,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2446,
+     "up": [
+      20.6,
+      22.6
+     ],
+     "stay": [
+      61.1,
+      60.7
+     ],
+     "down": [
+      18.3,
+      16.8
+     ]
+    },
+    {
+     "year": 2021,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1537,
+     "up": [
+      20.3,
+      23.4
+     ],
+     "stay": [
+      59.4,
+      57.6
+     ],
+     "down": [
+      20.3,
+      19.1
+     ]
+    },
+    {
+     "year": 2021,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3430,
+     "up": [
+      18.6,
+      14.3
+     ],
+     "stay": [
+      66.2,
+      68.6
+     ],
+     "down": [
+      15.2,
+      17.1
+     ]
+    },
+    {
+     "year": 2021,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2681,
+     "up": [
+      16.6,
+      15.8
+     ],
+     "stay": [
+      65.5,
+      66.3
+     ],
+     "down": [
+      17.9,
+      17.9
+     ]
+    },
+    {
+     "year": 2021,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 430,
+     "up": [
+      10.7,
+      11.3
+     ],
+     "stay": [
+      72.1,
+      69.7
+     ],
+     "down": [
+      17.2,
+      19.0
+     ]
+    },
+    {
+     "year": 2021,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 319,
+     "up": [
+      7.5,
+      8.0
+     ],
+     "stay": [
+      77.1,
+      79.3
+     ],
+     "down": [
+      15.4,
+      12.7
+     ]
+    },
+    {
+     "year": 2022,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2460,
+     "up": [
+      21.4,
+      22.9
+     ],
+     "stay": [
+      61.1,
+      60.3
+     ],
+     "down": [
+      17.5,
+      16.8
+     ]
+    },
+    {
+     "year": 2022,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1580,
+     "up": [
+      22.5,
+      23.1
+     ],
+     "stay": [
+      56.6,
+      57.0
+     ],
+     "down": [
+      20.9,
+      19.9
+     ]
+    },
+    {
+     "year": 2022,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3490,
+     "up": [
+      16.4,
+      14.3
+     ],
+     "stay": [
+      68.1,
+      69.0
+     ],
+     "down": [
+      15.6,
+      16.6
+     ]
+    },
+    {
+     "year": 2022,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2747,
+     "up": [
+      16.6,
+      15.9
+     ],
+     "stay": [
+      66.0,
+      66.2
+     ],
+     "down": [
+      17.4,
+      17.9
+     ]
+    },
+    {
+     "year": 2022,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 348,
+     "up": [
+      5.7,
+      8.1
+     ],
+     "stay": [
+      77.0,
+      79.3
+     ],
+     "down": [
+      17.2,
+      12.6
+     ]
+    },
+    {
+     "year": 2022,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 470,
+     "up": [
+      13.8,
+      11.7
+     ],
+     "stay": [
+      68.7,
+      70.0
+     ],
+     "down": [
+      17.4,
+      18.4
+     ]
+    },
+    {
+     "year": 2023,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2493,
+     "up": [
+      17.6,
+      22.7
+     ],
+     "stay": [
+      62.9,
+      60.9
+     ],
+     "down": [
+      19.5,
+      16.4
+     ]
+    },
+    {
+     "year": 2023,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1635,
+     "up": [
+      23.3,
+      23.7
+     ],
+     "stay": [
+      57.9,
+      57.3
+     ],
+     "down": [
+      18.8,
+      19.1
+     ]
+    },
+    {
+     "year": 2023,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3524,
+     "up": [
+      16.1,
+      13.7
+     ],
+     "stay": [
+      68.5,
+      69.6
+     ],
+     "down": [
+      15.4,
+      16.7
+     ]
+    },
+    {
+     "year": 2023,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2789,
+     "up": [
+      18.1,
+      16.0
+     ],
+     "stay": [
+      66.3,
+      67.1
+     ],
+     "down": [
+      15.6,
+      16.9
+     ]
+    },
+    {
+     "year": 2023,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 544,
+     "up": [
+      10.5,
+      11.1
+     ],
+     "stay": [
+      70.6,
+      70.9
+     ],
+     "down": [
+      18.9,
+      18.0
+     ]
+    },
+    {
+     "year": 2023,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 414,
+     "up": [
+      10.9,
+      8.4
+     ],
+     "stay": [
+      75.4,
+      79.8
+     ],
+     "down": [
+      13.8,
+      11.7
+     ]
+    },
+    {
+     "year": 2024,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2430,
+     "up": [
+      19.3,
+      21.9
+     ],
+     "stay": [
+      62.8,
+      62.1
+     ],
+     "down": [
+      17.8,
+      16.0
+     ]
+    },
+    {
+     "year": 2024,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1662,
+     "up": [
+      22.6,
+      23.2
+     ],
+     "stay": [
+      57.3,
+      58.3
+     ],
+     "down": [
+      20.1,
+      18.5
+     ]
+    },
+    {
+     "year": 2024,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3552,
+     "up": [
+      15.8,
+      13.2
+     ],
+     "stay": [
+      70.6,
+      70.6
+     ],
+     "down": [
+      13.5,
+      16.2
+     ]
+    },
+    {
+     "year": 2024,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2806,
+     "up": [
+      18.6,
+      16.0
+     ],
+     "stay": [
+      66.6,
+      68.3
+     ],
+     "down": [
+      14.8,
+      15.7
+     ]
+    },
+    {
+     "year": 2024,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 620,
+     "up": [
+      8.2,
+      10.9
+     ],
+     "stay": [
+      71.3,
+      71.8
+     ],
+     "down": [
+      20.5,
+      17.4
+     ]
+    },
+    {
+     "year": 2024,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 466,
+     "up": [
+      8.6,
+      9.0
+     ],
+     "stay": [
+      79.4,
+      80.0
+     ],
+     "down": [
+      12.0,
+      11.0
+     ]
+    }
+   ],
+   "one_year_stay": {
+    "q1": [
+     {
+      "year": 2018,
+      "panel": 67.6,
+      "official": 68.1
+     },
+     {
+      "year": 2019,
+      "panel": 65.3,
+      "official": 68.3
+     },
+     {
+      "year": 2020,
+      "panel": 66.3,
+      "official": 67.8
+     },
+     {
+      "year": 2021,
+      "panel": 66.5,
+      "official": 68.3
+     },
+     {
+      "year": 2022,
+      "panel": 68.0,
+      "official": 69.1
+     },
+     {
+      "year": 2023,
+      "panel": 69.4,
+      "official": 70.1
+     },
+     {
+      "year": 2024,
+      "panel": 68.3,
+      "official": 70.7
+     }
+    ],
+    "q5": [
+     {
+      "year": 2018,
+      "panel": 85.8,
+      "official": 86.6
+     },
+     {
+      "year": 2019,
+      "panel": 86.9,
+      "official": 86.5
+     },
+     {
+      "year": 2020,
+      "panel": 85.2,
+      "official": 85.8
+     },
+     {
+      "year": 2021,
+      "panel": 86.7,
+      "official": 86.3
+     },
+     {
+      "year": 2022,
+      "panel": 87.5,
+      "official": 86.0
+     },
+     {
+      "year": 2023,
+      "panel": 84.4,
+      "official": 85.9
+     },
+     {
+      "year": 2024,
+      "panel": 87.1,
+      "official": 86.5
+     }
+    ]
+   }
+  },
+  "out_of_time": {
+   "kernel": "2024",
+   "predicted_2020": [
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "19~39세",
+     "n": 2480,
+     "up": [
+      20.7,
+      23.2
+     ],
+     "stay": [
+      60.8,
+      59.8
+     ],
+     "down": [
+      18.5,
+      17.0
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "19~39세",
+     "n": 1604,
+     "up": [
+      22.1,
+      23.8
+     ],
+     "stay": [
+      57.7,
+      56.6
+     ],
+     "down": [
+      20.3,
+      19.6
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "40~64세",
+     "n": 3432,
+     "up": [
+      16.7,
+      14.6
+     ],
+     "stay": [
+      69.3,
+      68.1
+     ],
+     "down": [
+      14.0,
+      17.3
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "40~64세",
+     "n": 2687,
+     "up": [
+      15.9,
+      16.8
+     ],
+     "stay": [
+      68.3,
+      65.4
+     ],
+     "down": [
+      15.8,
+      17.8
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "남자",
+     "age": "65세 이상",
+     "n": 401,
+     "up": [
+      7.2,
+      11.4
+     ],
+     "stay": [
+      74.3,
+      70.2
+     ],
+     "down": [
+      18.5,
+      18.3
+     ]
+    },
+    {
+     "year": 2020,
+     "sex": "여자",
+     "age": "65세 이상",
+     "n": 305,
+     "up": [
+      8.2,
+      7.6
+     ],
+     "stay": [
+      80.0,
+      79.9
+     ],
+     "down": [
+      11.8,
+      12.5
+     ]
+    }
+   ],
+   "mean_abs_gap_pp": 1.71
+  },
+  "followed": 15476
+ },
+ "income_amount": {
+  "model": "nominal annual labour + business income: sex x age-band lognormal from the published wage-job mean/median of the year, truncated to the national band of the person's quintile; within-band rank AR(1) rho=0.6; levels beyond the last table extrapolate each cell's 5-year compound growth",
+  "checks": {
+   "levels": {
+    "2018": {
+     "남자 20": {
+      "panel_mean": 284.7,
+      "panel_median": 282.7,
+      "official_mean": 213.9342,
+      "official_median": 204.111,
+      "n": 1116
+     },
+     "남자 30": {
+      "panel_mean": 312.0,
+      "panel_median": 282.6,
+      "official_mean": 348.9198,
+      "official_median": 315.1714,
+      "n": 1537
+     },
+     "남자 40": {
+      "panel_mean": 382.2,
+      "panel_median": 308.0,
+      "official_mean": 427.252,
+      "official_median": 364.34,
+      "n": 1711
+     },
+     "남자 50": {
+      "panel_mean": 416.2,
+      "panel_median": 315.1,
+      "official_mean": 417.5572,
+      "official_median": 303.5005,
+      "n": 1562
+     },
+     "남자 60": {
+      "panel_mean": 337.6,
+      "panel_median": 239.9,
+      "official_mean": 264.9233,
+      "official_median": 182.75,
+      "n": 619
+     },
+     "남자 70": {
+      "panel_mean": 197.8,
+      "panel_median": 176.1,
+      "official_mean": 189.9024,
+      "official_median": 135.707,
+      "n": 166
+     },
+     "여자 20": {
+      "panel_mean": 235.5,
+      "panel_median": 211.9,
+      "official_mean": 197.3353,
+      "official_median": 185.2345,
+      "n": 735
+     },
+     "여자 30": {
+      "panel_mean": 241.3,
+      "panel_median": 212.3,
+      "official_mean": 279.1292,
+      "official_median": 237.6302,
+      "n": 1044
+     },
+     "여자 40": {
+      "panel_mean": 248.0,
+      "panel_median": 196.0,
+      "official_mean": 267.3129,
+      "official_median": 195.0104,
+      "n": 1458
+     },
+     "여자 50": {
+      "panel_mean": 230.4,
+      "panel_median": 192.4,
+      "official_mean": 221.0852,
+      "official_median": 172.5933,
+      "n": 1290
+     },
+     "여자 60": {
+      "panel_mean": 197.5,
+      "panel_median": 174.3,
+      "official_mean": 144.6753,
+      "official_median": 126.5698,
+      "n": 362
+     },
+     "여자 70": {
+      "panel_mean": 103.3,
+      "panel_median": 68.3,
+      "official_mean": 75.514,
+      "official_median": 48.6,
+      "n": 165
+     }
+    },
+    "2024": {
+     "남자 20": {
+      "panel_mean": 357.9,
+      "panel_median": 351.4,
+      "official_mean": 285.7693,
+      "official_median": 275.8786,
+      "n": 1055
+     },
+     "남자 30": {
+      "panel_mean": 396.2,
+      "panel_median": 350.7,
+      "official_mean": 427.5364,
+      "official_median": 376.4219,
+      "n": 1400
+     },
+     "남자 40": {
+      "panel_mean": 470.5,
+      "panel_median": 380.7,
+      "official_mean": 543.878,
+      "official_median": 468.6112,
+      "n": 1558
+     },
+     "남자 50": {
+      "panel_mean": 540.8,
+      "panel_median": 421.1,
+      "official_mean": 548.2943,
+      "official_median": 424.9992,
+      "n": 1670
+     },
+     "남자 60": {
+      "panel_mean": 460.0,
+      "panel_median": 342.1,
+      "official_mean": 362.092,
+      "official_median": 255.9987,
+      "n": 924
+     },
+     "남자 70": {
+      "panel_mean": 224.8,
+      "panel_median": 202.8,
+      "official_mean": 234.3827,
+      "official_median": 165.9658,
+      "n": 402
+     },
+     "여자 20": {
+      "panel_mean": 298.3,
+      "panel_median": 274.0,
+      "official_mean": 254.9672,
+      "official_median": 247.413,
+      "n": 697
+     },
+     "여자 30": {
+      "panel_mean": 321.2,
+      "panel_median": 285.2,
+      "official_mean": 353.5816,
+      "official_median": 307.7176,
+      "n": 1085
+     },
+     "여자 40": {
+      "panel_mean": 329.2,
+      "panel_median": 268.4,
+      "official_mean": 363.4121,
+      "official_median": 277.486,
+      "n": 1331
+     },
+     "여자 50": {
+      "panel_mean": 311.6,
+      "panel_median": 261.3,
+      "official_mean": 305.6479,
+      "official_median": 240.0015,
+      "n": 1389
+     },
+     "여자 60": {
+      "panel_mean": 267.9,
+      "panel_median": 237.3,
+      "official_mean": 199.5172,
+      "official_median": 176.2016,
+      "n": 622
+     },
+     "여자 70": {
+      "panel_mean": 136.2,
+      "panel_median": 94.1,
+      "official_mean": 94.6896,
+      "official_median": 58.0,
+      "n": 352
+     }
+    }
+   },
+   "changes": {
+    "2024": {
+     "n": 11536,
+     "panel": {
+      "down_50": 0.041,
+      "down_10_50": 0.2238,
+      "down_0_10": 0.1485,
+      "same": 0.0018,
+      "up_0_10": 0.2168,
+      "up_10_50": 0.2226,
+      "up_50": 0.1455
+     },
+     "official": {
+      "down_50": 0.1087,
+      "down_10_50": 0.149,
+      "down_0_10": 0.1025,
+      "same": 0.0265,
+      "up_0_10": 0.2468,
+      "up_10_50": 0.1849,
+      "up_50": 0.1816
+     },
+     "within_10pct": {
+      "panel": 0.3671,
+      "official": 0.3758
+     },
+     "by_prior_quintile": {
+      "1": {
+       "n": 2212,
+       "panel": {
+        "down_50": 0.0199,
+        "down_10_50": 0.1618,
+        "down_0_10": 0.1153,
+        "same": 0.0009,
+        "up_0_10": 0.1469,
+        "up_10_50": 0.217,
+        "up_50": 0.3382
+       },
+       "official": {
+        "down_50": 0.1301,
+        "down_10_50": 0.1157,
+        "down_0_10": 0.0476,
+        "same": 0.0349,
+        "up_0_10": 0.0827,
+        "up_10_50": 0.1154,
+        "up_50": 0.4736
+       }
+      },
+      "2": {
+       "n": 2247,
+       "panel": {
+        "down_50": 0.0423,
+        "down_10_50": 0.2043,
+        "down_0_10": 0.1495,
+        "same": 0.0018,
+        "up_0_10": 0.2047,
+        "up_10_50": 0.2644,
+        "up_50": 0.1331
+       },
+       "official": {
+        "down_50": 0.1509,
+        "down_10_50": 0.1767,
+        "down_0_10": 0.0755,
+        "same": 0.025,
+        "up_0_10": 0.1061,
+        "up_10_50": 0.1648,
+        "up_50": 0.3009
+       }
+      },
+      "3": {
+       "n": 2331,
+       "panel": {
+        "down_50": 0.0347,
+        "down_10_50": 0.2278,
+        "down_0_10": 0.1634,
+        "same": 0.0009,
+        "up_0_10": 0.2686,
+        "up_10_50": 0.2192,
+        "up_50": 0.0854
+       },
+       "official": {
+        "down_50": 0.1268,
+        "down_10_50": 0.1648,
+        "down_0_10": 0.0965,
+        "same": 0.0384,
+        "up_0_10": 0.2655,
+        "up_10_50": 0.2097,
+        "up_50": 0.0983
+       }
+      },
+      "4": {
+       "n": 2371,
+       "panel": {
+        "down_50": 0.0434,
+        "down_10_50": 0.2472,
+        "down_0_10": 0.1645,
+        "same": 0.003,
+        "up_0_10": 0.2606,
+        "up_10_50": 0.1856,
+        "up_50": 0.0957
+       },
+       "official": {
+        "down_50": 0.084,
+        "down_10_50": 0.152,
+        "down_0_10": 0.1277,
+        "same": 0.021,
+        "up_0_10": 0.3556,
+        "up_10_50": 0.2216,
+        "up_50": 0.0381
+       }
+      },
+      "5": {
+       "n": 2375,
+       "panel": {
+        "down_50": 0.0632,
+        "down_10_50": 0.2728,
+        "down_0_10": 0.1478,
+        "same": 0.0025,
+        "up_0_10": 0.1987,
+        "up_10_50": 0.2286,
+        "up_50": 0.0863
+       },
+       "official": {
+        "down_50": 0.0557,
+        "down_10_50": 0.1354,
+        "down_0_10": 0.1599,
+        "same": 0.0138,
+        "up_0_10": 0.406,
+        "up_10_50": 0.2074,
+        "up_50": 0.0219
+       }
+      }
+     }
+    },
+    "all": {
+     "n": 77631,
+     "panel": {
+      "down_50": 0.045,
+      "down_10_50": 0.2275,
+      "down_0_10": 0.1352,
+      "same": 0.0018,
+      "up_0_10": 0.2083,
+      "up_10_50": 0.2324,
+      "up_50": 0.1498
+     },
+     "official": {
+      "down_50": 0.1101,
+      "down_10_50": 0.1475,
+      "down_0_10": 0.0958,
+      "same": 0.024,
+      "up_0_10": 0.221,
+      "up_10_50": 0.1992,
+      "up_50": 0.2023
+     },
+     "within_10pct": {
+      "panel": 0.3453,
+      "official": 0.3409
+     },
+     "by_prior_quintile": {
+      "1": {
+       "n": 14638,
+       "panel": {
+        "down_50": 0.0247,
+        "down_10_50": 0.1476,
+        "down_0_10": 0.1051,
+        "same": 0.0012,
+        "up_0_10": 0.1366,
+        "up_10_50": 0.2368,
+        "up_50": 0.348
+       },
+       "official": {
+        "down_50": 0.1318,
+        "down_10_50": 0.1132,
+        "down_0_10": 0.047,
+        "same": 0.0363,
+        "up_0_10": 0.0525,
+        "up_10_50": 0.1121,
+        "up_50": 0.5073
+       }
+      },
+      "2": {
+       "n": 15550,
+       "panel": {
+        "down_50": 0.0474,
+        "down_10_50": 0.2033,
+        "down_0_10": 0.1253,
+        "same": 0.0016,
+        "up_0_10": 0.1934,
+        "up_10_50": 0.2655,
+        "up_50": 0.1635
+       },
+       "official": {
+        "down_50": 0.1528,
+        "down_10_50": 0.1671,
+        "down_0_10": 0.0653,
+        "same": 0.0219,
+        "up_0_10": 0.085,
+        "up_10_50": 0.1712,
+        "up_50": 0.3366
+       }
+      },
+      "3": {
+       "n": 15507,
+       "panel": {
+        "down_50": 0.0413,
+        "down_10_50": 0.2434,
+        "down_0_10": 0.1472,
+        "same": 0.0021,
+        "up_0_10": 0.2503,
+        "up_10_50": 0.2278,
+        "up_50": 0.0878
+       },
+       "official": {
+        "down_50": 0.1277,
+        "down_10_50": 0.1634,
+        "down_0_10": 0.0841,
+        "same": 0.0318,
+        "up_0_10": 0.2226,
+        "up_10_50": 0.2489,
+        "up_50": 0.1214
+       }
+      },
+      "4": {
+       "n": 15884,
+       "panel": {
+        "down_50": 0.0399,
+        "down_10_50": 0.2565,
+        "down_0_10": 0.1651,
+        "same": 0.0025,
+        "up_0_10": 0.2598,
+        "up_10_50": 0.1929,
+        "up_50": 0.0834
+       },
+       "official": {
+        "down_50": 0.0877,
+        "down_10_50": 0.1574,
+        "down_0_10": 0.1198,
+        "same": 0.02,
+        "up_0_10": 0.3181,
+        "up_10_50": 0.2488,
+        "up_50": 0.0482
+       }
+      },
+      "5": {
+       "n": 16052,
+       "panel": {
+        "down_50": 0.0698,
+        "down_10_50": 0.2799,
+        "down_0_10": 0.1313,
+        "same": 0.0016,
+        "up_0_10": 0.1966,
+        "up_10_50": 0.2396,
+        "up_50": 0.0812
+       },
+       "official": {
+        "down_50": 0.0543,
+        "down_10_50": 0.1348,
+        "down_0_10": 0.1576,
+        "same": 0.0114,
+        "up_0_10": 0.4088,
+        "up_10_50": 0.2085,
+        "up_50": 0.0246
+       }
+      }
+     }
+    }
+   },
+   "growth": {
+    "n": 9935,
+    "panel_mean_2018_2024": 1.3073,
+    "panel_median_2018_2024": 1.2747
+   }
+  }
+ },
+ "smoking": {
+  "yearly": [
+   {
+    "year": 2018,
+    "n": 18097,
+    "panel": 19.6,
+    "district_rate_mean": 20.3
+   },
+   {
+    "year": 2019,
+    "n": 18383,
+    "panel": 19.2,
+    "district_rate_mean": 18.6
+   },
+   {
+    "year": 2020,
+    "n": 18616,
+    "panel": 18.3,
+    "district_rate_mean": 18.1
+   },
+   {
+    "year": 2021,
+    "n": 18847,
+    "panel": 17.8,
+    "district_rate_mean": 17.4
+   },
+   {
+    "year": 2022,
+    "n": 19094,
+    "panel": 17.8,
+    "district_rate_mean": 17.8
+   },
+   {
+    "year": 2023,
+    "n": 19323,
+    "panel": 17.7,
+    "district_rate_mean": 18.3
+   },
+   {
+    "year": 2024,
+    "n": 19555,
+    "panel": 17.0,
+    "district_rate_mean": 17.3
+   },
+   {
+    "year": 2025,
+    "n": 19761,
+    "panel": 16.4,
+    "district_rate_mean": 16.1
+   }
+  ],
+  "final_year_equals_life_context": true,
+  "sensitivity": {
+   "0.97": {
+    "smoker_2024_still_2025": 86.0,
+    "share_with_quit_line": 10.0
+   },
+   "0.985": {
+    "smoker_2024_still_2025": 89.1,
+    "share_with_quit_line": 8.0
+   },
+   "0.995": {
+    "smoker_2024_still_2025": 92.2,
+    "share_with_quit_line": 5.7
+   }
+  },
+  "note": "district_rate_mean is the unweighted mean of the panel members' district rates (조율), which the panel tracks by construction; it is not the national rate."
+ },
+ "residence": {
+  "yearly": [
+   {
+    "year": 2018,
+    "panel_moved_pct": 4.5,
+    "official_movers_pct_of_2025_pop": 4.7
+   },
+   {
+    "year": 2019,
+    "panel_moved_pct": 4.7,
+    "official_movers_pct_of_2025_pop": 4.6
+   },
+   {
+    "year": 2020,
+    "panel_moved_pct": 5.0,
+    "official_movers_pct_of_2025_pop": 4.9
+   },
+   {
+    "year": 2021,
+    "panel_moved_pct": 4.7,
+    "official_movers_pct_of_2025_pop": 4.7
+   },
+   {
+    "year": 2022,
+    "panel_moved_pct": 4.1,
+    "official_movers_pct_of_2025_pop": 4.2
+   },
+   {
+    "year": 2023,
+    "panel_moved_pct": 4.0,
+    "official_movers_pct_of_2025_pop": 4.1
+   },
+   {
+    "year": 2024,
+    "panel_moved_pct": 4.0,
+    "official_movers_pct_of_2025_pop": 4.2
+   },
+   {
+    "year": 2025,
+    "panel_moved_pct": 4.2,
+    "official_movers_pct_of_2025_pop": 4.2
+   }
+  ],
+  "ever_moved_2017_2025": 13.7,
+  "five_year_by_age": [
+   {
+    "sex": "남자",
+    "age_2025": "20",
+    "panel_2020_2025": 15.9,
+    "census_2005_five_year": 17.0
+   },
+   {
+    "sex": "남자",
+    "age_2025": "25",
+    "panel_2020_2025": 20.6,
+    "census_2005_five_year": 20.9
+   },
+   {
+    "sex": "남자",
+    "age_2025": "30",
+    "panel_2020_2025": 18.6,
+    "census_2005_five_year": 20.2
+   },
+   {
+    "sex": "남자",
+    "age_2025": "35",
+    "panel_2020_2025": 13.4,
+    "census_2005_five_year": 16.2
+   },
+   {
+    "sex": "남자",
+    "age_2025": "40",
+    "panel_2020_2025": 9.1,
+    "census_2005_five_year": 11.1
+   },
+   {
+    "sex": "남자",
+    "age_2025": "50",
+    "panel_2020_2025": 7.7,
+    "census_2005_five_year": 6.7
+   },
+   {
+    "sex": "남자",
+    "age_2025": "60",
+    "panel_2020_2025": 7.4,
+    "census_2005_five_year": 6.1
+   },
+   {
+    "sex": "여자",
+    "age_2025": "20",
+    "panel_2020_2025": 18.0,
+    "census_2005_five_year": 19.1
+   },
+   {
+    "sex": "여자",
+    "age_2025": "25",
+    "panel_2020_2025": 17.7,
+    "census_2005_five_year": 20.6
+   },
+   {
+    "sex": "여자",
+    "age_2025": "30",
+    "panel_2020_2025": 12.8,
+    "census_2005_five_year": 19.5
+   },
+   {
+    "sex": "여자",
+    "age_2025": "35",
+    "panel_2020_2025": 12.5,
+    "census_2005_five_year": 13.9
+   },
+   {
+    "sex": "여자",
+    "age_2025": "40",
+    "panel_2020_2025": 11.1,
+    "census_2005_five_year": 8.8
+   },
+   {
+    "sex": "여자",
+    "age_2025": "50",
+    "panel_2020_2025": 7.6,
+    "census_2005_five_year": 6.4
+   },
+   {
+    "sex": "여자",
+    "age_2025": "60",
+    "panel_2020_2025": 6.8,
+    "census_2005_five_year": 6.5
+   }
+  ],
+  "mover_shape_k": 0.1,
+  "note": "Panel is 19+, the official yearly share is of all ages (movers / ~51.7M). Mobility propensity (Gamma, mean 1, shape k) is sized on the 2005 census five-year question, the latest published by age; today's moves are rarer, so the panel five-year shares should sit somewhat below 2005."
+ },
+ "marital": {
+  "marriage": {
+   "mean_abs_gap_per_1000": 3.16,
+   "mean_rate_per_1000": 15.4
+  },
+  "divorce": {
+   "mean_abs_gap_per_1000": 1.92,
+   "mean_rate_per_1000": 5.36
+  },
+  "changed_2017_2025_pct": 13.3
+ },
+ "forward": {
+  "baseline": {
+   "2025": {
+    "alive": 20000,
+    "mean_age": 50.7,
+    "working_share": 0.6307,
+    "smoking_share": 0.1639,
+    "bottom_quintile_share": 0.1939,
+    "quintile_shares": [
+     0.1939,
+     0.1994,
+     0.1987,
+     0.2072,
+     0.2009
+    ],
+    "mean_amount": 4721.9,
+    "median_amount": 3751.6,
+    "bottom_2024_ever_left": 0.2904,
+    "bottom_2024_still_bottom": 0.6404,
+    "married_share": 0.5967,
+    "capital_share": 0.5064
+   },
+   "2026": {
+    "alive": 19861,
+    "mean_age": 51.5,
+    "working_share": 0.6335,
+    "smoking_share": 0.1626,
+    "bottom_quintile_share": 0.1935,
+    "quintile_shares": [
+     0.1935,
+     0.2009,
+     0.2009,
+     0.2017,
+     0.203
+    ],
+    "mean_amount": 4901.9,
+    "median_amount": 3879.3,
+    "bottom_2024_ever_left": 0.4272,
+    "bottom_2024_still_bottom": 0.4764,
+    "married_share": 0.5994,
+    "capital_share": 0.5081
+   },
+   "2027": {
+    "alive": 19677,
+    "mean_age": 52.3,
+    "working_share": 0.6291,
+    "smoking_share": 0.162,
+    "bottom_quintile_share": 0.195,
+    "quintile_shares": [
+     0.195,
+     0.2032,
+     0.2026,
+     0.1979,
+     0.2013
+    ],
+    "mean_amount": 5088.3,
+    "median_amount": 4024.4,
+    "bottom_2024_ever_left": 0.504,
+    "bottom_2024_still_bottom": 0.4063,
+    "married_share": 0.6024,
+    "capital_share": 0.5081
+   },
+   "2028": {
+    "alive": 19498,
+    "mean_age": 53.0,
+    "working_share": 0.6245,
+    "smoking_share": 0.1624,
+    "bottom_quintile_share": 0.1974,
+    "quintile_shares": [
+     0.1974,
+     0.2073,
+     0.1992,
+     0.1962,
+     0.2
+    ],
+    "mean_amount": 5306.9,
+    "median_amount": 4214.4,
+    "bottom_2024_ever_left": 0.5465,
+    "bottom_2024_still_bottom": 0.3705,
+    "married_share": 0.6054,
+    "capital_share": 0.5078
+   },
+   "2029": {
+    "alive": 19283,
+    "mean_age": 53.8,
+    "working_share": 0.6223,
+    "smoking_share": 0.1617,
+    "bottom_quintile_share": 0.199,
+    "quintile_shares": [
+     0.199,
+     0.2051,
+     0.1998,
+     0.1961,
+     0.1999
+    ],
+    "mean_amount": 5540.5,
+    "median_amount": 4396.0,
+    "bottom_2024_ever_left": 0.5795,
+    "bottom_2024_still_bottom": 0.3417,
+    "married_share": 0.6056,
+    "capital_share": 0.5093
+   },
+   "2030": {
+    "alive": 19081,
+    "mean_age": 54.5,
+    "working_share": 0.6164,
+    "smoking_share": 0.1599,
+    "bottom_quintile_share": 0.2033,
+    "quintile_shares": [
+     0.2033,
+     0.2054,
+     0.1985,
+     0.1919,
+     0.2009
+    ],
+    "mean_amount": 5769.8,
+    "median_amount": 4528.6,
+    "bottom_2024_ever_left": 0.602,
+    "bottom_2024_still_bottom": 0.3054,
+    "married_share": 0.6084,
+    "capital_share": 0.5104
+   }
+  },
+  "scenario_bottom_exit_plus_5pp": {
+   "2025": {
+    "alive": 20000,
+    "mean_age": 50.7,
+    "working_share": 0.6307,
+    "smoking_share": 0.1639,
+    "bottom_quintile_share": 0.1848,
+    "quintile_shares": [
+     0.1848,
+     0.2084,
+     0.1987,
+     0.2072,
+     0.2009
+    ],
+    "mean_amount": 4732.5,
+    "median_amount": 3751.6,
+    "bottom_2024_ever_left": 0.3379,
+    "bottom_2024_still_bottom": 0.5928,
+    "married_share": 0.5967,
+    "capital_share": 0.5064
+   },
+   "2026": {
+    "alive": 19861,
+    "mean_age": 51.5,
+    "working_share": 0.6335,
+    "smoking_share": 0.1626,
+    "bottom_quintile_share": 0.1803,
+    "quintile_shares": [
+     0.1803,
+     0.2125,
+     0.2021,
+     0.2019,
+     0.2032
+    ],
+    "mean_amount": 4921.1,
+    "median_amount": 3882.9,
+    "bottom_2024_ever_left": 0.4885,
+    "bottom_2024_still_bottom": 0.4234,
+    "married_share": 0.5994,
+    "capital_share": 0.5081
+   },
+   "2027": {
+    "alive": 19677,
+    "mean_age": 52.3,
+    "working_share": 0.6291,
+    "smoking_share": 0.162,
+    "bottom_quintile_share": 0.1805,
+    "quintile_shares": [
+     0.1805,
+     0.2145,
+     0.205,
+     0.1985,
+     0.2015
+    ],
+    "mean_amount": 5112.3,
+    "median_amount": 4040.2,
+    "bottom_2024_ever_left": 0.5674,
+    "bottom_2024_still_bottom": 0.3605,
+    "married_share": 0.6024,
+    "capital_share": 0.5081
+   },
+   "2028": {
+    "alive": 19498,
+    "mean_age": 53.0,
+    "working_share": 0.6245,
+    "smoking_share": 0.1624,
+    "bottom_quintile_share": 0.1827,
+    "quintile_shares": [
+     0.1827,
+     0.2181,
+     0.2024,
+     0.1965,
+     0.2002
+    ],
+    "mean_amount": 5332.7,
+    "median_amount": 4233.7,
+    "bottom_2024_ever_left": 0.6145,
+    "bottom_2024_still_bottom": 0.3229,
+    "married_share": 0.6054,
+    "capital_share": 0.5078
+   },
+   "2029": {
+    "alive": 19283,
+    "mean_age": 53.8,
+    "working_share": 0.6223,
+    "smoking_share": 0.1617,
+    "bottom_quintile_share": 0.1844,
+    "quintile_shares": [
+     0.1844,
+     0.2153,
+     0.2033,
+     0.1969,
+     0.2001
+    ],
+    "mean_amount": 5567.4,
+    "median_amount": 4421.3,
+    "bottom_2024_ever_left": 0.6454,
+    "bottom_2024_still_bottom": 0.2954,
+    "married_share": 0.6056,
+    "capital_share": 0.5093
+   },
+   "2030": {
+    "alive": 19081,
+    "mean_age": 54.5,
+    "working_share": 0.6164,
+    "smoking_share": 0.1599,
+    "bottom_quintile_share": 0.1886,
+    "quintile_shares": [
+     0.1886,
+     0.2166,
+     0.2003,
+     0.1932,
+     0.2012
+    ],
+    "mean_amount": 5800.1,
+    "median_amount": 4543.8,
+    "bottom_2024_ever_left": 0.6733,
+    "bottom_2024_still_bottom": 0.2578,
+    "married_share": 0.6084,
+    "capital_share": 0.5104
+   }
+  },
+  "scenario": "each year 5 more in 100 of the bottom quintile move up one quintile (an assumed policy effect, not an estimate); same random numbers as the baseline",
+  "sweep": {
+   "0.10": {
+    "2025": {
+     "alive": 20000,
+     "mean_age": 50.7,
+     "working_share": 0.6307,
+     "smoking_share": 0.1639,
+     "bottom_quintile_share": 0.1775,
+     "quintile_shares": [
+      0.1775,
+      0.2157,
+      0.1987,
+      0.2072,
+      0.2009
+     ],
+     "mean_amount": 4740.7,
+     "median_amount": 3751.6,
+     "bottom_2024_ever_left": 0.3763,
+     "bottom_2024_still_bottom": 0.5544,
+     "married_share": 0.5967,
+     "capital_share": 0.5064
+    },
+    "2026": {
+     "alive": 19861,
+     "mean_age": 51.5,
+     "working_share": 0.6335,
+     "smoking_share": 0.1626,
+     "bottom_quintile_share": 0.1705,
+     "quintile_shares": [
+      0.1705,
+      0.221,
+      0.2029,
+      0.2024,
+      0.2032
+     ],
+     "mean_amount": 4935.1,
+     "median_amount": 3890.6,
+     "bottom_2024_ever_left": 0.5365,
+     "bottom_2024_still_bottom": 0.3867,
+     "married_share": 0.5994,
+     "capital_share": 0.5081
+    },
+    "2027": {
+     "alive": 19677,
+     "mean_age": 52.3,
+     "working_share": 0.6291,
+     "smoking_share": 0.162,
+     "bottom_quintile_share": 0.1677,
+     "quintile_shares": [
+      0.1677,
+      0.2247,
+      0.2069,
+      0.1992,
+      0.2015
+     ],
+     "mean_amount": 5132.3,
+     "median_amount": 4046.1,
+     "bottom_2024_ever_left": 0.6145,
+     "bottom_2024_still_bottom": 0.3258,
+     "married_share": 0.6024,
+     "capital_share": 0.5081
+    },
+    "2028": {
+     "alive": 19498,
+     "mean_age": 53.0,
+     "working_share": 0.6245,
+     "smoking_share": 0.1624,
+     "bottom_quintile_share": 0.1689,
+     "quintile_shares": [
+      0.1689,
+      0.2283,
+      0.205,
+      0.1975,
+      0.2003
+     ],
+     "mean_amount": 5357.5,
+     "median_amount": 4246.0,
+     "bottom_2024_ever_left": 0.6637,
+     "bottom_2024_still_bottom": 0.2891,
+     "married_share": 0.6054,
+     "capital_share": 0.5078
+    },
+    "2029": {
+     "alive": 19283,
+     "mean_age": 53.8,
+     "working_share": 0.6223,
+     "smoking_share": 0.1617,
+     "bottom_quintile_share": 0.1713,
+     "quintile_shares": [
+      0.1713,
+      0.225,
+      0.2055,
+      0.198,
+      0.2001
+     ],
+     "mean_amount": 5591.2,
+     "median_amount": 4428.1,
+     "bottom_2024_ever_left": 0.6955,
+     "bottom_2024_still_bottom": 0.2607,
+     "married_share": 0.6056,
+     "capital_share": 0.5093
+    },
+    "2030": {
+     "alive": 19081,
+     "mean_age": 54.5,
+     "working_share": 0.6164,
+     "smoking_share": 0.1599,
+     "bottom_quintile_share": 0.1743,
+     "quintile_shares": [
+      0.1743,
+      0.2281,
+      0.2016,
+      0.1945,
+      0.2015
+     ],
+     "mean_amount": 5826.2,
+     "median_amount": 4555.5,
+     "bottom_2024_ever_left": 0.7234,
+     "bottom_2024_still_bottom": 0.2274,
+     "married_share": 0.6084,
+     "capital_share": 0.5104
+    }
+   },
+   "0.15": {
+    "2025": {
+     "alive": 20000,
+     "mean_age": 50.7,
+     "working_share": 0.6307,
+     "smoking_share": 0.1639,
+     "bottom_quintile_share": 0.1691,
+     "quintile_shares": [
+      0.1691,
+      0.2241,
+      0.1987,
+      0.2072,
+      0.2009
+     ],
+     "mean_amount": 4750.4,
+     "median_amount": 3751.6,
+     "bottom_2024_ever_left": 0.4205,
+     "bottom_2024_still_bottom": 0.5102,
+     "married_share": 0.5967,
+     "capital_share": 0.5064
+    },
+    "2026": {
+     "alive": 19861,
+     "mean_age": 51.5,
+     "working_share": 0.6335,
+     "smoking_share": 0.1626,
+     "bottom_quintile_share": 0.1588,
+     "quintile_shares": [
+      0.1588,
+      0.2316,
+      0.2036,
+      0.2028,
+      0.2032
+     ],
+     "mean_amount": 4950.6,
+     "median_amount": 3893.3,
+     "bottom_2024_ever_left": 0.5878,
+     "bottom_2024_still_bottom": 0.3488,
+     "married_share": 0.5994,
+     "capital_share": 0.5081
+    },
+    "2027": {
+     "alive": 19677,
+     "mean_age": 52.3,
+     "working_share": 0.6291,
+     "smoking_share": 0.162,
+     "bottom_quintile_share": 0.1566,
+     "quintile_shares": [
+      0.1566,
+      0.2329,
+      0.2089,
+      0.2,
+      0.2015
+     ],
+     "mean_amount": 5150.8,
+     "median_amount": 4054.9,
+     "bottom_2024_ever_left": 0.6671,
+     "bottom_2024_still_bottom": 0.292,
+     "married_share": 0.6024,
+     "capital_share": 0.5081
+    },
+    "2028": {
+     "alive": 19498,
+     "mean_age": 53.0,
+     "working_share": 0.6245,
+     "smoking_share": 0.1624,
+     "bottom_quintile_share": 0.1593,
+     "quintile_shares": [
+      0.1593,
+      0.2344,
+      0.2074,
+      0.1984,
+      0.2005
+     ],
+     "mean_amount": 5377.4,
+     "median_amount": 4261.6,
+     "bottom_2024_ever_left": 0.7138,
+     "bottom_2024_still_bottom": 0.2637,
+     "married_share": 0.6054,
+     "capital_share": 0.5078
+    },
+    "2029": {
+     "alive": 19283,
+     "mean_age": 53.8,
+     "working_share": 0.6223,
+     "smoking_share": 0.1617,
+     "bottom_quintile_share": 0.1603,
+     "quintile_shares": [
+      0.1603,
+      0.2325,
+      0.2079,
+      0.199,
+      0.2003
+     ],
+     "mean_amount": 5614.8,
+     "median_amount": 4449.2,
+     "bottom_2024_ever_left": 0.7418,
+     "bottom_2024_still_bottom": 0.2295,
+     "married_share": 0.6056,
+     "capital_share": 0.5093
+    },
+    "2030": {
+     "alive": 19081,
+     "mean_age": 54.5,
+     "working_share": 0.6164,
+     "smoking_share": 0.1599,
+     "bottom_quintile_share": 0.1628,
+     "quintile_shares": [
+      0.1628,
+      0.2357,
+      0.2045,
+      0.1951,
+      0.2019
+     ],
+     "mean_amount": 5851.4,
+     "median_amount": 4573.0,
+     "bottom_2024_ever_left": 0.7651,
+     "bottom_2024_still_bottom": 0.2003,
+     "married_share": 0.6084,
+     "capital_share": 0.5104
+    }
+   },
+   "0.20": {
+    "2025": {
+     "alive": 20000,
+     "mean_age": 50.7,
+     "working_share": 0.6307,
+     "smoking_share": 0.1639,
+     "bottom_quintile_share": 0.1601,
+     "quintile_shares": [
+      0.1601,
+      0.2331,
+      0.1987,
+      0.2072,
+      0.2009
+     ],
+     "mean_amount": 4760.7,
+     "median_amount": 3751.6,
+     "bottom_2024_ever_left": 0.4677,
+     "bottom_2024_still_bottom": 0.4631,
+     "married_share": 0.5967,
+     "capital_share": 0.5064
+    },
+    "2026": {
+     "alive": 19861,
+     "mean_age": 51.5,
+     "working_share": 0.6335,
+     "smoking_share": 0.1626,
+     "bottom_quintile_share": 0.1479,
+     "quintile_shares": [
+      0.1479,
+      0.2412,
+      0.2042,
+      0.2035,
+      0.2032
+     ],
+     "mean_amount": 4965.9,
+     "median_amount": 3896.7,
+     "bottom_2024_ever_left": 0.6358,
+     "bottom_2024_still_bottom": 0.3125,
+     "married_share": 0.5994,
+     "capital_share": 0.5081
+    },
+    "2027": {
+     "alive": 19677,
+     "mean_age": 52.3,
+     "working_share": 0.6291,
+     "smoking_share": 0.162,
+     "bottom_quintile_share": 0.1453,
+     "quintile_shares": [
+      0.1453,
+      0.2422,
+      0.2103,
+      0.2007,
+      0.2015
+     ],
+     "mean_amount": 5168.4,
+     "median_amount": 4060.1,
+     "bottom_2024_ever_left": 0.713,
+     "bottom_2024_still_bottom": 0.2591,
+     "married_share": 0.6024,
+     "capital_share": 0.5081
+    },
+    "2028": {
+     "alive": 19498,
+     "mean_age": 53.0,
+     "working_share": 0.6245,
+     "smoking_share": 0.1624,
+     "bottom_quintile_share": 0.1482,
+     "quintile_shares": [
+      0.1482,
+      0.2425,
+      0.2089,
+      0.2,
+      0.2005
+     ],
+     "mean_amount": 5397.6,
+     "median_amount": 4276.4,
+     "bottom_2024_ever_left": 0.7614,
+     "bottom_2024_still_bottom": 0.2307,
+     "married_share": 0.6054,
+     "capital_share": 0.5078
+    },
+    "2029": {
+     "alive": 19283,
+     "mean_age": 53.8,
+     "working_share": 0.6223,
+     "smoking_share": 0.1617,
+     "bottom_quintile_share": 0.15,
+     "quintile_shares": [
+      0.15,
+      0.2395,
+      0.2095,
+      0.2005,
+      0.2004
+     ],
+     "mean_amount": 5636.3,
+     "median_amount": 4460.4,
+     "bottom_2024_ever_left": 0.7818,
+     "bottom_2024_still_bottom": 0.2019,
+     "married_share": 0.6056,
+     "capital_share": 0.5093
+    },
+    "2030": {
+     "alive": 19081,
+     "mean_age": 54.5,
+     "working_share": 0.6164,
+     "smoking_share": 0.1599,
+     "bottom_quintile_share": 0.1523,
+     "quintile_shares": [
+      0.1523,
+      0.2422,
+      0.2069,
+      0.1966,
+      0.2021
+     ],
+     "mean_amount": 5875.2,
+     "median_amount": 4590.5,
+     "bottom_2024_ever_left": 0.8039,
+     "bottom_2024_still_bottom": 0.1761,
+     "married_share": 0.6084,
+     "capital_share": 0.5104
+    }
+   },
+   "0.30": {
+    "2025": {
+     "alive": 20000,
+     "mean_age": 50.7,
+     "working_share": 0.6307,
+     "smoking_share": 0.1639,
+     "bottom_quintile_share": 0.1443,
+     "quintile_shares": [
+      0.1443,
+      0.2489,
+      0.1987,
+      0.2072,
+      0.2009
+     ],
+     "mean_amount": 4778.4,
+     "median_amount": 3751.6,
+     "bottom_2024_ever_left": 0.5507,
+     "bottom_2024_still_bottom": 0.3801,
+     "married_share": 0.5967,
+     "capital_share": 0.5064
+    },
+    "2026": {
+     "alive": 19861,
+     "mean_age": 51.5,
+     "working_share": 0.6335,
+     "smoking_share": 0.1626,
+     "bottom_quintile_share": 0.1311,
+     "quintile_shares": [
+      0.1311,
+      0.2558,
+      0.2055,
+      0.2044,
+      0.2032
+     ],
+     "mean_amount": 4991.8,
+     "median_amount": 3906.0,
+     "bottom_2024_ever_left": 0.7171,
+     "bottom_2024_still_bottom": 0.2549,
+     "married_share": 0.5994,
+     "capital_share": 0.5081
+    },
+    "2027": {
+     "alive": 19677,
+     "mean_age": 52.3,
+     "working_share": 0.6291,
+     "smoking_share": 0.162,
+     "bottom_quintile_share": 0.1289,
+     "quintile_shares": [
+      0.1289,
+      0.2558,
+      0.2117,
+      0.2019,
+      0.2016
+     ],
+     "mean_amount": 5196.7,
+     "median_amount": 4071.4,
+     "bottom_2024_ever_left": 0.7847,
+     "bottom_2024_still_bottom": 0.2169,
+     "married_share": 0.6024,
+     "capital_share": 0.5081
+    },
+    "2028": {
+     "alive": 19498,
+     "mean_age": 53.0,
+     "working_share": 0.6245,
+     "smoking_share": 0.1624,
+     "bottom_quintile_share": 0.1305,
+     "quintile_shares": [
+      0.1305,
+      0.2562,
+      0.2107,
+      0.2021,
+      0.2006
+     ],
+     "mean_amount": 5429.9,
+     "median_amount": 4293.3,
+     "bottom_2024_ever_left": 0.8248,
+     "bottom_2024_still_bottom": 0.1919,
+     "married_share": 0.6054,
+     "capital_share": 0.5078
+    },
+    "2029": {
+     "alive": 19283,
+     "mean_age": 53.8,
+     "working_share": 0.6223,
+     "smoking_share": 0.1617,
+     "bottom_quintile_share": 0.1319,
+     "quintile_shares": [
+      0.1319,
+      0.2526,
+      0.2127,
+      0.2021,
+      0.2007
+     ],
+     "mean_amount": 5672.1,
+     "median_amount": 4477.6,
+     "bottom_2024_ever_left": 0.8431,
+     "bottom_2024_still_bottom": 0.1631,
+     "married_share": 0.6056,
+     "capital_share": 0.5093
+    },
+    "2030": {
+     "alive": 19081,
+     "mean_age": 54.5,
+     "working_share": 0.6164,
+     "smoking_share": 0.1599,
+     "bottom_quintile_share": 0.1328,
+     "quintile_shares": [
+      0.1328,
+      0.2568,
+      0.2103,
+      0.1974,
+      0.2027
+     ],
+     "mean_amount": 5914.3,
+     "median_amount": 4608.5,
+     "bottom_2024_ever_left": 0.8598,
+     "bottom_2024_still_bottom": 0.141,
+     "married_share": 0.6084,
+     "capital_share": 0.5104
+    }
+   }
+  }
+ },
+ "line_counts": {
+  "- 일": 1762,
+  "- 이사": 2733,
+  "- 개인 근로·사업소득": 3867,
+  "- 흡연 이력": 1578,
+  "- 결혼": 1602,
+  "- 2017~2024년 매년 개인 근로·사업소득 하위 20%": 419,
+  "- 이혼": 654
+ }
+}

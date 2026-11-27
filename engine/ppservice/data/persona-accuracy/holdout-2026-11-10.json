@@ -1,0 +1,530 @@
+{
+ "kind": "holdout_diagnostic",
+ "measured_on": "2026-11-10",
+ "source": "통계청 「2024 사회조사」(KOSIS), 20세 이상 성인, 2024년 12월 주민등록 연령대 인구로 가중",
+ "instructions": "service default (ppservice/survey/run.py INSTRUCTIONS)",
+ "profile": "full persona profile (P0)",
+ "order": "fwd = options as published; avg = mean of fwd and reversed with '모르겠음/잘 모르겠다' kept last",
+ "note": "old = 2024-10-27 진단 5문항(이미 결과를 본 문항), new = 결과를 보기 전에 고정한 5문항(2026-11-10). new 문항도 이제 결과를 봤으므로 이후 개선안의 최종 판정에는 쓰지 않는다.",
+ "items": {
+  "marriage": {
+   "group": "old",
+   "title": "결혼에 대한 견해",
+   "question": "결혼에 대한 귀하의 견해는 어떻습니까?",
+   "options": [
+    "반드시 해야 한다",
+    "하는 것이 좋다",
+    "해도 좋고 하지 않아도 좋다",
+    "하지 않는 것이 좋다",
+    "하지 말아야 한다",
+    "잘 모르겠다"
+   ]
+  },
+  "remarriage": {
+   "group": "old",
+   "title": "재혼에 대한 견해",
+   "question": "재혼에 대한 귀하의 견해는 어떻습니까?",
+   "options": [
+    "반드시 해야 한다",
+    "하는 것이 좋다",
+    "해도 좋고 하지 않아도 좋다",
+    "하지 않는 것이 좋다",
+    "하지 말아야 한다",
+    "잘 모르겠다"
+   ]
+  },
+  "safety_crime": {
+   "group": "old",
+   "title": "사회안전 인식(범죄)",
+   "question": "우리 사회가 범죄로부터 얼마나 안전하다고 생각하십니까?",
+   "options": [
+    "매우 안전",
+    "비교적 안전",
+    "보통",
+    "비교적 안전하지 않음",
+    "매우 안전하지 않음"
+   ]
+  },
+  "safety_disaster": {
+   "group": "old",
+   "title": "사회안전 인식(자연재해)",
+   "question": "우리 사회가 자연재해로부터 얼마나 안전하다고 생각하십니까?",
+   "options": [
+    "매우 안전",
+    "비교적 안전",
+    "보통",
+    "비교적 안전하지 않음",
+    "매우 안전하지 않음"
+   ]
+  },
+  "safety_security": {
+   "group": "old",
+   "title": "사회안전 인식(국가 안보 문제)",
+   "question": "우리 사회가 국가 안보 문제로부터 얼마나 안전하다고 생각하십니까?",
+   "options": [
+    "매우 안전",
+    "비교적 안전",
+    "보통",
+    "비교적 안전하지 않음",
+    "매우 안전하지 않음"
+   ]
+  },
+  "cohabit": {
+   "group": "new",
+   "title": "결혼문화에 대한 태도",
+   "question": "남녀가 결혼을 하지 않더라도 함께 살 수 있다는 의견에 대해 어떻게 생각하십니까?",
+   "options": [
+    "전적으로 동의",
+    "약간 동의",
+    "약간 반대",
+    "전적으로 반대"
+   ]
+  },
+  "housework": {
+   "group": "new",
+   "title": "가사 분담에 대한 견해",
+   "question": "가사 분담에 대한 귀하의 견해는 어떻습니까?",
+   "options": [
+    "아내가 전적으로 책임",
+    "아내가 주로 하지만 남편도 분담",
+    "부부가 공평하게 분담",
+    "남편이 주로 하지만 아내도 분담",
+    "남편이 전적으로 책임"
+   ]
+  },
+  "stress": {
+   "group": "new",
+   "title": "스트레스 정도(전반적인 생활)",
+   "question": "귀하는 지난 2주 동안 전반적인 생활에서 스트레스를 어느 정도 느꼈습니까?",
+   "options": [
+    "매우 느낌",
+    "느끼는 편임",
+    "느끼지 않는 편임",
+    "전혀 느끼지 않음"
+   ]
+  },
+  "school": {
+   "group": "new",
+   "title": "학교 교육의 효과",
+   "question": "학교에서 받은 교육이 생활·직업·취업에 얼마나 효과가 있다고 생각하십니까?",
+   "options": [
+    "매우효과있음",
+    "약간효과있음",
+    "보통",
+    "별로효과없음",
+    "전혀효과없음",
+    "모르겠음"
+   ]
+  },
+  "queue": {
+   "group": "new",
+   "title": "공공질서 준수 수준(차례 지키기)",
+   "question": "우리 사회에서 사람들이 차례 지키기를 얼마나 잘 지킨다고 생각하십니까?",
+   "options": [
+    "아주 잘 지킨다",
+    "비교적 잘 지킨다",
+    "보통",
+    "비교적 지키지 않는다",
+    "전혀 지키지 않는다"
+   ]
+  }
+ },
+ "models": {
+  "jev": {
+   "model": "jev-1.14.0 (TypeSafe)",
+   "n_adults": 300,
+   "fwd": {
+    "old": {
+     "mae_pp": 6.3,
+     "tvd_pp": 16.8,
+     "worst_pp": 26.4
+    },
+    "new": {
+     "mae_pp": 11.0,
+     "tvd_pp": 25.7,
+     "worst_pp": 29.5
+    },
+    "by_item": {
+     "marriage": {
+      "mae": 6.4,
+      "tvd": 19.3,
+      "worst": 19.1
+     },
+     "remarriage": {
+      "mae": 4.8,
+      "tvd": 14.4,
+      "worst": 13.0
+     },
+     "safety_crime": {
+      "mae": 11.8,
+      "tvd": 29.6,
+      "worst": 26.4
+     },
+     "safety_disaster": {
+      "mae": 5.8,
+      "tvd": 14.4,
+      "worst": 11.6
+     },
+     "safety_security": {
+      "mae": 2.6,
+      "tvd": 6.6,
+      "worst": 4.4
+     },
+     "cohabit": {
+      "mae": 14.8,
+      "tvd": 29.5,
+      "worst": 29.5
+     },
+     "housework": {
+      "mae": 9.5,
+      "tvd": 23.8,
+      "worst": 23.8
+     },
+     "stress": {
+      "mae": 11.6,
+      "tvd": 23.1,
+      "worst": 18.5
+     },
+     "school": {
+      "mae": 7.7,
+      "tvd": 23.1,
+      "worst": 22.5
+     },
+     "queue": {
+      "mae": 11.6,
+      "tvd": 29.1,
+      "worst": 25.6
+     }
+    }
+   },
+   "avg": {
+    "old": {
+     "mae_pp": 6.3,
+     "tvd_pp": 17.1,
+     "worst_pp": 24.8
+    },
+    "new": {
+     "mae_pp": 10.8,
+     "tvd_pp": 25.3,
+     "worst_pp": 30.8
+    },
+    "by_item": {
+     "marriage": {
+      "mae": 7.0,
+      "tvd": 20.9,
+      "worst": 18.2
+     },
+     "remarriage": {
+      "mae": 5.2,
+      "tvd": 15.5,
+      "worst": 14.7
+     },
+     "safety_crime": {
+      "mae": 11.2,
+      "tvd": 27.9,
+      "worst": 24.8
+     },
+     "safety_disaster": {
+      "mae": 5.9,
+      "tvd": 14.8,
+      "worst": 13.2
+     },
+     "safety_security": {
+      "mae": 2.5,
+      "tvd": 6.1,
+      "worst": 5.9
+     },
+     "cohabit": {
+      "mae": 15.4,
+      "tvd": 30.8,
+      "worst": 30.8
+     },
+     "housework": {
+      "mae": 8.8,
+      "tvd": 22.1,
+      "worst": 22.1
+     },
+     "stress": {
+      "mae": 10.0,
+      "tvd": 19.9,
+      "worst": 16.9
+     },
+     "school": {
+      "mae": 7.7,
+      "tvd": 23.0,
+      "worst": 20.7
+     },
+     "queue": {
+      "mae": 12.4,
+      "tvd": 31.0,
+      "worst": 24.7
+     }
+    }
+   }
+  },
+  "solar": {
+   "model": "solar-decide (Upstage)",
+   "n_adults": 150,
+   "fwd": {
+    "old": {
+     "mae_pp": 20.9,
+     "tvd_pp": 58.4,
+     "worst_pp": 91.9
+    },
+    "new": {
+     "mae_pp": 10.7,
+     "tvd_pp": 25.0,
+     "worst_pp": 28.0
+    },
+    "by_item": {
+     "marriage": {
+      "mae": 30.6,
+      "tvd": 91.9,
+      "worst": 91.9
+     },
+     "remarriage": {
+      "mae": 29.4,
+      "tvd": 88.3,
+      "worst": 88.3
+     },
+     "safety_crime": {
+      "mae": 16.6,
+      "tvd": 41.5,
+      "worst": 34.8
+     },
+     "safety_disaster": {
+      "mae": 12.0,
+      "tvd": 30.0,
+      "worst": 30.0
+     },
+     "safety_security": {
+      "mae": 16.0,
+      "tvd": 40.0,
+      "worst": 40.0
+     },
+     "cohabit": {
+      "mae": 14.2,
+      "tvd": 28.3,
+      "worst": 20.9
+     },
+     "housework": {
+      "mae": 4.0,
+      "tvd": 9.9,
+      "worst": 9.9
+     },
+     "stress": {
+      "mae": 12.6,
+      "tvd": 25.2,
+      "worst": 25.2
+     },
+     "school": {
+      "mae": 10.3,
+      "tvd": 30.9,
+      "worst": 26.8
+     },
+     "queue": {
+      "mae": 12.2,
+      "tvd": 30.6,
+      "worst": 28.0
+     }
+    }
+   },
+   "avg": {
+    "old": {
+     "mae_pp": 21.9,
+     "tvd_pp": 60.8,
+     "worst_pp": 93.3
+    },
+    "new": {
+     "mae_pp": 11.2,
+     "tvd_pp": 26.8,
+     "worst_pp": 34.0
+    },
+    "by_item": {
+     "marriage": {
+      "mae": 31.1,
+      "tvd": 93.3,
+      "worst": 93.3
+     },
+     "remarriage": {
+      "mae": 29.7,
+      "tvd": 89.2,
+      "worst": 89.2
+     },
+     "safety_crime": {
+      "mae": 15.9,
+      "tvd": 39.8,
+      "worst": 29.1
+     },
+     "safety_disaster": {
+      "mae": 14.7,
+      "tvd": 36.7,
+      "worst": 36.7
+     },
+     "safety_security": {
+      "mae": 18.1,
+      "tvd": 45.2,
+      "worst": 45.2
+     },
+     "cohabit": {
+      "mae": 13.2,
+      "tvd": 26.4,
+      "worst": 19.8
+     },
+     "housework": {
+      "mae": 4.2,
+      "tvd": 10.4,
+      "worst": 6.1
+     },
+     "stress": {
+      "mae": 11.1,
+      "tvd": 22.1,
+      "worst": 22.1
+     },
+     "school": {
+      "mae": 12.7,
+      "tvd": 38.2,
+      "worst": 34.0
+     },
+     "queue": {
+      "mae": 14.7,
+      "tvd": 36.7,
+      "worst": 33.8
+     }
+    }
+   }
+  },
+  "tev1": {
+   "model": "tev1:4b (Ollama, local)",
+   "n_adults": 100,
+   "fwd": {
+    "old": {
+     "mae_pp": 7.5,
+     "tvd_pp": 20.3,
+     "worst_pp": 22.1
+    },
+    "new": {
+     "mae_pp": 10.3,
+     "tvd_pp": 24.9,
+     "worst_pp": 36.6
+    },
+    "by_item": {
+     "marriage": {
+      "mae": 7.6,
+      "tvd": 22.7,
+      "worst": 21.8
+     },
+     "remarriage": {
+      "mae": 8.2,
+      "tvd": 24.7,
+      "worst": 13.7
+     },
+     "safety_crime": {
+      "mae": 10.0,
+      "tvd": 25.0,
+      "worst": 22.1
+     },
+     "safety_disaster": {
+      "mae": 7.5,
+      "tvd": 18.9,
+      "worst": 12.4
+     },
+     "safety_security": {
+      "mae": 4.1,
+      "tvd": 10.1,
+      "worst": 6.7
+     },
+     "cohabit": {
+      "mae": 8.4,
+      "tvd": 16.8,
+      "worst": 16.8
+     },
+     "housework": {
+      "mae": 14.6,
+      "tvd": 36.6,
+      "worst": 36.6
+     },
+     "stress": {
+      "mae": 10.6,
+      "tvd": 21.3,
+      "worst": 19.3
+     },
+     "school": {
+      "mae": 10.6,
+      "tvd": 31.8,
+      "worst": 30.7
+     },
+     "queue": {
+      "mae": 7.2,
+      "tvd": 18.0,
+      "worst": 10.5
+     }
+    }
+   },
+   "avg": {
+    "old": {
+     "mae_pp": 7.1,
+     "tvd_pp": 19.2,
+     "worst_pp": 19.1
+    },
+    "new": {
+     "mae_pp": 10.1,
+     "tvd_pp": 24.5,
+     "worst_pp": 35.3
+    },
+    "by_item": {
+     "marriage": {
+      "mae": 6.6,
+      "tvd": 19.9,
+      "worst": 16.7
+     },
+     "remarriage": {
+      "mae": 7.8,
+      "tvd": 23.3,
+      "worst": 16.6
+     },
+     "safety_crime": {
+      "mae": 6.9,
+      "tvd": 17.3,
+      "worst": 14.8
+     },
+     "safety_disaster": {
+      "mae": 11.3,
+      "tvd": 28.3,
+      "worst": 19.1
+     },
+     "safety_security": {
+      "mae": 2.8,
+      "tvd": 7.1,
+      "worst": 4.6
+     },
+     "cohabit": {
+      "mae": 5.3,
+      "tvd": 10.7,
+      "worst": 10.7
+     },
+     "housework": {
+      "mae": 16.1,
+      "tvd": 40.2,
+      "worst": 35.3
+     },
+     "stress": {
+      "mae": 10.1,
+      "tvd": 20.1,
+      "worst": 17.4
+     },
+     "school": {
+      "mae": 8.6,
+      "tvd": 25.8,
+      "worst": 25.1
+     },
+     "queue": {
+      "mae": 10.3,
+      "tvd": 25.7,
+      "worst": 15.8
+     }
+    }
+   }
+  }
+ }
+}

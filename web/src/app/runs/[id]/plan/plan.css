@@ -1,0 +1,28 @@
+.pp-doc { max-width: 880px; margin: 0 auto; background: #fff; border: 1px solid var(--pp-line); box-shadow: 0 10px 30px rgba(30, 33, 36, 0.08); padding: 56px 64px; box-sizing: border-box; }
+@media (max-width: 760px) { .pp-doc { padding: 28px 20px; } }
+.pp-doc-head { text-align: center; border-bottom: 2px solid var(--pp-ink); padding-bottom: 20px; margin-bottom: 8px; position: relative; }
+.pp-doc-stamp { position: absolute; right: 0; top: 0; margin: 0; border: 2px solid var(--pp-point); color: var(--pp-point-text); font-weight: 700; font-size: 1.3rem; padding: 2px 8px; border-radius: 4px; transform: rotate(4deg); }
+.pp-doc-title { font-size: 2.8rem; line-height: 1.4; margin: 12px 0 8px; }
+.pp-doc-date { margin: 0; color: var(--pp-ink-3); font-size: 1.4rem; }
+.pp-doc section { margin-top: 28px; }
+.pp-doc h3 { font-size: 1.9rem; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--pp-line); }
+.pp-doc-sq { margin: 0; padding: 0; list-style: none; }
+.pp-doc-sq li { padding-left: 1.4em; text-indent: -1.4em; margin-bottom: 6px; }
+.pp-doc-sq li::before { content: "□ "; }
+.pp-doc-item { margin-bottom: 14px; }
+.pp-doc-o { margin: 0 0 4px; font-weight: 700; }
+.pp-doc-o span { font-weight: 400; color: var(--pp-ink-3); font-size: 1.4rem; }
+.pp-doc-dash { margin: 0 0 4px 1.2em; font-size: 1.5rem; }
+.pp-doc-quote, .pp-doc-quote-inline { color: var(--pp-ink-2); font-size: 1.45rem; }
+.pp-doc-quote { margin: 4px 0 0 1.2em; padding-left: 10px; border-left: 3px solid var(--pp-line); }
+.pp-doc-quote-inline { font-weight: 400; }
+.pp-doc-table-wrap { overflow-x: auto; }
+.pp-doc-table { width: 100%; border-collapse: collapse; font-size: 1.4rem; }
+.pp-doc-table th, .pp-doc-table td { border: 1px solid var(--pp-line); padding: 8px 10px; vertical-align: top; text-align: left; }
+.pp-doc-table th { background: var(--pp-bg-2); white-space: nowrap; }
+.pp-doc-table small { color: var(--pp-ink-3); }
+.pp-doc-note { margin: 8px 0 0; font-size: 1.3rem; color: var(--pp-ink-3); }
+.pp-doc-qa { margin-bottom: 12px; }
+.pp-doc-qa p { margin: 0 0 2px; }
+.pp-doc-qa small { color: var(--pp-ink-3); }
+@media print { .pp-doc { border: 0; box-shadow: none; padding: 0; max-width: none; } }

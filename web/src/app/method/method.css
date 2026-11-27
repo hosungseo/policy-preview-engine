@@ -1,0 +1,13 @@
+.pp-steps-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.pp-steps-row li { counter-increment: s; }
+.pp-steps-row li .pp-card::before { content: counter(s); display: inline-flex; width: 28px; height: 28px; border-radius: 50%; background: var(--pp-primary); color: #fff; font-weight: 700; align-items: center; justify-content: center; margin-bottom: 8px; }
+.pp-steps-row p { margin: 4px 0 0; color: var(--pp-ink-2); font-size: 1.45rem; }
+@media (max-width: 860px) { .pp-steps-row { grid-template-columns: minmax(0, 1fr); } }
+.pp-bullets { margin: 0; padding-left: 20px; }
+.pp-bullets li { margin-bottom: 8px; }
+.pp-limit p { margin: 6px 0 0; color: var(--pp-ink-2); font-size: 1.5rem; }
+.pp-table-wrap { overflow-x: auto; }
+.pp-table { width: 100%; border-collapse: collapse; font-size: 1.45rem; }
+.pp-table th, .pp-table td { border-bottom: 1px solid var(--pp-line); padding: 10px 8px; text-align: left; vertical-align: top; }
+.pp-table th { background: var(--pp-bg-2); white-space: nowrap; }
+.pp-code { background: #1e2124; color: #f4f5f6; border-radius: 10px; padding: 16px 20px; overflow-x: auto; font-size: 1.4rem; line-height: 1.7; }

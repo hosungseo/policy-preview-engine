@@ -1,0 +1,27 @@
+{
+  "name": "policy-preview-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync-krds": "node scripts/sync-krds.mjs",
+    "predev": "node scripts/sync-krds.mjs",
+    "dev": "next dev -p 3100",
+    "prebuild": "node scripts/sync-krds.mjs",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "krds-uiux": "^1.1.0",
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.63.0",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,17 @@
+.git
+.venv
+.env
+.env.*
+data
+runs
+service-data
+videos
+research
+docs
+web/node_modules
+web/.next
+web/out
+web/dev-runs
+web/dev-series
+**/__pycache__
+**/.pytest_cache

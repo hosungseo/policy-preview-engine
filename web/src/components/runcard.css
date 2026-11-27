@@ -1,0 +1,6 @@
+.pp-runcard { display: grid; gap: 10px; align-content: start; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.pp-runcard:hover { border-color: var(--pp-primary); box-shadow: 0 6px 18px rgba(37, 110, 244, 0.12); }
+.pp-runcard-top { display: flex; gap: 6px; align-items: center; }
+.pp-runcard .pp-h3 { margin: 0; }
+.pp-runcard-agency, .pp-runcard-date { margin: 0; font-size: 1.35rem; color: var(--pp-ink-3); }
+.pp-runcard-issue { margin: 0; font-size: 1.45rem; color: var(--pp-ink-2); }

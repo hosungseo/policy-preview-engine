@@ -1,0 +1,19 @@
+.pp-compare { display: grid; gap: 8px; }
+.pp-compare-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 124px; gap: 10px; align-items: center; font-size: 1.35rem; }
+.pp-compare-track { position: relative; height: 14px; background: var(--pp-bg-2); border-radius: 4px; }
+.pp-compare-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--pp-primary); border-radius: 0 4px 4px 0; }
+.pp-compare-tick { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--pp-ink); }
+.pp-compare-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--pp-ink-2); }
+.pp-tick-swatch { width: 2px; height: 14px; background: var(--pp-ink); display: inline-block; }
+.pp-map-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: start; }
+.pp-spec dl { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px 12px; margin: 0; }
+.pp-spec dt { color: var(--pp-ink-3); font-size: 1.4rem; }
+.pp-spec dd { margin: 0; }
+.pp-spec-groups { margin: 0; padding-left: 18px; }
+.pp-combos { display: grid; gap: 10px; margin-bottom: 8px; }
+.pp-combo-label { font-size: 1.4rem; font-weight: 700; margin-bottom: 2px; }
+.pp-occ h4 { margin: 14px 0 6px; font-size: 1.45rem; }
+@media (max-width: 760px) {
+  .pp-map-wrap { grid-template-columns: minmax(0, 1fr); }
+  .pp-compare-row { grid-template-columns: 72px minmax(0, 1fr) 104px; }
+}

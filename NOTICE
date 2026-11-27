@@ -1,0 +1,15 @@
+policy-preview-engine (백번 미리 묻다)
+Copyright 2026 Hosung Seo
+
+The source code in this repository is licensed under the Apache License,
+Version 2.0 (see LICENSE).
+
+The data files in this repository keep their own terms and are not
+relicensed under the Apache License. Each file's source, terms and how it was
+made are listed in data/SOURCES.md, including:
+
+- NVIDIA Nemotron-Personas-Korea (CC BY 4.0)
+  https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea
+- Korean public statistics and public-sector works used with source
+  attribution (KOSIS, data.go.kr, the Korean government's press releases and
+  legislative notices), as listed per file in data/SOURCES.md.

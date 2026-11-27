@@ -1,0 +1,112 @@
+{
+ "note": "투기과열지구·조정대상지역으로 함께 지정된 곳. from은 효력 발생일이고, 첫 기간은 출처 문서가 '현재 지정'이라고 밝힌 날이다. 인물 DB에 구 구분이 없는 시(화성시)는 partial. evidence는 출처 문서의 문장을 스크립트로 옮긴 것. korea.kr 근거 문장은 공공누리 제1유형(텍스트) 원문, 금융위원회 근거는 기사별 공공누리 표시가 없어 이 저장소의 요약(kind=summary)으로 둔다.",
+ "periods": [
+  {
+   "from": "2025-06-27",
+   "areas": [
+    "서울-강남구",
+    "서울-서초구",
+    "서울-송파구",
+    "서울-용산구"
+   ],
+   "partial": [],
+   "source": "https://www.fsc.go.kr/no010101/84824",
+   "evidence": [
+    {
+     "url": "https://www.fsc.go.kr/no010101/84824",
+     "text": "(요약) 이 보도자료는 발표 당시 투기지역·투기과열지구·조정대상지역으로 서울 강남·서초·송파·용산 4개 구를 들었다.",
+     "kind": "summary",
+     "license": "기사별 공공누리 표시 없음"
+    }
+   ]
+  },
+  {
+   "from": "2025-10-16",
+   "areas": [
+    "서울-*",
+    "경기-과천시",
+    "경기-광명시",
+    "경기-성남시 분당구",
+    "경기-성남시 수정구",
+    "경기-성남시 중원구",
+    "경기-수원시 영통구",
+    "경기-수원시 장안구",
+    "경기-수원시 팔달구",
+    "경기-안양시 동안구",
+    "경기-용인시 수지구",
+    "경기-의왕시",
+    "경기-하남시"
+   ],
+   "partial": [],
+   "source": "https://www.korea.kr/common/download.do?fileId=198211790&tblKey=GMN",
+   "evidence": [
+    {
+     "url": "https://www.korea.kr/common/download.do?fileId=198211790&tblKey=GMN",
+     "text": "□ (적용시기) 10.16(목) 일자로 지정 및 효력 발생",
+     "license": "공공누리 제1유형(출처표시), 텍스트에 한함",
+     "page": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156718969",
+     "title": "「주택시장 안정화 대책」 발표",
+     "provider": "국토교통부"
+    },
+    {
+     "url": "https://www.korea.kr/common/download.do?fileId=198211791&tblKey=GMN",
+     "text": "- 조정대상지역 및 투기과열지구는 기존에 지정되어 있는 강남구, 서초구, 송파구, 용산구 4개 자치구에 대해 지정을 유지하고, 그 외 서울 21개 자치구 전체와 경기도 12개 지역*은 신규 지정한다.",
+     "license": "공공누리 제1유형(출처표시), 텍스트에 한함",
+     "page": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156718969",
+     "title": "「주택시장 안정화 대책」 발표",
+     "provider": "국토교통부"
+    },
+    {
+     "url": "https://www.korea.kr/common/download.do?fileId=198211791&tblKey=GMN",
+     "text": "* 과천시, 광명시, 성남시 분당구ㆍ수정구ㆍ중원구, 수원시 영통구ㆍ장안구ㆍ팔달구, 안양시 동안구, 용인시 수지구, 의왕시, 하남시",
+     "license": "공공누리 제1유형(출처표시), 텍스트에 한함",
+     "page": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156718969",
+     "title": "「주택시장 안정화 대책」 발표",
+     "provider": "국토교통부"
+    }
+   ]
+  },
+  {
+   "from": "2026-07-01",
+   "areas": [
+    "서울-*",
+    "경기-과천시",
+    "경기-광명시",
+    "경기-성남시 분당구",
+    "경기-성남시 수정구",
+    "경기-성남시 중원구",
+    "경기-수원시 영통구",
+    "경기-수원시 장안구",
+    "경기-수원시 팔달구",
+    "경기-안양시 동안구",
+    "경기-용인시 수지구",
+    "경기-의왕시",
+    "경기-하남시",
+    "경기-용인시 기흥구",
+    "경기-구리시"
+   ],
+   "partial": [
+    "경기-화성시"
+   ],
+   "source": "https://www.korea.kr/news/policyNewsView.do?newsId=148967354",
+   "evidence": [
+    {
+     "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148967354",
+     "text": "국토교통부는 최근 큰 폭으로 집값이 상승한 경기도 화성시 동탄구, 용인시 기흥구, 구리시 등 3곳을 투기과열지구 및 조정대상지역으로 신규 지정했다.",
+     "license": "공공누리 제1유형(출처표시), 텍스트에 한함",
+     "page": "https://www.korea.kr/news/policyNewsView.do?newsId=148967354",
+     "title": "'동탄·기흥·구리' 3곳 투기과열지구·조정대상지역 지정",
+     "provider": "국토교통부"
+    },
+    {
+     "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148967354",
+     "text": "이에 국토교통부는 투기적 매수를 차단 실수요자를 보호하고 주택시장 과열에 대응하기 위해, 주거정책심의위원회를 거쳐 투기과열지구와 조정대상지역을 추가 지정했고 7월 1일부터 지정효력이 발생한다.",
+     "license": "공공누리 제1유형(출처표시), 텍스트에 한함",
+     "page": "https://www.korea.kr/news/policyNewsView.do?newsId=148967354",
+     "title": "'동탄·기흥·구리' 3곳 투기과열지구·조정대상지역 지정",
+     "provider": "국토교통부"
+    }
+   ]
+  }
+ ]
+}

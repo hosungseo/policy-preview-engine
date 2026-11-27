@@ -1,0 +1,67 @@
+.pp-series-chart svg { display: block; overflow: visible; }
+.pp-narrow-only { display: none; }
+@media (max-width: 560px) { .pp-wide-only { display: none; } .pp-narrow-only { display: block; } }
+.pp-series-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; list-style: none; padding: 0; margin: 0 0 8px; font-size: 1.4rem; color: var(--pp-ink-2); }
+.pp-series-legend li { display: flex; align-items: center; gap: 6px; }
+.pp-series-caution { background: #fff8e6; border: 1px solid #f2d28b; border-radius: var(--pp-radius); padding: 14px 18px; margin: 0 0 20px; font-size: 1.45rem; line-height: 1.6; }
+.pp-series-caution ul { margin: 0; padding-left: 18px; }
+.pp-series-list { columns: 2; font-size: 1.35rem; color: var(--pp-ink-2); margin: 10px 0 0; padding-left: 20px; }
+@media (max-width: 640px) { .pp-series-list { columns: 1; } }
+.pp-series-heat-wrap { overflow-x: auto; }
+.pp-series-heat { border-collapse: separate; border-spacing: 2px; width: 100%; table-layout: fixed; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.pp-series-heat th { font-weight: 600; color: var(--pp-ink-2); font-size: 1.2rem; padding: 2px; }
+.pp-series-heat th.pp-rowh { text-align: left; width: 44px; }
+.pp-series-heat td { text-align: center; border-radius: 3px; padding: 4px 0; }
+.pp-series-heat td.is-small { background: #fff; border: 1px dashed var(--pp-line); color: var(--pp-ink-3); }
+.pp-series-heat .pp-heat-total td { font-weight: 700; }
+.pp-series-maps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 960px) { .pp-series-maps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .pp-series-maps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pp-series-maps .pp-tile { font-size: 1.05rem; padding: 3px 1px; }
+.pp-series-multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.pp-series-mini { border: 1px solid var(--pp-line); border-radius: var(--pp-radius); padding: 10px 12px; background: #fff; }
+.pp-series-mini-head { display: flex; justify-content: space-between; gap: 6px; font-size: 1.35rem; }
+.pp-series-mini-head span, .pp-series-mini-foot { color: var(--pp-ink-3); font-size: 1.2rem; }
+.pp-dumbbell-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 150px; gap: 10px; align-items: center; padding: 3px 0; font-size: 1.3rem; }
+@media (max-width: 560px) { .pp-dumbbell-row { grid-template-columns: 40px minmax(0, 1fr); } .pp-dumbbell-nums { grid-column: 2; } }
+.pp-dumbbell-track { position: relative; height: 14px; background: #f4f5f6; border-radius: 7px; }
+.pp-dumbbell-bar { position: absolute; top: 6px; height: 2px; background: #b1b8be; }
+.pp-dumbbell-dot { position: absolute; top: 2px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
+.pp-dumbbell-dot.is-jev { background: #256ef4; }
+.pp-dumbbell-dot.is-official { background: #464c53; border-radius: 2px; }
+.pp-measure-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.pp-measure-card h3 { font-size: 1.7rem; margin: 4px 0 6px; }
+.pp-measure-card .pp-measure-meta { color: var(--pp-ink-3); font-size: 1.3rem; }
+.pp-measure-card .pp-measure-nums { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 1.35rem; margin: 8px 0; }
+.pp-measure-text { white-space: pre-wrap; font-size: 1.45rem; line-height: 1.7; background: var(--pp-bg-2); border-radius: var(--pp-radius); padding: 16px 18px; }
+.pp-pos-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px 90px; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--pp-line-2); font-size: 1.35rem; }
+@media (max-width: 560px) { .pp-pos-row { grid-template-columns: minmax(0, 1fr) 70px 70px; } }
+.pp-tiles.is-compact .pp-tile { font-size: 1.05rem; padding: 3px 1px; }
+.pp-tiles.is-compact .pp-tile b { font-size: 1.2rem; }
+.pp-series-heat td { white-space: nowrap; }
+@media (max-width: 640px) {
+  .pp-series-heat.is-effect { min-width: 620px; }
+  .pp-series-heat th.pp-rowh { position: sticky; left: 0; background: #fff; z-index: 1; }
+}
+.pp-series-usage { list-style: none; margin: 12px 0 0; padding: 0; }
+.pp-series-usage li { padding: 8px 0; border-bottom: 1px solid var(--pp-line-2); font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.pp-series-table-wrap { overflow-x: auto; }
+.pp-series-table { width: 100%; border-collapse: collapse; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.pp-series-table th, .pp-series-table td { padding: 7px 6px; border-bottom: 1px solid var(--pp-line-2); text-align: right; white-space: nowrap; }
+.pp-series-table th:first-child, .pp-series-table td:first-child { text-align: left; white-space: normal; }
+.pp-series-table th { font-weight: 600; color: var(--pp-ink-2); font-size: 1.2rem; }
+.pp-series-table tr.is-small td { color: var(--pp-ink-3); }
+.pp-pos-row.is-head { font-weight: 600; color: var(--pp-ink-2); font-size: 1.2rem; }
+.pp-series-heat.is-change th.pp-rowh { width: 92px; white-space: nowrap; }
+.pp-series-heat .pp-heat-kind th { text-align: left; padding: 10px 2px 2px; font-size: 1.25rem; color: var(--pp-ink-1, #1e2124); }
+@media (max-width: 640px) { .pp-series-heat.is-change { min-width: 700px; } }
+.pp-series-moves { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; }
+@media (max-width: 800px) { .pp-series-moves { grid-template-columns: minmax(0, 1fr); } }
+.pp-series-moves h4 { margin: 0 0 6px; font-size: 1.4rem; }
+.pp-series-moves ol { margin: 0; padding-left: 20px; font-size: 1.35rem; line-height: 1.7; font-variant-numeric: tabular-nums; }
+.pp-series-note { font-size: 1.35rem; line-height: 1.65; color: var(--pp-ink-2); margin: 12px 0 0; }
+.pp-housing-examples { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 960px) { .pp-housing-examples { grid-template-columns: minmax(0, 1fr); } }
+.pp-housing-examples h4 { margin: 0 0 6px; font-size: 1.35rem; }
+.pp-housing-examples pre { white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; margin: 0; font-family: inherit; font-size: 1.3rem; line-height: 1.65; background: var(--pp-bg-2); border-radius: var(--pp-radius); padding: 12px 14px; }
+.pp-series-mapcta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 20px; font-size: 1.4rem; color: var(--pp-ink-2); }
