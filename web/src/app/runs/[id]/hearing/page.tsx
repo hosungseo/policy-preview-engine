@@ -75,6 +75,8 @@ export default async function HearingPage({ params }: { params: Promise<{ id: st
       <AiNotice extra="가상 공청회 회의록은 합성 인물(AI)이 만든 토론이며 실제 발언이 아닙니다." />
       <RunHeader bundle={b} active="hearing" />
       <div className="pp-container">
+        {h.policy_truncated && <p role="note" className="pp-card">{h.context_note ??
+          `공청회에는 정책문 ${h.total_chars}자 중 앞 ${h.shown_chars}자만 전달했습니다. 뒤의 조항은 발언에 반영되지 않을 수 있습니다.`}</p>}
         <section className="pp-section">
           <SectionHead title="참석자"
             desc="쟁점별로 입장이 가장 뚜렷한 사람과, 찬성·반대·연령·권역이 고루 섞이도록 코드가 고른 6명입니다." />

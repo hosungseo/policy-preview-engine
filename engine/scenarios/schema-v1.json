@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Policy Preview 시험 카드 v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scenario_id", "persona_uuid", "source_revision", "observed_fields", "assumed_context", "unknown_fields", "guidance", "question", "jurisdiction", "as_of", "reference_documents", "expected", "forbidden"],
+  "properties": {
+    "schema_version": {"enum": ["1"]},
+    "scenario_id": {"$ref": "#/$defs/text"},
+    "persona_uuid": {"type": "string", "format": "uuid"},
+    "source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "observed_fields": {"type": "object"},
+    "assumed_context": {"type": "object"},
+    "unknown_fields": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/text"}},
+    "guidance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "text", "sha256", "placeholder"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text"}, "version": {"$ref": "#/$defs/text"},
+        "text": {"$ref": "#/$defs/text"}, "sha256": {"$ref": "#/$defs/hash"},
+        "placeholder": {"type": "boolean"}
+      }
+    },
+    "question": {"$ref": "#/$defs/text"},
+    "jurisdiction": {"$ref": "#/$defs/text"},
+    "as_of": {"type": "string", "format": "date"},
+    "reference_documents": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "title", "version", "text", "sha256", "jurisdiction", "effective_from", "effective_until", "review_status", "placeholder"],
+        "properties": {
+          "id": {"$ref": "#/$defs/text"}, "title": {"$ref": "#/$defs/text"},
+          "version": {"$ref": "#/$defs/text"}, "text": {"$ref": "#/$defs/text"},
+          "sha256": {"$ref": "#/$defs/hash"}, "jurisdiction": {"$ref": "#/$defs/text"},
+          "effective_from": {"type": "string", "format": "date"},
+          "effective_until": {"type": ["string", "null"], "format": "date"},
+          "review_status": {"enum": ["reviewed", "unreviewed"]},
+          "placeholder": {"type": "boolean"}
+        }
+      }
+    },
+    "expected": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/behavior"}},
+    "forbidden": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/behavior"}}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "behavior": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "behavior", "reference_ids"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text"}, "behavior": {"$ref": "#/$defs/text"},
+        "reference_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/text"}}
+      }
+    }
+  }
+}

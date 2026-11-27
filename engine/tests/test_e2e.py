@@ -29,6 +29,10 @@ def test_full_pipeline_with_mock(persona_db, tmp_path, monkeypatch):
     assert bundle["analysis"]["overall"]["n"] == 30
     assert sum(p["panel"] == "aff" for p in bundle["personas"]) == 10
     assert len(bundle["hearing"]["turns"]) == 21
+    assert bundle["selection"]["uuids"] == [p["uuid"] for p in bundle["personas"]]
+    assert bundle["selection"]["selected_count"] == 40
+    assert bundle["hearing"]["policy_truncated"] is False
+    assert bundle["meta"]["hearing_context"]["shown_chars"] == bundle["hearing"]["shown_chars"]
     assert any("의미 검색 경로 생략" in f for f in bundle["meta"]["fallbacks"])
     assert not (tmp_path / "public").exists()
     assert [s["name"] for s in bundle["meta"]["stages"]] == ["segment", "clarity", "panel", "react", "issues", "jev",

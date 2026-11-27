@@ -8,6 +8,29 @@ from tests.test_svc_survey import H, OPTIONS, QUESTION, _answers, api, drain, lo
 SPEC = {"title": "농어민 지원(합성 예시)", "policy_text": "농어민 직불금 지급 기준을 조정한다.", "question": QUESTION}
 
 
+@pytest.mark.parametrize("profile", [
+    "어린이집 교사로 일합니다.", "유치원 원장입니다.", "어린이집에서 근무합니다.",
+    "유치원 근처에 거주합니다.", "어린이집 옆에 삽니다.", "신생아실 간호사입니다.",
+    "영유아 자녀는 없습니다.", "신생아를 키우지 않습니다.", "유치원에 다니는 조카를 만납니다.",
+    "어린 시절 유치원에서 놀았습니다.", "유치원 교사이며 고등학생 자녀를 키웁니다.",
+])
+def test_child_mentions_do_not_establish_parenthood(profile):
+    assert visit.young_child_candidate(profile) is False
+
+
+@pytest.mark.parametrize("profile", [
+    "영유아 자녀를 키웁니다.", "갓난아이를 양육하고 있습니다.", "신생아를 키웁니다.",
+    "유치원에 다니는 딸과 함께 삽니다.", "자녀를 어린이집에 보냅니다.",
+    "어린이집 교사이며 갓난아이를 키웁니다.",
+    "유치원 교사로 일합니다. 신생아를 키웁니다.",
+])
+def test_child_mentions_remain_review_candidates(profile):
+    p = {"uuid": "invented", "age_band": "30대", "sex": "여자", "province": "서울", "profile": profile}
+    groups = visit.memberships([p], {}, ())
+    child = [(key, value) for key, value in groups.items() if key[0] == "영유아"]
+    assert len(child) == 1 and child[0][0][1] == "영유아·보육 관련 언급 인물(확인 후보)"
+
+
 @pytest.mark.needs_panel
 def test_cards_name_the_groups_that_differ_and_where_they_live():
     everyone = panel.load(addons="off")[0]

@@ -94,6 +94,7 @@ def assemble(run_dir: Path) -> dict:
         "source": policy.get("source", {}), "policy_text": policy["text"],
         "segments": _read(run_dir / "segments.json"), "population": population,
         "panel": _read(run_dir / "panel.json"),
+        "selection": _optional(run_dir / "selection.json"),
         "personas": [public_person(p, jev_rows.get(p["uuid"])) for p in _read(run_dir / "personas.json")],
         "reactions": _with_lenses(_with_consistency(_read(run_dir / "reactions.json"), analysis), review),
         "analysis": analysis, "clarity": _optional(run_dir / "clarity.json"),

@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from . import budget, config, export, pipeline
@@ -16,6 +17,8 @@ from . import budget, config, export, pipeline
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="pp")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    check = sub.add_parser("validate-scenario", help="validate a test card locally, without model calls")
+    check.add_argument("scenario", type=Path)
     run = sub.add_parser("run", help="run every stage for one policy file (resumes)")
     run.add_argument("policy", type=Path)
     run.add_argument("--n-rep", type=int, default=300)
@@ -65,7 +68,16 @@ def main(argv: list[str] | None = None) -> None:
     if args.cmd in ("run", "compare"):
         limits = budget.Limits(args.max_calls, args.max_output_tokens, args.max_retries, args.max_concurrency,
                                None if args.unknown_cost else args.max_cost_usd)
-    if args.cmd == "run":
+    if args.cmd == "validate-scenario":
+        from .scenario import validate_scenario
+
+        try:
+            result = validate_scenario(json.loads(args.scenario.read_text(encoding="utf-8")))
+        except (ValueError, OSError) as exc:
+            parser.error(str(exc))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.cmd == "run":
+
         job = pipeline.Run(args.policy, n_rep=args.n_rep, n_aff=args.n_aff, n_jev=args.n_jev, n_alt=args.n_alt,
                            workers=args.workers,
                            seed=args.seed, allow_mock=args.allow_mock, run_dir=args.run_dir, limits=limits)

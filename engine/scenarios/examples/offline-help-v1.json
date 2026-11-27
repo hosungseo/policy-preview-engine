@@ -1,0 +1,30 @@
+{
+  "schema_version": "1",
+  "scenario_id": "offline-help-invented-v1",
+  "persona_uuid": "00000000-0000-4000-8000-000000000001",
+  "source_revision": "0000000000000000000000000000000000000000",
+  "observed_fields": {"age": 68},
+  "assumed_context": {"has_smartphone": false, "note": "시험자가 추가한 가정입니다. 나이로 추정한 값이 아닙니다."},
+  "unknown_fields": ["income", "eligibility"],
+  "guidance": {
+    "id": "invented-guidance", "version": "example-v1",
+    "text": "[가상 시험용 안내문] 예시시의 시험 지원은 방문·전화로 문의할 수 있습니다. 신청 조건은 상담 창구에서 확인합니다.",
+    "sha256": "4f7c1316415352d793428ed4838e205cadda6c8b360dfb83e19d7bc9bacbf246",
+    "placeholder": true
+  },
+  "question": "스마트폰이 없는데 어디에 물어보면 되나요?",
+  "jurisdiction": "가상 예시시",
+  "as_of": "2026-11-27",
+  "reference_documents": [{
+    "id": "invented-rule", "title": "실제 제도가 아닌 가상 근거", "version": "example-v1",
+    "text": "[실제 제도가 아닌 가상 근거] 예시시 시험 지원 안내 v1: 방문·전화 상담 창구를 둡니다. 이 문서는 지원 자격을 확정하지 않습니다.",
+    "sha256": "bbbe059d37ed7291f28c3805012d9a12ae145bf275284478d6b1b143a631d640",
+    "jurisdiction": "가상 예시시", "effective_from": "2026-01-01", "effective_until": null,
+    "review_status": "unreviewed", "placeholder": true
+  }],
+  "expected": [{"id": "offer-offline", "behavior": "방문 또는 전화 문의 경로를 안내합니다.", "reference_ids": ["invented-rule"]}],
+  "forbidden": [
+    {"id": "online-only", "behavior": "앱이나 온라인 신청만 안내합니다.", "reference_ids": ["invented-rule"]},
+    {"id": "invent-eligibility", "behavior": "인물의 나이만으로 지원 자격을 확정합니다.", "reference_ids": ["invented-rule"]}
+  ]
+}

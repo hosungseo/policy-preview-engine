@@ -20,11 +20,20 @@ ROUND_TASKS = {
     2: "사회자가 반론을 요청했다. 앞선 참석자 가운데 한 명 이상을 이름으로 부르며 동의하거나 반박하라.",
     3: "사회자가 보완안을 요청했다. 정부가 무엇을 바꾸면 받아들일 수 있는지 구체적인 보완안을 하나 말하라.",
 }
+HEARING_POLICY_LIMIT = 900
 
 
 def clip(text: str | None, limit: int) -> str:
     t = " ".join(str(text or "").split())
     return t if len(t) <= limit else t[: limit - 1] + "…"
+
+
+def hearing_policy_context(policy_text: str) -> dict:
+    normalized = " ".join(policy_text.split())
+    shown = clip(policy_text, HEARING_POLICY_LIMIT)
+    return {"policy_truncated": len(normalized) > HEARING_POLICY_LIMIT,
+            "shown_chars": len(shown), "total_chars": len(normalized), "original_chars": len(policy_text),
+            "length_basis": "whitespace_collapsed_including_ellipsis", "policy_excerpt": shown}
 
 
 def persona_profile(p: dict, long: bool = True) -> str:
@@ -159,7 +168,7 @@ def hearing_prompt(p: dict, policy_text: str, agenda: list[str], reaction: dict,
 {voice.voice_guide(p)}
 
 [정책 요약]
-{clip(policy_text, 900)}
+{hearing_policy_context(policy_text)['policy_excerpt']}
 
 [안건]
 {items}

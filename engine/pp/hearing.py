@@ -97,4 +97,9 @@ def run_hearing(title: str, policy_text: str, participants: list[str], people: d
     summary = llm.complete_json("hearing_summary", prompts.SUMMARY_SYSTEM,
                                 prompts.summary_prompt(title, render_transcript(turns, people)),
                                 model=model, validate=_summary)
-    return {"participants": participants, "agenda": agenda, "turns": turns, "summary": summary}
+    context = prompts.hearing_policy_context(policy_text)
+    note = (f"공청회에는 공백을 정리한 정책문 {context['total_chars']}자 중 앞 {context['shown_chars']}자"
+            "(줄임표 포함)만 전달했습니다. 뒤의 조항은 발언에 반영되지 않을 수 있습니다."
+            if context["policy_truncated"] else "공청회에 정책문 전체를 전달했습니다(공백 정리 후).")
+    return {"participants": participants, "agenda": agenda, "turns": turns, "summary": summary,
+            **context, "context_note": note}
