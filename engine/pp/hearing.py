@@ -1,7 +1,7 @@
 """Virtual hearing: code picks six divergent participants; each speaks in their own voice."""
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+from .budget import ThreadPoolExecutor
 
 from . import config, llm, prompts
 

@@ -16,7 +16,7 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from . import config, net
+from . import budget, config, net
 
 TYPESAFE_API = "https://api.typesafe.ai/v1/systemone"
 UPSTAGE_API = "https://api.upstage.ai/v1/systemone"  # the default (global) Solar Decide endpoint
@@ -296,8 +296,12 @@ def evaluate(state, questions: dict, *, label: str = "other", cache: bool = True
         base = json.dumps(state, ensure_ascii=False, sort_keys=True)
         answers = {qid: _mock_answer(q, int(hashlib.sha256((base + qid).encode("utf-8")).hexdigest()[:8], 16))
                    for qid, q in questions.items()}
+        with budget.attempt(f"jev:{label}", [state, questions], mock=True):
+            pass
         _record(label, 0, time.time() - started)
-        return {"model": "mock", "answers": answers, "usage": {"input_tokens": 0, "output_tokens": 0}}
+        result = {"model": "mock", "answers": answers, "usage": {"input_tokens": 0, "output_tokens": 0}}
+        budget.check_output(json.dumps(result, ensure_ascii=False))
+        return result
     is_custom = custom_endpoint()
     key = _env("PP_JEV_API_KEY") or None if is_custom else api_key()
     if not key and not is_custom:
@@ -314,13 +318,17 @@ def evaluate(state, questions: dict, *, label: str = "other", cache: bool = True
             _record(label, 0, 0.0, cached=True)
             return hit
     last: Exception | None = None
+    retries = budget.retries_limit(retries)
     for attempt in range(retries + 1):
         headers = {"Content-Type": "application/json", "User-Agent": "policy-preview/0.1"}
         if key:
             headers["Authorization"] = f"Bearer {key}"
         try:
             _limiter.wait()
-            out = json.loads(net.post(api_url(), body, headers=headers, timeout=timeout))
+            with budget.attempt(f"jev:{label}", [state, questions]):
+                out = json.loads(net.post(api_url(), body, headers=headers, timeout=timeout))
+                budget.record_usage(out.get("usage"))
+            budget.check_output(json.dumps(out, ensure_ascii=False))
             missing = set(questions) - set(out.get("answers", {}))
             if missing:
                 raise JevError(f"missing answers: {sorted(missing)[:5]}")

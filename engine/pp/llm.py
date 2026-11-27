@@ -18,7 +18,7 @@ import subprocess
 import time
 from typing import Callable
 
-from . import config, net
+from . import budget, config, net
 
 # Measured 2026-09-24: with thinking on, one persona reaction spent ~10.6k thinking tokens and
 # 79 s; with thinking off it took ~6 s and ~350 output tokens with the same JSON quality.
@@ -84,6 +84,7 @@ def _cli(system: str, prompt: str, model: str, timeout: int) -> str:
     if proc.returncode != 0:
         raise LLMError(f"claude -p rc={proc.returncode}: {proc.stderr[:300]}")
     envelope = json.loads(proc.stdout)
+    budget.record_usage(envelope.get("usage"))
     if envelope.get("is_error"):
         raise LLMError(f"claude -p error: {str(envelope.get('result'))[:300]}")
     return str(envelope.get("result", ""))
@@ -126,7 +127,7 @@ def _exaone(system: str, prompt: str, timeout: int) -> str:
     body = {
         "model": "k-exaone_v2.5",
         "temperature": float(_env("PP_LLM_TEMPERATURE", "0.7")),
-        "max_tokens": _exaone_max_tokens(),
+        "max_tokens": budget.output_limit(_exaone_max_tokens()),
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
     }
     if _env("PP_EXAONE_THINKING") == "0":
@@ -139,6 +140,7 @@ def _exaone(system: str, prompt: str, timeout: int) -> str:
         raise LLMError(f"HTTP {e.code}: {e.body!r}") from e
     except (net.NetError, json.JSONDecodeError) as e:
         raise LLMError(f"{type(e).__name__}: {e}") from e
+    budget.record_usage(out.get("usage"))
     try:
         return str(out["choices"][0]["message"]["content"] or "")
     except (KeyError, IndexError, TypeError) as e:
@@ -149,7 +151,7 @@ def _http(system: str, prompt: str, model: str, timeout: int) -> str:
     base = _env("PP_LLM_BASE_URL").rstrip("/")
     if not base:
         raise LLMError("PP_LLM_BASE_URL is not set")
-    body = {"model": http_model(model), "temperature": float(_env("PP_LLM_TEMPERATURE", "0.7")),
+    body = {"max_tokens": budget.output_limit(), "model": http_model(model), "temperature": float(_env("PP_LLM_TEMPERATURE", "0.7")),
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}]}
     headers = {"Content-Type": "application/json", "User-Agent": "policy-preview/0.1"}
     key = _env("PP_LLM_API_KEY")
@@ -162,6 +164,7 @@ def _http(system: str, prompt: str, model: str, timeout: int) -> str:
         raise LLMError(f"HTTP {e.code}: {e.body!r}") from e
     except (net.NetError, json.JSONDecodeError) as e:
         raise LLMError(f"{type(e).__name__}: {e}") from e
+    budget.record_usage(out.get("usage"))
     try:
         text = out["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as e:
@@ -203,9 +206,12 @@ def complete_json(task: str, system: str, prompt: str, *, model: str,
                   retries: int = 2, timeout: int = 300) -> dict:
     """Call the model, parse one JSON object, validate it; retry on any failure."""
     last: Exception | None = None
+    retries = budget.retries_limit(retries)
     for attempt in range(retries + 1):
         try:
-            raw = _call(task, system, prompt, model, timeout)
+            with budget.attempt(f"llm:{task}", [system, prompt], mock=provider() == "mock", cli=provider() == "cli"):
+                raw = _call(task, system, prompt, model, timeout)
+            budget.check_output(raw)
             data = extract_json(raw)
             return validate(data) if validate else data
         except (LLMError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as e:

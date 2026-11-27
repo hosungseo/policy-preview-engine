@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import json
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
+from .budget import ThreadPoolExecutor
 from pathlib import Path
 
-from . import config, llm, prompts, segment
+from . import config, llm, prompts, provenance, segment
 
 _IMPACT_ALIASES = {"직접적": "직접", "간접적": "간접", "없음": "무관", "해당없음": "무관", "관계없음": "무관"}
 _TRUE = {"true", "예", "네", "yes", "1"}
@@ -66,23 +67,35 @@ def verify_quotes(reactions: list[dict], policy_text: str, segments: list[dict])
 
 
 def run_reactions(people: list[dict], policy_text: str, out_path: Path, *,
-                  workers: int = 8, model: str | None = None) -> tuple[list[dict], list[dict]]:
+                  workers: int = 8, model: str | None = None, question: str = "") -> tuple[list[dict], list[dict]]:
     """One reaction per person, appended to out_path (JSONL) as it completes; resumes."""
     model = model or config.REACT_MODEL
+    def prompt_for(person):
+        prompt = prompts.react_prompt(person, policy_text)
+        return prompt + ("\n같은 비교 질문에 답하세요: " + question if question else "")
+    code = provenance.code_version()
+    settings = provenance.model_settings()
+    def fingerprint(person):
+        return provenance.input_hash({"person": person, "text": policy_text, "model": llm.model_label(model),
+                                      "settings": settings, "system": prompts.REACT_SYSTEM,
+                                      "prompt": prompt_for(person), "code": code})
+    hashes = {p["uuid"]: fingerprint(p) for p in people}
     done: dict[str, dict] = {}
     if out_path.exists():
         for line in out_path.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 row = json.loads(line)
+                if row["uuid"] in hashes and row.get("input_hash") != hashes[row["uuid"]]:
+                    raise provenance.InputMismatch(f"reaction inputs changed for {row['uuid']}; use a new output file")
                 done[row["uuid"]] = row
     todo = [p for p in people if p["uuid"] not in done]
     lock = threading.Lock()
     failures: list[dict] = []
 
     def one(person: dict) -> dict:
-        data = llm.complete_json("react", prompts.REACT_SYSTEM, prompts.react_prompt(person, policy_text),
+        data = llm.complete_json("react", prompts.REACT_SYSTEM, prompt_for(person),
                                  model=model, validate=normalize_reaction)
-        return {"uuid": person["uuid"], **data}
+        return {"uuid": person["uuid"], "input_hash": hashes[person["uuid"]], **data}
 
     with ThreadPoolExecutor(max_workers=workers) as pool, open(out_path, "a", encoding="utf-8") as sink:
         futures = {pool.submit(one, p): p for p in todo}

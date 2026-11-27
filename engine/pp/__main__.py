@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from . import config, export, pipeline
+from . import budget, config, export, pipeline
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -27,6 +27,21 @@ def main(argv: list[str] | None = None) -> None:
     run.add_argument("--force", nargs="*", default=[], choices=pipeline.STAGES)
     run.add_argument("--only", nargs="*", default=[], choices=pipeline.STAGES)
     run.add_argument("--allow-mock", action="store_true")
+    run.add_argument("--run-dir", type=Path, help="separate folder for changed inputs")
+    cmp = sub.add_parser("compare", help="repeat both policy versions with frozen personas and one question")
+    cmp.add_argument("parent", type=Path)
+    cmp.add_argument("policy", type=Path)
+    cmp.add_argument("--out", type=Path, required=True)
+    cmp.add_argument("--question", required=True)
+    cmp.add_argument("--repeats", type=int, default=3)
+    cmp.add_argument("--workers", type=int, default=8)
+    for command in (run, cmp):
+        command.add_argument("--max-calls", type=int, default=100_000)
+        command.add_argument("--max-output-tokens", type=int, default=16_384)
+        command.add_argument("--max-retries", type=int, default=2)
+        command.add_argument("--max-concurrency", type=int, default=8)
+        command.add_argument("--max-cost-usd", type=float, default=10.0)
+        command.add_argument("--unknown-cost", action="store_true", help="use call limits when billing cannot be bounded")
     ser = sub.add_parser("series", help="run a Jev-only policy series (resumes)")
     ser.add_argument("series", type=Path)
     ser.add_argument("--n", type=int, default=None, help="panel size (default: the series file's)")
@@ -47,13 +62,20 @@ def main(argv: list[str] | None = None) -> None:
     again.add_argument("run_id")
     again.add_argument("--allow-mock", action="store_true")
     args = parser.parse_args(argv)
+    if args.cmd in ("run", "compare"):
+        limits = budget.Limits(args.max_calls, args.max_output_tokens, args.max_retries, args.max_concurrency,
+                               None if args.unknown_cost else args.max_cost_usd)
     if args.cmd == "run":
         job = pipeline.Run(args.policy, n_rep=args.n_rep, n_aff=args.n_aff, n_jev=args.n_jev, n_alt=args.n_alt,
                            workers=args.workers,
-                           seed=args.seed, allow_mock=args.allow_mock)
+                           seed=args.seed, allow_mock=args.allow_mock, run_dir=args.run_dir, limits=limits)
         dest = job.run(force=tuple(args.force), only=tuple(args.only))
         if dest:
             print(f"exported {dest}")
+    elif args.cmd == "compare":
+        from .compare import compare_runs
+        print(compare_runs(args.parent, args.policy, args.out, question=args.question,
+                           repeats=args.repeats, workers=args.workers, limits=limits))
     elif args.cmd == "series":
         from . import series
 

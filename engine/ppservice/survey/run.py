@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from pp.budget import BudgetExceeded, ThreadPoolExecutor
+from pp import budget
 from typing import Callable
 
 log = logging.getLogger("ppservice.survey")
@@ -91,23 +92,40 @@ def execute(runner, spec: dict, people: list[dict], evaluate: Callable, threads:
 
     def one(task: tuple[str, dict]) -> int:
         arm, person = task
-        for attempt in range(ATTEMPTS):
+        for attempt in range(budget.retries_limit(ATTEMPTS - 1) + 1):
             runner.check_alive()
             try:
-                out = evaluate(state_for(arm, spec, person), questions[arm == "reversed"], cache=False, retries=0,
-                               timeout=runner.call_timeout())
+                from pp import jev
+                state_input = state_for(arm, spec, person)
+                if evaluate is jev.evaluate:
+                    out = evaluate(state_input, questions[arm == "reversed"], cache=False, retries=0,
+                                   timeout=runner.call_timeout())
+                else:
+                    with budget.attempt(f"jev:survey:{arm}", [state_input, questions[arm == "reversed"]],
+                                        mock=jev.provider() == "mock"):
+                        out = evaluate(state_input, questions[arm == "reversed"], cache=False, retries=0,
+                                       timeout=runner.call_timeout())
+                        budget.record_usage(out.get("usage"))
+                tokens = int((out.get("usage") or {}).get("input_tokens") or 0)
+                # Count a paid malformed answer too, before probability validation.
+                with lock:
+                    state["tokens"] = state.get("tokens", 0) + tokens
+                    if (out.get("usage") or {}).get("input_tokens") is None:
+                        state["unknown"] = True
                 probs = normalize(out["answers"]["q"]["probabilities"], keys)
+            except BudgetExceeded as e:
+                raise RunFailed("budget_exceeded", str(e)) from e
             except (Cancelled, RunFailed):
                 raise
             except Exception as e:  # network, HTTP 429/5xx, malformed answer
                 with lock:
+                    state["unknown"] = True
                     state["consecutive"] += 1
                     too_many = state["consecutive"] >= MAX_CONSECUTIVE_FAILURES
                 if too_many:
                     raise RunFailed("model_unavailable", f"{type(e).__name__}: {e}") from e
                 runner.sleep(2 * (attempt + 1))
                 continue
-            tokens = int((out.get("usage") or {}).get("input_tokens") or 0)
             runner.save_answer(arm, person["uuid"], probs, tokens)
             with lock:
                 state["consecutive"] = 0
@@ -121,7 +139,8 @@ def execute(runner, spec: dict, people: list[dict], evaluate: Callable, threads:
     with ThreadPoolExecutor(max_workers=threads) as pool:
         for start in range(0, len(tasks), BATCH):
             chunk = tasks[start:start + BATCH]
-            reservation = runner.reserve(len(chunk), est)
+            reservation = runner.reserve(len(chunk) * ATTEMPTS, est)
+            tokens_before = state.get("tokens", 0)
             futures = [pool.submit(one, t) for t in chunk]
             used, error = 0, None
             for f in futures:
@@ -129,7 +148,9 @@ def execute(runner, spec: dict, people: list[dict], evaluate: Callable, threads:
                     used += f.result()
                 except (Cancelled, RunFailed) as e:
                     error = error or e
-            runner.settle(reservation, used)
+            # Missing usage / timeout keeps its reservation rather than reporting free calls.
+            if error is None and state["failed"] == 0 and not state.get("unknown"):
+                runner.settle(reservation, state.get("tokens", 0) - tokens_before)
             if error:
                 for f in futures:
                     f.cancel()

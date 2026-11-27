@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
+from .budget import ThreadPoolExecutor
 from pathlib import Path
 
 from . import config, jev, prompts

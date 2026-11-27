@@ -36,6 +36,8 @@ ERROR_MESSAGES = {
     "llm_unavailable": "의견을 글로 쓰는 언어 모델에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
     "model_unavailable": "응답 모델에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
     "model_config": "분석에 필요한 자료나 설정이 서버에 없습니다. 운영자에게 알려 주세요.",
+    "budget_exceeded": "실행 비용 또는 호출 한도에 도달해 중단했습니다.",
+    "input_changed": "입력이 바뀌어 이전 결과를 이어 쓸 수 없습니다. 새 실행을 만들어 주세요.",
     "run_timeout": "분석이 제한 시간을 넘어 중단했습니다. 다시 시도하면 끝난 단계부터 이어서 합니다.",
     "server_restart": "서버가 여러 번 중단되어 분석을 마치지 못했습니다. 다시 시도해 주세요.",
     "invalid_result": "분석 결과가 점검을 통과하지 못해 보여 드리지 않습니다. 다시 시도해 주세요.",
@@ -111,8 +113,14 @@ def request(db: Database, settings: Settings, user_id: int, run_id: str) -> tupl
             raise DeepError("daily_limit", f"하루 심층 분석 횟수({settings.daily_deeps}회)를 모두 썼습니다. 내일 다시 시도해 주세요.", 429)
         spent = con.execute("SELECT COALESCE(SUM(COALESCE(actual_usd, reserved_usd)), 0) FROM spend WHERE day=?",
                             (today(),)).fetchone()[0]
-        if spent + ESTIMATE_USD > settings.daily_budget_usd:
+        reservation = con.execute("SELECT id, reserved_usd FROM spend WHERE run_id=? AND input_tokens=-1", (run_id,)).fetchone()
+        cap = min(settings.max_cost_usd, ESTIMATE_USD)
+        if not reservation and spent + cap > settings.daily_budget_usd:
             raise DeepError("budget_exceeded", "오늘 사용할 수 있는 실행 비용 한도에 도달했습니다. 내일 다시 시도해 주세요.", 429)
+        if not reservation:
+            # -1 identifies the deep-analysis reservation separately from the survey's batches.
+            con.execute("INSERT INTO spend(run_id, user_id, day, reserved_usd, input_tokens, created_at)"
+                        " VALUES (?, ?, ?, ?, -1, ?)", (run_id, user_id, today(), cap, now()))
         if row:
             con.execute("UPDATE deeps SET status='queued', attempt=0, error_code=NULL, error_detail=NULL, finished_at=NULL"
                         " WHERE run_id=?", (run_id,))
@@ -214,6 +222,9 @@ def summarize(b: dict, spec: dict, main_answers: dict[str, list[float]]) -> dict
     coverage = [_coverage("한 사람씩 의견 듣기", counts.get("react_calls"), counts.get("reactions")),
                 _coverage("더 많은 응답자에게 확인", counts.get("jev_calls"), counts.get("jev_scored"))]
     cost = sum(u.get("cost_usd", 0) for stage in (meta.get("jev_usage") or {}).values() for u in stage.values())
+    ledger = meta.get("budget")
+    if ledger:
+        cost = ledger["cost_usd"]
     return {
         "mock": meta.get("provider") == "mock", "models": meta.get("models", {}),
         "counts": {"heard": len(b["reactions"]), "matched": heard,
@@ -228,7 +239,10 @@ def summarize(b: dict, spec: dict, main_answers: dict[str, list[float]]) -> dict
         "qa": [{"question": q["question"], "answer": q["answer"]} for q in b["plan"]["qa"][:5]],
         "limits": b["plan"]["limits"], "fallbacks": meta.get("fallbacks", []),
         "coverage": [c for c in coverage if c],
-        "seconds": round(sum(s["seconds"] for s in meta.get("stages", [])), 1), "cost_usd": round(cost, 4),
+        "seconds": round(sum(s["seconds"] for s in meta.get("stages", [])), 1),
+        "cost_usd": round(cost, 4) if cost is not None else None,
+        "cost_status": ledger.get("cost_status") if ledger else "legacy_partial",
+        "budget": ledger,
     }
 
 
@@ -242,7 +256,12 @@ def _coverage(step: str, planned, done) -> dict | None:
 
 
 def _classify(e: Exception) -> str:
-    from pp import config, jev, llm
+    from pp import budget, config, jev, llm, provenance
+
+    if isinstance(e, budget.BudgetExceeded):
+        return "budget_exceeded"
+    if isinstance(e, provenance.InputMismatch):
+        return "input_changed"
 
     if isinstance(e, llm.LLMError):
         return "llm_unavailable"
@@ -254,7 +273,7 @@ def _classify(e: Exception) -> str:
 
 
 def run_one(db: Database, settings: Settings, run_id: str, attempt: int, stop: threading.Event | None = None) -> None:
-    from pp import export, llm, pipeline
+    from pp import budget, export, llm, pipeline
 
     from .jobs import _answers, scrub
 
@@ -297,16 +316,10 @@ def run_one(db: Database, settings: Settings, run_id: str, attempt: int, stop: t
         mock = llm.provider() == "mock"
         kwargs = dict(n_rep=settings.deep_rep, n_aff=settings.deep_aff, n_jev=settings.deep_jev, n_alt=settings.deep_alt,
                       workers=settings.deep_workers, seed=spec["seed"] % 100_000, allow_mock=mock, run_dir=folder,
-                      pool_uuids=pool, on_stage=on_stage, data_meta=data_meta)
-        try:
-            job = pipeline.Run(policy_path, **kwargs)
-        except RuntimeError:  # leftovers written with another provider cannot be resumed
-            shutil.rmtree(folder)
-            folder.mkdir(parents=True)
-            policy_path.write_text(json.dumps({"id": run_id, "title": spec["title"], "kind": "현장 질문 미리 설계",
-                                               "agency": "", "source": {}, "text": spec["policy_text"]},
-                                              ensure_ascii=False), encoding="utf-8")
-            job = pipeline.Run(policy_path, **kwargs)
+                      pool_uuids=pool, on_stage=on_stage, data_meta=data_meta,
+                      limits=budget.Limits(settings.max_calls, settings.max_output_tokens, settings.max_retries,
+                                           settings.max_concurrency, min(settings.max_cost_usd, ESTIMATE_USD)))
+        job = pipeline.Run(policy_path, **kwargs)
         job.run(skip=("export",))
         full = export.assemble(folder)
         errors = export.validate_bundle(full, allow_mock=mock)
@@ -334,9 +347,9 @@ def run_one(db: Database, settings: Settings, run_id: str, attempt: int, stop: t
                                (json.dumps(result, ensure_ascii=False), json.dumps(full, ensure_ascii=False), now(),
                                 run_id, attempt)).rowcount
             if done:
-                con.execute("INSERT INTO spend(run_id, user_id, day, reserved_usd, actual_usd, created_at)"
-                            " VALUES (?, ?, ?, ?, ?, ?)",
-                            (run_id, run["user_id"], today(), result["cost_usd"], result["cost_usd"], now()))
+                if result.get("cost_status") == "known":
+                    con.execute("UPDATE spend SET actual_usd=? WHERE run_id=? AND input_tokens=-1",
+                                (result["cost_usd"], run_id))
     except sqlite3.Error:
         log.exception("deep=%s attempt=%s could not store the result", run_id, attempt)
         return
