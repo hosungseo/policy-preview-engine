@@ -6,7 +6,7 @@ from copy import deepcopy
 from threading import Lock
 from uuid import uuid4
 
-from . import public_rules, service
+from . import public_rules, service, mcp_setup
 
 
 class Jobs:
@@ -22,7 +22,7 @@ class Jobs:
         limits = service.normalize_limits(limits)
         service.normalize_conditions(conditions)
         credentials = credentials or service.Credentials.from_env()
-        credentials.require()
+        mcp_setup.preflight(credentials)
         run_id = uuid4().hex
         initial = public_rules.envelope({
             "id": run_id, "status": "queued",
@@ -43,8 +43,7 @@ class Jobs:
                                         i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
             update = {"status": "completed", "result": result}
         except Exception as exc:
-            update = {"status": "failed", "error": "실행 실패: 패널 DB, 모델 키·잔액·연결을 확인하세요. "
-                      "원격 오류 원문은 키 보호를 위해 저장하지 않습니다."}
+            update = {"status": "failed", **mcp_setup.error_payload(exc)}
             if hasattr(exc, "budget_snapshot"):
                 update["budget"] = exc.budget_snapshot
         with self._lock:

@@ -11,6 +11,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from . import analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, policy_groups, public_rules, provenance, react, segment, visit_shared
+from . import mcp_setup
 
 DEFAULT_SAMPLE = 200
 MAX_SAMPLE = panel_provider.MAX_N
@@ -18,8 +19,9 @@ MAX_CHARS = 30_000
 MODEL = "claude-haiku-4-5-20251001"
 
 
-class RequestError(ValueError):
-    pass
+class RequestError(mcp_setup.SetupError):
+    def __init__(self, message: str, code: str = "input_rejected"):
+        super().__init__(code, message)
 
 
 @dataclass(frozen=True)
@@ -32,9 +34,8 @@ class Credentials:
         return cls(os.environ.get("ANTHROPIC_API_KEY", ""), os.environ.get("TYPESAFE_API_KEY", ""))
 
     def require(self):
-        if not self.anthropic:
-            raise RequestError("ANTHROPIC_API_KEY가 없어 반응·쟁점·질문을 생성할 수 없습니다. "
-                               "환경 변수 또는 X-Anthropic-Api-Key 헤더를 설정하세요. estimate는 키 없이 가능합니다.")
+        if not mcp_setup.mock_mode() and not self.anthropic.strip():
+            raise RequestError("실제 실행용 Anthropic API 키가 없습니다.", "missing_model_key")
 
 
 def validate(policy_text: str, sample: int = DEFAULT_SAMPLE, seed: int = 42, i_confirm_public: bool = False) -> None:
@@ -83,12 +84,12 @@ def estimate(policy_text: str, sample: int = DEFAULT_SAMPLE, *, i_confirm_public
     # Budget all reaction prompts and an upper bound for grouping, outreach and QA.
     input_tokens = sample * (len(policy_text) + 1200) + sample * 1400 + 16000
     output_tokens = sample * 550 + 16000
-    usd = (input_tokens * 1.0 + output_tokens * 5.0) / 1_000_000
+    usd = 0 if mcp_setup.mock_mode() else (input_tokens * 1.0 + output_tokens * 5.0) / 1_000_000
     seconds = math.ceil(sample / 8) * 6 + 90
     hash_inputs = {"policy": policy_text, "sample": sample, "limits": asdict(limits)}
     if norm_conditions:
         hash_inputs["conditions"] = norm_conditions
-    return public_rules.envelope({"sample": sample, "policy_chars": len(policy_text), "model": MODEL,
+    return public_rules.envelope({"sample": sample, "policy_chars": len(policy_text), "model": "mock" if mcp_setup.mock_mode() else MODEL,
             "input_hash": provenance.input_hash(hash_inputs),
             "budget_limits": asdict(limits), "attribution": attribution.build(),
             "target_conditions": norm_conditions,
@@ -128,12 +129,12 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
     validate(policy_text, sample, seed, i_confirm_public)
     norm_conditions = normalize_conditions(conditions)
     credentials = credentials or Credentials.from_env()
-    credentials.require()
+    mcp_setup.preflight(credentials)
     title = policy_text.strip().splitlines()[0][:120]
     # Explicit DBs take precedence. Otherwise use the portable, attributed 20k bundle.
-    db = config.persona_db()
+    db = mcp_setup.demo_panel() or config.persona_db()
     panel_version = "external-db-unversioned"
-    if personas.source() == "bundle":
+    if not mcp_setup.demo_panel() and personas.source() == "bundle":
         from . import bundle_db
         db = bundle_db.ensure()
         panel_version = db.stem
@@ -154,9 +155,9 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
     inputs = provenance.execution_inputs(
         {"text": policy_text, "public_confirmed": i_confirm_public},
         source, sampling_inputs, asdict(limits),
-        models={"provider": "anthropic", "model": MODEL,
-                "clarity_provider": "typesafe" if credentials.typesafe else None,
-                "clarity_model": os.environ.get("PP_JEV_MODEL") or "jev-latest" if credentials.typesafe else None})
+        models={"provider": "mock" if mcp_setup.mock_mode() else "anthropic", "model": "mock" if mcp_setup.mock_mode() else MODEL,
+                "clarity_provider": "typesafe" if credentials.typesafe and not mcp_setup.mock_mode() else None,
+                "clarity_model": (os.environ.get("PP_JEV_MODEL") or "jev-latest") if credentials.typesafe and not mcp_setup.mock_mode() else None})
     selection_receipt = sampled["selection"]
     selection_receipt["data"] = source
     # Provider's public province labels are converted back to the engine's raw vocabulary.
@@ -173,8 +174,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         p["family_persona"] = lines[9] if len(lines) > 9 else ""
         p["cultural_background"] = lines[10] if len(lines) > 10 else ""
     segments = segment.split_segments(policy_text)
-    with llm.use_transport(_api_transport(credentials), system_rules=public_rules.SYSTEM_RULES,
-                            provider_name="anthropic", model=MODEL), jev.use_key(credentials.typesafe):
+    with mcp_setup.model_transport(credentials, _api_transport), jev.use_key(None if mcp_setup.mock_mode() else credentials.typesafe):
         # Existing reaction code is resumable on disk; its private temporary output is deleted on exit.
         with TemporaryDirectory(prefix="pp-") as folder:
             reactions, failures = react.run_reactions(people, policy_text, Path(folder) / "reactions.jsonl")
@@ -195,7 +195,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         issues = [{**it, "id": f"i{i}"} for i, it in enumerate(raw_issues, 1)]
         qa = analyze_llm.plan_qa(issues, title, consultation=True)
         clarity = {"available": False, "reason": "TYPESAFE_API_KEY 없음: 명료성·안내 누락 점검 미실행"}
-        if credentials.typesafe:
+        if credentials.typesafe and not mcp_setup.mock_mode():
             try:
                 checked = jev_panel.check_clarity(title, policy_text, segments)
                 labels = {item["key"]: item["label"] for item in checked["indicators"]}
@@ -219,7 +219,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
             "input_hash": provenance.input_hash(inputs), "execution_inputs": inputs,
             "selection": selection_receipt, "attribution": attribution.build(source),
             "budget": budget.current().snapshot(),
-            "conditions": {"model": MODEL, "seed": seed, "panel_version": panel_version,
+            "conditions": {"model": "mock" if mcp_setup.mock_mode() else MODEL, "seed": seed, "panel_version": panel_version,
                            "source": sampled["source"], "public_confirmed": i_confirm_public,
                            "reaction_failures": bool(failures), "unverified_quotes": bool(mismatches),
                            "grouping_basis": grouping_basis, "confirmed_conditions": bool(norm_conditions),
@@ -233,12 +233,13 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
 def run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 42,
                credentials: Credentials | None = None, i_confirm_public: bool = False, limits=None,
                conditions=None) -> dict:
+    validate(policy_text, sample, seed, i_confirm_public)
     limits = normalize_limits(limits)
     ledger = budget.Budget(limits)
-    with ledger.scope(), budget.use_prices({"llm": (1.0, 5.0), "jev": (jev.PRICE_PER_M_INPUT, 0.0)}):
+    with ledger.scope(), budget.use_prices({"llm": (1.0, 5.0), "jev": (jev.PRICE_PER_M_INPUT, 0.0)}), mcp_setup.runtime(sample):
         try:
-            return _run_policy(policy_text, sample=sample, seed=seed, credentials=credentials,
-                               i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
+            return mcp_setup.mark_result(_run_policy(policy_text, sample=sample, seed=seed, credentials=credentials,
+                               i_confirm_public=i_confirm_public, limits=limits, conditions=conditions))
         except Exception as exc:
             exc.budget_snapshot = ledger.snapshot()
             raise

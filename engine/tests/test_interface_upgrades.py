@@ -88,6 +88,10 @@ def test_zero_dollar_cap_blocks_transport_before_any_paid_attempt(fake_models, m
     def forbidden(*args):
         pytest.fail("cost cap must stop before transport")
     monkeypatch.setattr(service, "_api_transport", lambda keys: forbidden)
+    if provider == "mock":
+        result = service.run_policy(POLICY, sample=1, limits={"max_cost_usd": 0})
+        assert result["mode"] == "mock" and result["budget"]["cost_usd"] == 0
+        return
     with pytest.raises(budget.BudgetExceeded) as caught:
         service.run_policy(POLICY, sample=1, limits={"max_cost_usd": 0})
     assert caught.value.budget_snapshot["calls"] == 0
