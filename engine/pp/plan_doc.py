@@ -34,7 +34,8 @@ def _clarity_items(clarity: dict | None, labels: dict[str, str]) -> dict | None:
 
 
 def build_plan(policy: dict, analysis: dict, segments: list[dict], qa: list[dict], meta: dict,
-               clarity: dict | None = None) -> dict:
+               clarity: dict | None = None, *, diagnostics: dict | None = None,
+               contrast: dict | None = None) -> dict:
     labels = {s["id"]: s["label"] for s in segments}
     issues = [{
         "id": it["id"], "title": it["title"], "stance": it["stance"], "n": it["n"], "share": it["share"],
@@ -71,6 +72,13 @@ def build_plan(policy: dict, analysis: dict, segments: list[dict], qa: list[dict
         "created_at": local_date(meta["created_at"]), "panel_version": meta.get("panel_version"),
         "source_revision": meta.get("source_revision"),
     }
-    return {"overview": overview, "issues": issues, "outreach": outreach, "qa": qa,
+    plan = {"overview": overview, "issues": issues, "outreach": outreach, "qa": qa,
             "suggestions": suggestions, "alternatives": alternatives, "explain": explain,
             "clarity": _clarity_items(clarity, labels), "limits": LIMITS}
+    diag = diagnostics if diagnostics is not None else analysis.get("diagnostics")
+    if diag is not None:
+        plan["diagnostics"] = diag
+        plan["warnings"] = [*diag.get("reliability_findings", []), *diag.get("warnings", [])]
+    if contrast is not None:
+        plan["persona_contrast"] = contrast
+    return plan

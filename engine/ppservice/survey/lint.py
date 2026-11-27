@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import re
 
+from pp.diagnostics import question_reliability_findings
+
 ELECTION = re.compile(r"정당|후보|지지도|지지율|선거|투표|당선|대선|총선|지방선거|국회의원 선거|재보궐")
 RRN = re.compile(r"(?<!\d)\d{6}\s*-\s*[1-8]\d{6}(?!\d)")
 PHONE = re.compile(r"(?<!\d)01[016789]\s*-?\s*\d{3,4}\s*-?\s*\d{4}(?!\d)")
@@ -65,6 +67,7 @@ def check(policy_text: str, question: str, options: list[str]) -> list[dict]:
         found.append(_f("long", "info", f"문항이 깁니다({len(q)}자). 80자 안쪽이 읽기 쉽습니다."))
     if DOUBLE_NEG.search(q):
         found.append(_f("double_negative", "warn", "이중 부정 표현이 있습니다. 긍정문으로 바꾸세요."))
+    found.extend(question_reliability_findings(q, opts))
     return found
 
 

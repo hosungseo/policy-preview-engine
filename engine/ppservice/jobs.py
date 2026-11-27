@@ -414,7 +414,8 @@ class JobRunner:
             for a in self.db.all("SELECT arm, uuid, probs FROM answers WHERE run_id=?", (run_id,)):
                 answers.setdefault(a["arm"], {})[a["uuid"]] = json.loads(a["probs"])
             result = aggregate.summarize(spec, people, answers, json.loads(row["lint"]),
-                                         panel_version=version, model_version=outcome["model"], future=future_meta)
+                                         panel_version=version, model_version=outcome["model"], future=future_meta,
+                                         include_diagnostics=True)
         except Cancelled:
             log.info("run=%s attempt=%s cancelled", run_id, attempt)
             return

@@ -238,7 +238,7 @@ def _questions(kind: str, question: str, option: str | None) -> list[str]:
 def view(spec: dict, people: list[dict], answers: dict, options: list[str], panel_version: str | None,
          everyone: list[dict] | None = None, context: dict | None = None, roster: dict | None = None) -> dict:
     """The visit view of one finished run. `people` is the run's sample, `everyone` the full list (for places)."""
-    from pp import life_context
+    from pp import diagnostics as pp_diag, life_context
 
     everyone = everyone if everyone is not None else panel.load(addons="off")[0]
     context = context if context is not None else load_context()
@@ -359,6 +359,7 @@ def view(spec: dict, people: list[dict], answers: dict, options: list[str], pane
                       and abs(quiet - quiet_all) >= QUIET_GAP_PP else None),
             "questions": _questions(c["kind"], spec.get("question", ""), options[i]),
             "basis": "기본 인물 정보" if g["basis"] == "기본" else f"생활 여건 자료({life_context.ADDONS[g['basis']]['title']})",
+            **({"caution": pp_diag.EDU_INCOME_CARD_CAUTION} if r["key"][0] in ("학력", "income") else {}),
         })
 
     regional = [r for r in rows if r["key"][0] in ("권역", "시도") and any(readable(c) for c in r["gaps"])]
@@ -384,7 +385,9 @@ def view(spec: dict, people: list[dict], answers: dict, options: list[str], pane
         "만날 곳은 집단 유형별로 미리 정해 둔 기관 종류이며, 특정 기관을 추천하는 것이 아닙니다.",
         "합성 인물의 답은 실제 국민의 응답이 아닙니다. 이 화면은 누구를 먼저 만날지 정하는 데 쓰고, 결론은 실제로 만나서 들은 말로 내리십시오.",
     ]
+    diag = pp_diag.diagnose_survey({**spec, "options": options}, sample, main, context=context)
     lines = [f"{c['group']}({c['n']:,}명): {c['say']}. 만날 곳: {', '.join(c['venues'])}." for c in cards]
     copy_text = ("찾아갈 곳(합성 인물 기준, 실제 조사 아님) — " + " / ".join(lines)) if lines else (small or "")
     return {"cards": cards, "missing": missing, "region_note": region_note, "small": small, "groups": len(usable),
-            "tests": tests, "n": len(sample), "quiet_all_pct": quiet_all, "roster_n": roster.get("n"), "method": method, "copy_text": copy_text}
+            "tests": tests, "n": len(sample), "quiet_all_pct": quiet_all, "roster_n": roster.get("n"), "method": method,
+            "diagnostics": diag, "warnings": [*diag["reliability_findings"], *diag["warnings"]], "copy_text": copy_text}
