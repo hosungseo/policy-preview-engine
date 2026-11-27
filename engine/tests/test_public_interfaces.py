@@ -13,7 +13,7 @@ import urllib.error
 import pytest
 from fastapi.testclient import TestClient
 
-from pp import analyze_llm, api, budget, cli, jev, llm, bundle_db as portable, service
+from pp import analyze_llm, api, budget, cli, jev, llm, bundle_db as portable, mcp_copy, service
 from pp.jobs import Jobs
 from pp.public_rules import NOTICE
 
@@ -275,8 +275,7 @@ def test_mcp_rejects_extra_arguments_before_execution(name, arguments, extra, mo
     try:
         result = asyncio.run(server.call_tool(name, {**arguments, extra: SECRET}))
         assert result.isError
-        assert "추가 인자" in result.structuredContent["error"]
-        assert "키는 환경변수로 설정합니다(BYOK)" in result.structuredContent["error"]
+        assert result.structuredContent["error"] == mcp_copy.error("extra_argument")
         assert result.content[0].text.splitlines()[0] == NOTICE
         assert result.structuredContent["notice"] == NOTICE
         captured = capsys.readouterr()
@@ -309,8 +308,7 @@ def test_mcp_real_stdio_estimate_start_poll(fake_process_script):
                 ]:
                     rejected = await session.call_tool(name, {**arguments, extra: SECRET})
                     assert rejected.isError
-                    assert "추가 인자" in rejected.structuredContent["error"]
-                    assert "키는 환경변수로 설정합니다(BYOK)" in rejected.structuredContent["error"]
+                    assert rejected.structuredContent["error"] == mcp_copy.error("extra_argument")
                     assert rejected.content[0].text.splitlines()[0] == NOTICE
                     assert rejected.structuredContent["notice"] == NOTICE
                     assert SECRET not in rejected.model_dump_json()
