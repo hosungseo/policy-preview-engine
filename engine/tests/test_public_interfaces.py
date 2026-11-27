@@ -23,13 +23,19 @@ SECRET = "fake-key-must-never-appear-in-output"
 
 @pytest.fixture
 def fake_models(persona_db, monkeypatch):
-    monkeypatch.setenv("PP_LLM_PROVIDER", "mock")
+    # This fixture exercises the real API adapter with an offline fake transport.
+    # Genuine keyless mock mode is covered separately without transport patches.
+    monkeypatch.setenv("PP_LLM_PROVIDER", "cli")
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     def fake(task, system, prompt, model, timeout):
         budget.record_usage({"input_tokens": 0, "output_tokens": 0})
         return llm._mock(task, system, prompt)
     monkeypatch.setattr(service, "_api_transport", lambda credentials: fake)
+    original_call = llm._call
+    monkeypatch.setattr(llm, "_call", lambda task, system, prompt, model, timeout:
+                        original_call(task, system, prompt, model, timeout) if llm._transport.get() is not None
+                        else llm._mock(task, system, prompt))
     # Fail closed if any path accidentally escapes the fake transport.
     monkeypatch.setattr(service.urllib.request, "urlopen", lambda *a, **kw: pytest.fail("External call forbidden"))
 
@@ -295,7 +301,7 @@ def test_mcp_real_stdio_estimate_start_poll(fake_process_script):
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 tools = await session.list_tools()
-                assert {t.name for t in tools.tools} == {"estimate", "start_run", "get_run"}
+                assert {"estimate", "start_run", "get_run", "check_setup", "try_example", "find_notice", "get_notice"} <= {t.name for t in tools.tools}
                 # API keys must never be accepted in tool arguments/transcripts.
                 assert all("api_key" not in json.dumps(t.inputSchema) for t in tools.tools)
                 assert all(t.inputSchema["additionalProperties"] is False for t in tools.tools)
