@@ -83,6 +83,16 @@ def test_persona_db_has_the_engine_schema(parquet_dir, tmp_path):
                     "--persona-db", str(db), "--revision", "a" * 40])
     metadata = json.loads(db.with_name(db.name + ".meta.json").read_text())
     assert metadata["source_revision"] == "a" * 40 and metadata["revision_status"] == "user_supplied"
+    # Both sidecars carry the CC BY 4.0 credit with the revision and what was changed; no model output is claimed.
+    from pp import attribution
+    panel_meta = json.loads((tmp_path / "p.jsonl.gz.meta.json").read_text())
+    for meta in (metadata, panel_meta):
+        assert attribution.validate(meta["attribution"]) == []
+        persona = meta["attribution"]["sources"][0]
+        assert persona["source_revision"] == "a" * 40 and "검증 안 됨" in meta["attribution"]["notice"]
+        assert [s["role"] for s in meta["attribution"]["sources"]] == ["synthetic_personas"]
+    assert "SQLite" in metadata["attribution"]["sources"][0]["changes"][0]
+    assert "프로필" in " ".join(panel_meta["attribution"]["sources"][0]["changes"])
     conn = sqlite3.connect(db)
     assert conn.execute("SELECT count(*) FROM persona").fetchone()[0] == 400
     hit = conn.execute("SELECT count(*) FROM persona_fts WHERE persona_fts MATCH '가족과'").fetchone()[0]

@@ -107,7 +107,14 @@ REGION_OF = {
 }
 REGIONS = ["수도권", "충청권", "호남권", "대경권", "동남권", "강원", "제주"]
 
-FAMILY_BUCKETS = ["1인 가구", "부부", "부부+자녀", "한부모·자녀", "부모 등과 동거", "기타"]
+# Household composition (who the person lives with), not eligibility: "자녀와 거주 (한부모)" also covers an older
+# widow living with grown-up children, so the group is named by its living arrangement. Results saved before the
+# rename carry the old label; LEGACY_FAMILY_LABELS maps it.
+CHILDREN_NO_SPOUSE = "배우자 없이 자녀와 거주"
+FAMILY_BUCKETS = ["1인 가구", "부부", "부부+자녀", CHILDREN_NO_SPOUSE, "부모 등과 동거", "기타"]
+LEGACY_FAMILY_LABELS = {"한부모·자녀": CHILDREN_NO_SPOUSE}
+FAMILY_NOTE = ("가구는 함께 사는 사람으로 나눈 가구 구성입니다. 한부모가족 같은 지원 대상인지는 자녀 나이·양육·소득 등 "
+               "제도 기준으로 따로 정해지며, 이 이름으로 판단하지 않습니다.")
 EDUCATION_ORDER = ["무학", "초등학교", "중학교", "고등학교", "2~3년제 전문대학", "4년제 대학교", "대학원"]
 HOUSING_ORDER = ["아파트", "단독주택", "다세대주택", "연립주택", "비주거용 건물 내 주택", "주택 이외의 거처"]
 OCCUPATION_MAJORS = [
@@ -140,7 +147,7 @@ def family_bucket(family_type: str) -> str:
     if t.startswith("배우자"):
         return "기타"
     if t.startswith("자녀"):
-        return "한부모·자녀"
+        return CHILDREN_NO_SPOUSE
     if any(k in t for k in ("부모", "어머니", "아버지", "부 또는 모", "조부", "조모")):
         return "부모 등과 동거"
     return "기타"

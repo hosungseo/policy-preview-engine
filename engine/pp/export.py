@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import config, prompts, segment
+from . import attribution, config, prompts, segment
 from .jev_panel import LENSES, METHODS
 
 
@@ -89,6 +89,7 @@ def assemble(run_dir: Path) -> dict:
             if line.strip():
                 row = json.loads(line)
                 jev_rows[row["uuid"]] = row
+    meta = _read(run_dir / "meta.json")
     return {
         "id": policy["id"], "title": policy["title"], "kind": policy["kind"], "agency": policy.get("agency", ""),
         "source": policy.get("source", {}), "policy_text": policy["text"],
@@ -100,7 +101,9 @@ def assemble(run_dir: Path) -> dict:
         "analysis": analysis, "clarity": _optional(run_dir / "clarity.json"),
         "hearing": _with_reads(_read(run_dir / "hearing.json"), _optional(run_dir / "debrief.json")),
         "plan": _read(run_dir / "plan.json"),
-        "meta": _read(run_dir / "meta.json"),
+        "meta": meta,
+        "attribution": attribution.build(meta),
+        "field_notes": {"family": config.FAMILY_NOTE},
     }
 
 
@@ -108,6 +111,7 @@ def validate_bundle(b: dict, allow_mock: bool = False) -> list[str]:
     errors: list[str] = []
     if b["meta"].get("provider") == "mock" and not allow_mock:
         errors.append("mock provider bundle cannot be exported to the public site")
+    errors += attribution.validate(b.get("attribution"))
     panel_of = {p["uuid"]: p["panel"] for p in b["personas"]}
     rids: dict[str, dict] = {}
     for r in b["reactions"]:

@@ -23,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import dotmap, personas
+from . import attribution, config, dotmap, personas
 
 QUANT = 64
 CHUNK = 500
@@ -136,6 +136,11 @@ def build(run_dir: Path, bundle_path: Path, geo_dir: Path, out_dir: Path,
     meta = {
         "version": 1, "series": bundle.get("id"), "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": "NVIDIA Nemotron-Personas-Korea (CC BY 4.0)",
+        "attribution": attribution.build(attribution.recorded(config.persona_db()),
+                                         changes=("sampled", "profile", "answers", "dots"),
+                                         extra=[attribution.BOUNDARIES]),
+        # Cards show the source's household value as is (e.g. '자녀와 거주 (한부모)'): who the person lives with.
+        "field_notes": {"family": config.FAMILY_NOTE},
         "quant": QUANT, "n_dots": int(len(ids)), "width_km": width, "height_km": height,
         "districts": [{"k": r["d"], "name": display(r["d"]), "s": r["s"], "n": r["n"], "cx": r["cx"], "cy": r["cy"]}
                       for r in table],

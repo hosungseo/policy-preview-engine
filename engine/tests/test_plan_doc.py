@@ -26,6 +26,24 @@ def test_build_plan_sections_and_verbatim_quotes():
     assert plan["qa"] == qa and len(plan["limits"]) >= 4
 
 
+def test_plan_carries_attribution_and_reading_limits():
+    from pp import attribution
+
+    analysis = {"overall": {"n": 1}, "overall_aff": {"n": 0}, "issues": [], "outreach": [], "suggestions": []}
+    # A legacy run with no recorded revision but the verified 20k panel: the revision comes from the checked panel.
+    meta = {"created_at": "2026-09-24T01:00:00+00:00", "panel_version": "4b5aa1c42bfd"}
+    plan = plan_doc.build_plan({"title": "t", "kind": "k"}, analysis, [], [], meta)
+    assert attribution.validate(plan["attribution"]) == []
+    persona = plan["attribution"]["sources"][0]
+    assert persona["source_revision"].startswith("ada0f5b") and persona["revision_status"] == "verified_saved_panel"
+    limits = " ".join(plan["limits"])
+    assert "수급 자격" in limits and "상환 능력" in limits and "가운데 값" in limits
+    assert "가구 구성" in limits and "교차 칸" in limits
+    unknown = plan_doc.build_plan({"title": "t", "kind": "k"}, analysis, [], [], {"created_at": meta["created_at"]})
+    assert unknown["attribution"]["sources"][0]["source_revision"] is None
+    assert "revision 기록 없음" in unknown["attribution"]["notice"]
+
+
 def test_plan_date_is_korean_local_date():
     assert plan_doc.local_date("2026-09-23T15:50:31+00:00") == "2026-09-24"
     assert plan_doc.local_date("2026-09-23T14:59:59+00:00") == "2026-09-23"

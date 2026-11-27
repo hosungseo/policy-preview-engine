@@ -18,8 +18,11 @@ import re
 from collections import Counter
 from statistics import NormalDist
 
+from pp import attribution, config
+
 from . import panel
-from .aggregate import MIN_GROUP, UNSURE, Z_MULTI, compare_tops, int_percent
+from .aggregate import (DIGITAL_LIMIT, MIN_GROUP, MONEY_LIMIT, UNSURE, Z_MULTI, compare_tops, int_percent,
+                        result_attribution)
 
 MAX_DIFFER, MAX_PER_OPTION, MAX_UNSURE = 3, 2, 2
 OVERLAP = 0.6           # two groups sharing this much of the smaller one count as the same people
@@ -39,6 +42,15 @@ CHILD_PARENT_CONTEXT = re.compile(r"(?:영유아|갓난(?:아기|아이)?|신생
                                   r"(?:어린이집|유치원).{0,4}학부모")
 DEFAULT_VENUES = ["행정복지센터", "주민자치회"]
 PROVINCE = {"경상남": "경남", "경상북": "경북", "전라남": "전남", "충청남": "충남", "충청북": "충북"}
+# The source's '자녀와 거주 (한부모)' is a living arrangement (it includes older parents living with grown-up
+# children), not 한부모가족 eligibility, so the group is named by who the person lives with.
+CHILDREN_NO_SPOUSE = "배우자 없이 자녀와 사는 사람"
+# Labels the 1M roster file may still carry from before a rename (scripts/build_roster_1m.py rebuilds it).
+ROSTER_LEGACY = {CHILDREN_NO_SPOUSE: "한부모 가구"}
+# What a card's group does not mean, by attribute: household composition is not eligibility, the digital proxy is
+# information finding (not filing papers or applying in an app), drawn income bands and flags are not amounts.
+CARD_CAUTIONS = {"가구": config.FAMILY_NOTE, "digital": DIGITAL_LIMIT, "kiosk_hard": DIGITAL_LIMIT,
+                 "income": MONEY_LIMIT, "livelihood": MONEY_LIMIT, "basic_pension": MONEY_LIMIT}
 
 # People the synthetic list cannot stand in for. The first three apply to every policy; the rest are named only when
 # the policy text mentions them.
@@ -114,7 +126,7 @@ def _base_groups(p: dict, h: dict) -> list[tuple[str, str, list[str]]]:
     if household.startswith("혼자 거주"):
         out.append(("가구", "혼자 사는 사람", ["1인가구 지원센터", "행정복지센터"]))
     elif "한부모" in household:
-        out.append(("가구", "한부모 가구", ["가족센터", "한부모가족 지원기관"]))
+        out.append(("가구", CHILDREN_NO_SPOUSE, ["가족센터", "행정복지센터"]))
     if young_child_candidate(p["profile"]):
         out.append(("영유아", "영유아·보육 관련 언급 인물(확인 후보)", ["어린이집·유치원 학부모 모임", "육아종합지원센터"]))
     housing = h.get("주거", "")
@@ -144,8 +156,8 @@ ADDON_GROUPS = {
                             "wage": ("임금 근로자", ["직장인 대상 저녁·온라인 간담회", "온라인 설문"])}),
     "nonregular": ("work", {True: ("비정규직 근로자", ["노동권익센터", "고용센터"])}),
     "dual_earner": ("work", {True: ("맞벌이 가구", ["직장인 대상 저녁·온라인 간담회", "어린이집·학교 학부모 모임"])}),
-    "digital": ("digital", {"poor": ("디지털 기기가 서툰 사람", ["행정복지센터 방문 창구", "디지털배움터"])}),
-    "kiosk_hard": ("digital", {True: ("무인 주문기가 어려운 사람", ["행정복지센터 방문 창구", "경로당·노인복지관"])}),
+    "digital": ("digital", {"poor": ("인터넷·스마트폰으로 정보 찾기를 어려워하는 사람", ["행정복지센터 방문 창구", "디지털배움터"])}),
+    "kiosk_hard": ("digital", {True: ("키오스크 주문·결제를 어려워하는 사람", ["행정복지센터 방문 창구", "경로당·노인복지관"])}),
     "religion": ("belief", {"protestant": ("개신교 신자", ["종교 단체 협의 창구"]), "buddhist": ("불교 신자", ["종교 단체 협의 창구"]),
                             "catholic": ("천주교 신자", ["종교 단체 협의 창구"]), "none": ("종교가 없는 사람", DEFAULT_VENUES)}),
 }
@@ -218,7 +230,8 @@ def load_roster() -> dict:
 
 def where_roster(label: str, roster: dict) -> dict | None:
     """The same reading as `where`, from the 1,000,000-person list: enough people per district to name districts."""
-    dist = roster.get("groups", {}).get(label)
+    groups = roster.get("groups", {})
+    dist = groups.get(label) or groups.get(ROSTER_LEGACY.get(label, ""))
     if not dist:
         return None
     people, total, dist_all = sum(dist.values()), roster["n"], roster["districts"]
@@ -376,6 +389,7 @@ def view(spec: dict, people: list[dict], answers: dict, options: list[str], pane
                       and abs(quiet - quiet_all) >= QUIET_GAP_PP else None),
             "questions": _questions(c["kind"], spec.get("question", ""), options[i]),
             "basis": "기본 인물 정보" if g["basis"] == "기본" else f"생활 여건 자료({life_context.ADDONS[g['basis']]['title']})",
+            "caution": CARD_CAUTIONS.get(r["key"][0]),
         })
 
     regional = [r for r in rows if r["key"][0] in ("권역", "시도") and any(readable(c) for c in r["gaps"])]
@@ -402,6 +416,10 @@ def view(spec: dict, people: list[dict], answers: dict, options: list[str], pane
         "합성 인물의 답은 실제 국민의 응답이 아닙니다. 이 화면은 누구를 먼저 만날지 정하는 데 쓰고, 결론은 실제로 만나서 들은 말로 내리십시오.",
     ]
     lines = [f"{c['group']}({c['n']:,}명): {c['say']}. 만날 곳: {', '.join(c['venues'])}." for c in cards]
-    copy_text = ("찾아갈 곳(합성 인물 기준, 실제 조사 아님) — " + " / ".join(lines)) if lines else (small or "")
+    credit = result_attribution(panel_version, list(addons))
+    cautions = list(dict.fromkeys(c["caution"] for c in cards if c["caution"]))
+    copy_text = ("찾아갈 곳(합성 인물 기준, 실제 조사 아님) — " + " / ".join(lines)
+                 + "".join(f" 주의: {x}" for x in cautions) + f" {attribution.short(credit)}") if lines else (small or "")
     return {"cards": cards, "missing": missing, "region_note": region_note, "small": small, "groups": len(usable),
-            "tests": tests, "n": len(sample), "quiet_all_pct": quiet_all, "roster_n": roster.get("n"), "method": method, "copy_text": copy_text}
+            "tests": tests, "n": len(sample), "quiet_all_pct": quiet_all, "roster_n": roster.get("n"), "method": method,
+            "copy_text": copy_text, "attribution": credit}

@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pp import config, personas, prompts  # noqa: E402
+from pp import attribution, config, personas, prompts, provenance  # noqa: E402
 
 PANEL = config.REPO_ROOT / "runs" / "series-housing" / "panel.json"
 OUT = Path(__file__).resolve().parents[1] / "ppservice" / "data" / "panel-20k.jsonl.gz"
@@ -43,8 +43,13 @@ def main() -> int:
             line = json.dumps(row, ensure_ascii=False, sort_keys=True)
             digest.update(line.encode("utf-8"))
             f.write(line + "\n")
-    print(json.dumps({"out": str(OUT), "people": len(uuids), "bytes": OUT.stat().st_size,
-                      "panel_version": digest.hexdigest()[:12], "seed": saved.get("seed")}, ensure_ascii=False))
+    report = {"out": str(OUT), "people": len(uuids), "bytes": OUT.stat().st_size,
+              "panel_version": digest.hexdigest()[:12], "seed": saved.get("seed")}
+    # The DB's recorded source passes on to the bundle's sidecar, with the credit and what was changed.
+    source = attribution.recorded(config.persona_db())
+    provenance.write_metadata(OUT, {**report, **source, "attribution": attribution.build(
+        {**source, "panel_version": report["panel_version"]}, changes=("sampled", "profile"), model_output=False)})
+    print(json.dumps(report, ensure_ascii=False))
     return 0
 
 

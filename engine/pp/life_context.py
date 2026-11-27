@@ -43,7 +43,9 @@ INCOME_KO = {"lt10": "1천만 원 미만", "10_30": "1천만~3천만 원", "30_5
              "70_100": "7천만~1억 원", "ge100": "1억 원 이상"}
 LOW_INCOME = ("lt10", "10_30")
 # Band midpoints (만원) for matching published mean incomes; the open top band's 1.6억 makes the national band shares
-# reproduce the survey's national mean (7,404 vs 7,427).
+# reproduce the survey's national mean (7,404 vs 7,427). Calibration only: a person's drawn band is an assumption,
+# so a midpoint is never shown as that person's income nor used for a benefit amount, eligibility or ability to repay
+# (tests/test_attribution_labels.py keeps it to the raking and survey-matching code).
 INCOME_MIDPOINT = {"lt10": 600, "10_30": 2000, "30_50": 4000, "50_70": 6000, "70_100": 8500, "ge100": 16000}
 RELIGION_KO = {"none": "종교 없음", "buddhist": "불교", "protestant": "개신교", "catholic": "천주교", "other": "기타 종교"}
 COMMUTE_KO = {"walk": "걸어서", "bike": "자전거", "car": "자가용(승용차·승합차·트럭)", "bus": "시내·마을버스",
@@ -608,7 +610,8 @@ def assign_elder(people: list[dict], out: dict, seed: int) -> float:
 def assign_digital(people: list[dict], out: dict, seed: int) -> float:
     """'Can find what I need online': 20-59 and 60-69 from the smartphone overdependence survey; 70+ scaled down by the
     digital divide survey's competence index (70+ vs 60s); 60+ raked by sex and monthly household income using the
-    same index's relative levels."""
+    same index's relative levels. A survey proxy for finding information, not for filing papers or applying in an app:
+    a test that needs those states them as its own conditions, never inferring them from age or from this value."""
     d = tables()["digital"]
 
     def three(dist: dict) -> dict:

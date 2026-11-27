@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pp import personas  # noqa: E402
+from pp import attribution, config, personas, provenance  # noqa: E402
 
 DATA = Path(__file__).resolve().parents[1] / "ppservice" / "data"
 PANEL = DATA / "panel-20k.jsonl.gz"
@@ -45,6 +45,10 @@ def main() -> int:
             line = json.dumps(by_uuid[u], ensure_ascii=False, sort_keys=True) + "\n"
             digest.update(line.encode("utf-8"))
             f.write(line)
+    source = attribution.recorded(config.persona_db())
+    provenance.write_metadata(OUT, {"people": len(uuids), "content_sha256": digest.hexdigest()[:12], **source,
+                                    "attribution": attribution.build(source, changes=("sampled", "dropped_id"),
+                                                                     model_output=False)})
     print(f"wrote {OUT} ({len(uuids):,} people, {len(next(iter(by_uuid.values())))} fields, "
           f"{OUT.stat().st_size / 1e6:.1f} MB, content sha256 {digest.hexdigest()[:12]})")
     return 0
