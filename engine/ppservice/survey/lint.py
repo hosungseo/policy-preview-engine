@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import re
 
+from pp.diagnostics import question_reliability_findings
+
 ELECTION = re.compile(r"정당|후보|지지도|지지율|선거|투표|당선|대선|총선|지방선거|국회의원 선거|재보궐")
 RRN = re.compile(r"(?<!\d)\d{6}\s*-\s*[1-8]\d{6}(?!\d)")
 PHONE = re.compile(r"(?<!\d)01[016789]\s*-?\s*\d{3,4}\s*-?\s*\d{4}(?!\d)")
@@ -91,6 +93,7 @@ def check(policy_text: str, question: str, options: list[str]) -> list[dict]:
                         f"서류 제출·앱 신청 같은 절차 능력을 묻는 것 같습니다(‘{hit.group(0).strip()}’). 합성 인물에는 이 정보가 "
                         "없습니다. 디지털 항목은 ‘인터넷·스마트폰으로 필요한 정보를 찾을 수 있는지’ 설문의 대리값입니다.",
                         "절차 조건은 시험 조건으로 따로 정해 적고(예: ‘스마트폰 없음’), 나이로 채우지 마세요."))
+    found.extend(question_reliability_findings(q, opts))
     return found
 
 

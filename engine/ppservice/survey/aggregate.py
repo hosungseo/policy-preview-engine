@@ -62,7 +62,8 @@ def load_baseline(path: Path = BASELINE) -> dict | None:
 
 def summarize(spec: dict, people: list[dict], answers: dict[str, dict[str, list[float]]], lint: list[dict],
               baseline: dict | None = None, *, panel_version: str | None = None,
-              model_version: str | None = None, future: dict | None = None) -> dict:
+              model_version: str | None = None, future: dict | None = None,
+              include_diagnostics: bool = False, context: dict | None = None) -> dict:
     options = spec["options"]
     k = len(options)
     by_uuid = {p["uuid"]: {**p, "region": region(p)} for p in people}
@@ -147,7 +148,7 @@ def summarize(spec: dict, people: list[dict], answers: dict[str, dict[str, list[
         summary_text = (f"합성 인물 {len(main):,}명 모의 응답(AI 추정, 실제 여론조사 아님)에서 ‘{options[top]}’ {percent[top]}%. "
                         f"과거 진단 5문항(2024 사회조사)의 비교 문항 평균 절대 차이 {historical['mae_pp']}%p이며 "
                         "이 문항의 오차 범위가 아닙니다. 현재 실행과 진단 모델판의 동일성은 미확인입니다.")
-    return {
+    out = {
         "n": len(main), "options": options, "percent": percent, "top": top,
         "placebo_shift_pp": placebo_shift, "reversal_shift_pp": reversal_shift, "unstable": unstable,
         "splits": splits, "axes": axes, "baseline": None, "accuracy": accuracy, "next_action": next_action,
@@ -157,6 +158,32 @@ def summarize(spec: dict, people: list[dict], answers: dict[str, dict[str, list[
                                           ["통계청 「2024 사회조사」(과거 진단 비교 기준)"]
                                           if historical and historical['panel_version'] == panel_version else []),
     }
+    no_persona = answers.get("no_persona")
+    if no_persona:
+        np_shares = mean_shares(list(no_persona.values()), k)
+        lift_pp = max_shift_pp(main_shares, np_shares)
+        noise_pp = round(max(FLOOR_PP, placebo_shift, reversal_shift), 1)
+        clears = lift_pp > noise_pp
+        out["persona_net_effect"] = {
+            "no_persona_percent": int_percent(np_shares),
+            "persona_lift_pp": lift_pp,
+            "noise_floor_pp": noise_pp,
+            "clears_noise": clears,
+        }
+        if not clears:
+            cautions.append(
+                f"인물 설정을 넣어도 인물 없는 대조군과 최대 차이({lift_pp:.1f}%p)가 흔들림 폭({noise_pp:.1f}%p) 이하입니다. "
+                "뻔한 문항이거나 모델 기본 상식이 우세할 수 있습니다."
+            )
+    if include_diagnostics:
+        from pp import diagnostics as pp_diag
+
+        diag = pp_diag.diagnose_survey(spec, people, main, context=context)
+        out["diagnostics"] = diag
+        for item in (*diag["reliability_findings"], *diag["warnings"]):
+            if item["message"] not in cautions:
+                cautions.append(item["message"])
+    return out
 
 
 def result_attribution(panel_version: str | None, addons: list[str], extra_stats: list[str] = ()) -> dict:

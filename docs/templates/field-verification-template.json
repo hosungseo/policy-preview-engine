@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "run_id": "example-run",
+  "policy_title": "예시 정책 안내문",
+  "recorded_at": "2026-11-27",
+  "panel_version": null,
+  "source_revision": null,
+  "entries": [
+    {
+      "entry_id": "fv-001",
+      "visit_date": "2026-11-27",
+      "group_label": "70세 이상",
+      "venue": "경로당·노인복지관",
+      "participant_count": 5,
+      "predicted_ref": "card-1:70세 이상",
+      "item_kind": "group",
+      "outcome": "hit",
+      "field_finding": "온라인 신청 안내가 작아 주민센터 방문 신청 가능 여부를 묻는 의견이 많았습니다.",
+      "action_taken": "revised",
+      "review_minutes": 60,
+      "notes": "안내문 첫머리에 방문 창구 안내 추가"
+    },
+    {
+      "entry_id": "fv-002",
+      "visit_date": "2026-11-27",
+      "group_label": "대리 신청 보호자",
+      "venue": "행정복지센터",
+      "participant_count": 3,
+      "predicted_ref": null,
+      "item_kind": "unpredicted",
+      "outcome": "miss",
+      "field_finding": "가족이 대신 신청할 때 필요한 위임장 서류 안내가 빠져 있었습니다.",
+      "action_taken": "planned",
+      "review_minutes": 40,
+      "notes": "합성 미리보기에서 놓친 절차 막힘"
+    }
+  ]
+}

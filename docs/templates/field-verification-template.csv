@@ -1,0 +1,3 @@
+entry_id,visit_date,group_label,venue,participant_count,predicted_ref,item_kind,outcome,field_finding,action_taken,review_minutes,notes
+fv-001,2026-11-27,70세 이상,경로당·노인복지관,5,card-1:70세 이상,group,hit,온라인 신청 안내가 작아 주민센터 방문 신청 가능 여부를 묻는 의견이 많았습니다.,revised,60,안내문 첫머리에 방문 창구 안내 추가
+fv-002,2026-11-27,대리 신청 보호자,행정복지센터,3,,unpredicted,miss,가족이 대신 신청할 때 필요한 위임장 서류 안내가 빠져 있었습니다.,planned,40,합성 미리보기에서 놓친 절차 막힘
