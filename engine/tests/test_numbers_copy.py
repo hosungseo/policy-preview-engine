@@ -197,7 +197,7 @@ def test_group_table_applies_the_four_small_group_tiers():
 def test_slices_follow_tiers_and_never_mix_panels():
     numbers = nc.view(engine_like())
     tiny = nc.slice_text({"filters": {"age_band": "70세 이상", "province": "제주"}, "n": 4, "favor": .25, "reserve": .75}, numbers)
-    assert tiny.startswith("[대표 패널] 70세 이상 · 제주: 합성 인물 4명 중 찬성 쪽 1명 · 반대·유보 3명")
+    assert tiny.startswith("[대표 패널] 70세 이상 · 시도 제주: 합성 인물 4명 중 찬성 쪽 1명 · 반대·유보 3명")
     assert "%" not in tiny and nc.TINY_NOTE in tiny
     small = nc.slice_text({"filters": {"sex": "여자"}, "n": 18, "favor": .39, "reserve": .61}, numbers)
     assert "18명 중 찬성 쪽 7명(39%) · 반대·유보 11명(61%)" in small and nc.SMALL_NOTE in small
@@ -315,7 +315,7 @@ def test_numbers_stay_bounded_with_long_prose_and_many_slices():
 def test_mock_numbers_keep_the_trial_line_first():
     result = {**engine_like(), "mode": "mock", "trial_notice": mcp_setup.TRIAL_NOTICE, "result_label": "체험"}
     text = summary_card.build(result, "run")["text"]
-    assert text.splitlines()[0] == nc.BANNER and nc.TAILS["mock"] in text
+    assert text.splitlines()[0] == mcp_setup.TRIAL_NOTICE and nc.TAILS["mock"] in text
     assert text_index(text, nc.BANNER) < text_index(text, "%")
 
 

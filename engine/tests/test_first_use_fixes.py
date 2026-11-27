@@ -52,7 +52,7 @@ def test_own_policy_trial_is_clear_on_first_line(offline):
         assert state['trial_notice'] == mcp_setup.TRIAL_NOTICE and state['mode'] == 'mock'
         jobs.close()
         summary = jobs.get(state['id'], view='summary')['summary']
-        assert summary['text'].splitlines()[0] == summary_card.numbers_copy.BANNER
+        assert summary['text'].splitlines()[0] == mcp_setup.TRIAL_NOTICE
         assert summary['cards'] and summary['missing_perspectives']
         assert summary_card.numbers_copy.TAILS['mock'] in summary['text']
     finally:

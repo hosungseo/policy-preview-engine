@@ -59,7 +59,7 @@ def test_mock_summary_and_full_repeat_exact_first_line_for_assistant(offline):
             assert not response.isError
             first_line = response.content[0].text.splitlines()[0]
             if view == "summary":
-                assert first_line == summary_card.numbers_copy.BANNER
+                assert first_line == mcp_setup.TRIAL_NOTICE
                 assert summary_card.numbers_copy.TAILS["mock"] in response.content[0].text
                 assert len(response.content) == 1 and "assistant_guidance" not in response.structuredContent
                 continue

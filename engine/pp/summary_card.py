@@ -98,6 +98,8 @@ def build(result: dict, run_id: str) -> dict:
     trial = {k: result[k] for k in ('mode', 'result_label', 'trial_notice') if k in result}
     head = [numbers_copy.BANNER] if numbers else ([trial['trial_notice'], public_rules.NOTICE, trial.get('result_label', '')] if result.get('mode') == 'mock'
             else [public_rules.NOTICE, *[str(trial[k]) for k in ('result_label', 'trial_notice') if k in trial]])
+    if numbers and result.get('mode') == 'mock':
+        head.insert(0, trial['trial_notice'])
     if result.get('archive'):
         archive = result['archive']
         head.append('보관 출처: ' + archive['created_at'][:10] + ' 기록(경로·해시는 전체 결과)')

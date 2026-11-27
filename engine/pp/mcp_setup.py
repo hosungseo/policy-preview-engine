@@ -20,6 +20,7 @@ GUIDANCE = {
     "missing_model_key": ("실제 실행용 Anthropic API 키가 없습니다.", "서버 환경변수 ANTHROPIC_API_KEY를 설정하고 클라이언트를 다시 켜세요."),
     "panel_not_ready": ("실제 실행에 필요한 합성 인물 자료가 없습니다.", "python engine/scripts/build_panel_from_nemotron.py로 패널을 준비하세요."),
     "input_rejected": ("입력 문안 또는 형식이 실행 규칙에 맞지 않습니다.", "표시된 낱말이나 입력 항목을 고쳐 다시 비용을 확인하세요."),
+    "invalid_region": ("권역값이 맞지 않습니다.", "권역을 " + ", ".join(sorted(set(config.REGION_OF.values()))) + " 중에서 골라 무료 재집계를 다시 요청하세요."),
     "budget_exceeded": ("설정한 비용 또는 호출 한도에 닿아 멈췄습니다.", "합성 프로필 수(sample)를 줄여 새 비용을 확인하세요."),
     "run_not_found": ("이 서버에서 해당 실행 번호(run id)를 찾지 못했습니다.", "estimate의 plan_id(견적 번호)가 아니라 start_run이 돌려준 id(실행 번호)를 넣으세요. 서버를 재시작했다면 새 견적부터 시작하세요."),
     "plan_id_as_run_id": ("이 번호는 견적 번호입니다. 실행 번호를 넣으세요.", "이 견적으로 실행해 달라고 말한 뒤, 돌려받은 실행 번호로 결과를 확인하세요."),

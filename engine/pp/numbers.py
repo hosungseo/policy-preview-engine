@@ -221,7 +221,7 @@ def slice_results(result, filters=None, reason_limit=3):
     data = result.get("result", result)
     regions = sorted(set(config.REGION_OF.values()))
     if "region" in filters and filters["region"] not in regions:
-        raise ValueError("권역은 다음 값 중에서 고르세요: " + ", ".join(regions) + ". 서울은 province(시도)로 넣으세요.")
+        raise ValueError("권역은 다음 값 중에서 고르세요: " + ", ".join(regions) + ".")
     sliced = data.get("slice_data", {})
     if sliced.get("schema") != "pp.slice/1":
         raise ValueError("slice data unavailable; retrieve full result")
@@ -275,6 +275,9 @@ def from_archive(data):
     result["overall"]["reasons_by_panel"] = {panel: sum(r["panel"] == panel for r in reasons)
                                               for panel in ("representative", "affected")}
     quant = analysis.get("jev")
+    # Individual sentence-model rows provide voices only, even on axes absent from Jev.
+    result["by_group"] = {key: [g for g in groups if g["panel"] == "affected"]
+                          for key, groups in result["by_group"].items()}
     if quant:
         original = quant["overall"]
         mass, n = original["mass"], original["n"]

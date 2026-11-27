@@ -41,6 +41,37 @@ def test_archive_missing_cells_do_not_replace_jev_with_sentence_distribution(fil
         assert "%" not in text and "oppose" not in text
 
 
+@pytest.mark.parametrize("example", archived_examples.EXAMPLES)
+@pytest.mark.parametrize("province", ["서울", "강원"])
+def test_archive_province_without_saved_group_table_has_voices_but_no_rates(example, province):
+    result = archived_examples.load(example)
+    assert not any(g["panel"] == "representative" for g in result["by_group"]["province"])
+    sliced = numbers.slice_results(result, {"province": province})
+    assert sliced["source_scope"] == "archived_voices_only"
+    assert sliced["n"] is None and sliced["rates"] is None and sliced["counts"] is None
+    assert "favor" not in sliced and "reserve" not in sliced
+    assert sliced["reason_n"] > 0 and sliced["reasons"]
+    text = nc.slice_text(sliced, nc.view(result))
+    assert f"시도 {province}" in text and "표에 있는 집단만" in text
+    assert "%" not in text and "전체 대비" not in text
+    assert sliced["cost_usd"] == sliced["model_calls"] == 0
+    if province == "강원":
+        region = numbers.slice_results(result, {"region": "강원"})
+        assert region["source_scope"] == "archived_group_table"
+        assert "권역 강원" in nc.slice_text(region, nc.view(result))
+
+
+def test_small_reason_sample_does_not_warn_about_large_numeric_cell():
+    result = archived_examples.load("subway-free-ride")
+    sliced = numbers.slice_results(result, {"age_band": "60대"})
+    assert sliced["n"] == 893 and 30 <= sliced["reason_n"] < 100
+    text = nc.slice_text(sliced, nc.view(result))
+    assert nc.THIN_NOTE not in text and "표본 여유 부족" not in text
+    assert f"이유 표본 {sliced['reason_n']}명" in text
+    assert "목소리 참고로만" in text
+    assert nc.THIN_NOTE not in nc.affected_line(nc.view(result))
+
+
 def test_raw_delta_rounded_once_and_same_at_float_boundary_in_table_and_slice():
     result = native_result()
     base = result["overall"]["rates"]["support"]
@@ -114,7 +145,9 @@ def test_recovery_quote_screen_and_fallback_slice_are_readable(monkeypatch):
         missing = await server.call_tool("slice_results", {"id": "unknown-work-number"})
         assert missing.isError and missing.structuredContent["code"] == "run_not_found"
         bad = await server.call_tool("slice_results", {"result": native_result(), "filters": {"region": "서울"}})
-        assert bad.isError and all(v in bad.content[0].text for v in ("수도권", "동남권", "province"))
+        assert bad.isError and all(v in bad.content[0].text for v in ("수도권", "동남권", "무료 재집계"))
+        assert "비용" not in bad.structuredContent["next_action"]
+        assert "province" not in bad.content[0].text
         fallback = native_result()
         fallback["overall"]["decision"]["fallback"] = True
         reply = await server.call_tool("slice_results", {"result": fallback, "filters": {"age_band": "60대"}})

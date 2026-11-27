@@ -101,7 +101,7 @@ DIFF = "(전체 대비 찬성 쪽 {diff})"
 SLICE_SWING_UNKNOWN = " (흔들림 폭 미측정)"
 TINY_NOTE = "(5명 미만: 비율 숨김 · 해석 불가, 찾아갈 곳의 단독 근거로 쓰지 않음)"
 SMALL_NOTE = "소집단 주의: 인원이 적어 집단 특성으로 단정할 수 없습니다(현장 확인 참고용)."
-THIN_NOTE = "표본 여유 부족: 차이가 흔들림 폭을 넘어도 찾아갈 곳 근거로는 약합니다."
+THIN_NOTE = "표본 여유 부족: 이 숫자 칸은 30~99명으로, 찾아갈 곳의 단독 근거로 쓰기 어렵습니다."
 INFLATE_NOTE = "AI는 학력·소득 격차를 실제보다 부풀리는 경향이 있습니다."
 SLICE_REASONS = "이유(문장 모델 표본 {n} 중 이 조건, AI가 상상한 문장이며 실제 사람의 말이 아님): {quotes}"
 
@@ -420,7 +420,7 @@ def affected_line(numbers: dict) -> str | None:
     a = numbers["affected"]
     if not a:
         return None
-    return AFFECTED.format(label=a["label"], n=people(a["n"])) + (" " + THIN_NOTE if tier(a['n']) == 'thin' else "")
+    return AFFECTED.format(label=a["label"], n=people(a["n"]))
 
 
 def basis_line(h: dict) -> str:
@@ -440,7 +440,7 @@ def slice_text(item: dict, numbers: dict | None = None, warnings: list | None = 
         raise ValueError("panel_must_be_representative_or_affected")
     filters = item.get("filters") or {}
     stance_names = {"support": "찬성한 합성 인물", "oppose": "반대한 합성 인물", "unknown": "모름·유보인 합성 인물"}
-    label = " · ".join(stance_names.get(v, str(v)) if k == "stance" else f"{v}세 이상" if k == "age_min" else f"{v}세 이하" if k == "age_max" else str(v) for k, v in filters.items() if k != "panel") or SLICE_ALL
+    label = " · ".join(stance_names.get(v, str(v)) if k == "stance" else f"{v}세 이상" if k == "age_min" else f"{v}세 이하" if k == "age_max" else f"{AXIS[k]} {v}" if k in {"province", "region"} else str(v) for k, v in filters.items() if k != "panel") or SLICE_ALL
     shares = _row(item)
     n = int(item.get("n") or 0)
     voices_only = item.get("source_scope") in {"archived_voices_only", "archived_reason_sample"}
@@ -482,7 +482,7 @@ def slice_text(item: dict, numbers: dict | None = None, warnings: list | None = 
     if item.get("excluded_reason_n"):
         text += f"\n규칙 검사로 제외한 이유: {item['excluded_reason_n']}개(인용에서 제외)."
     if 0 < item.get("reason_n", 0) < 100:
-        text += "\n" + (SMALL_NOTE if item["reason_n"] < 30 else THIN_NOTE)
+        text += f"\n이유 표본 {people(item['reason_n'])}: 문장 모델의 목소리 참고로만 읽으세요. 숫자 칸의 인원과는 다릅니다."
     return text
 
 

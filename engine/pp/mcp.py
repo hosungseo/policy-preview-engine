@@ -144,7 +144,7 @@ def create_server(jobs: Jobs | None = None) -> FastMCP:
                 raise
             except ValueError as exc:
                 if str(exc).startswith("권역은"):
-                    raise service.RequestError(str(exc)) from None
+                    raise service.RequestError(str(exc), "invalid_region") from None
                 raise service.RequestError("전체 결과의 slice_data와 연령·권역·시도·성별·찬반 필터를 확인하세요.") from None
             except KeyError:
                 if id:

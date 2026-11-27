@@ -224,7 +224,7 @@ def test_genuine_stdio_without_transport_stub(tmp_path):
                 assert state.structuredContent["status"] == "completed", state
                 summary = state.structuredContent
                 assert summary["mode"] == "mock" and summary["result_label"] == "체험(모의) 결과"
-                assert state.content[0].text.splitlines()[0] == numbers_copy.BANNER
+                assert state.content[0].text.splitlines()[0] == mcp_setup.TRIAL_NOTICE
                 assert numbers_copy.TAILS["mock"] in state.content[0].text
                 assert len(state.content) == 1 and "assistant_guidance" not in summary
                 assert summary["summary"]["overall"]["n"] == 3000
