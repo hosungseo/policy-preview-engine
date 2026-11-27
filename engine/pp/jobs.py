@@ -5,14 +5,21 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from threading import Lock
 from uuid import uuid4
+from time import monotonic
+
+from . import run_progress, summary_card
+from .run_experience import RunExperience
+from .run_plans import Plans
 
 from . import public_rules, service, mcp_setup
 
 
-class Jobs:
+class Jobs(RunExperience):
     def __init__(self):
         self._runs: dict[str, dict] = {}
         self._lock = Lock()
+        self._plans = Plans()
+        self._started_at = {}
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pp-run")
 
     def start(self, policy_text: str, sample: int = service.DEFAULT_SAMPLE, seed: int = 42,
@@ -37,10 +44,11 @@ class Jobs:
 
     def _run(self, run_id, policy_text, sample, seed, credentials, i_confirm_public, limits, conditions=None):
         with self._lock:
-            self._runs[run_id] = {**self._runs[run_id], "status": "running"}
+            self._runs[run_id] = {**self._runs[run_id], "status": "running", "stage": "preparing"}
+            self._started_at[run_id] = monotonic()
         try:
-            result = service.run_policy(policy_text, sample=sample, seed=seed, credentials=credentials,
-                                        i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
+            with run_progress.track(lambda stage: self._stage(run_id, stage)):
+                result = service.run_policy(policy_text, sample=sample, seed=seed, credentials=credentials, i_confirm_public=i_confirm_public, limits=limits, conditions=conditions)
             update = {"status": "completed", "result": result}
         except Exception as exc:
             update = {"status": "failed", **mcp_setup.error_payload(exc)}
@@ -49,11 +57,18 @@ class Jobs:
         with self._lock:
             self._runs[run_id] = {**self._runs[run_id], **update}
 
-    def get(self, run_id: str) -> dict:
+    def get(self, run_id: str, view="full") -> dict:
+        if view not in {"summary", "full"}:
+            raise service.RequestError("view는 summary 또는 full이어야 합니다.")
         with self._lock:
             if run_id not in self._runs:
-                raise KeyError("Unknown run id (jobs are lost on server restart)")
-            return deepcopy(self._runs[run_id])
+                raise KeyError("작업을 찾을 수 없습니다. ID가 다르거나 서버 재시작으로 사라졌을 수 있습니다. 저장본을 확인하거나 다시 견적을 내세요.")
+            state = deepcopy(self._runs[run_id])
+            started_at = self._started_at.get(run_id)
+        state = run_progress.snapshot(state, started_at)
+        if state["status"] == "completed":
+            state["save_notice"] = summary_card.SAVE_NOTICE
+        return summary_card.response(state) if view == "summary" else state
 
     def close(self):
         self._pool.shutdown(wait=True)

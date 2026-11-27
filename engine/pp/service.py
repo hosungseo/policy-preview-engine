@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 
 from . import analyze_llm, attribution, budget, config, diagnostics, jev, jev_panel, llm, panel_provider, personas, policy_groups, public_rules, provenance, react, segment, visit_shared
 from . import mcp_setup
+from . import run_progress
 
 DEFAULT_SAMPLE = 200
 MAX_SAMPLE = panel_provider.MAX_N
@@ -130,6 +131,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
     norm_conditions = normalize_conditions(conditions)
     credentials = credentials or Credentials.from_env()
     mcp_setup.preflight(credentials)
+    run_progress.report("preparing")
     title = policy_text.strip().splitlines()[0][:120]
     # Explicit DBs take precedence. Otherwise use the portable, attributed 20k bundle.
     db = mcp_setup.demo_panel() or config.persona_db()
@@ -174,6 +176,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         p["family_persona"] = lines[9] if len(lines) > 9 else ""
         p["cultural_background"] = lines[10] if len(lines) > 10 else ""
     segments = segment.split_segments(policy_text)
+    run_progress.report("reactions")
     with mcp_setup.model_transport(credentials, _api_transport), jev.use_key(None if mcp_setup.mock_mode() else credentials.typesafe):
         # Existing reaction code is resumable on disk; its private temporary output is deleted on exit.
         with TemporaryDirectory(prefix="pp-") as folder:
@@ -186,6 +189,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
         mismatches = react.verify_quotes(reactions, policy_text, segments)
         by_uuid = {p["uuid"]: p for p in people}
         # Keep issue order tied to source clauses, never member counts or stance.
+        run_progress.report("questions")
         raw_issues = analyze_llm.cluster_issues(reactions, title)
         by_rid = {r["rid"]: r for r in reactions}
         clause_order = {s["id"]: i for i, s in enumerate(segments)}
@@ -211,6 +215,7 @@ def _run_policy(policy_text: str, *, sample: int = DEFAULT_SAMPLE, seed: int = 4
                 raise
             except Exception:
                 clarity = {"available": False, "reason": "Jev 호출 실패: 키·잔액·연결을 확인하세요"}
+    run_progress.report("finalizing")
     public, warnings, diag, limits_notes = policy_groups.build_consultation_views(
         policy_text, segments, people, reactions, issues, qa, clarity, active_conditions, grouping_basis
     )

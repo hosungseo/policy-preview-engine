@@ -107,8 +107,13 @@ def test_mcp_output_contract(malicious_models):
         assert state["status"] == "completed", state
         result = await server.call_tool("get_run", {"id": state["id"]})
         assert result.content[0].text.splitlines()[0] == NOTICE
-        assert_contract(result.structuredContent, malicious_models)
-        assert json.loads(result.content[0].text.split("\n", 1)[1]) == result.structuredContent
+        assert_notice(result.structuredContent)
+        assert len(result.content[0].text) <= 3000
+        assert malicious_models not in json.dumps(result.structuredContent, ensure_ascii=False)
+        assert result.content[0].text == result.structuredContent["summary"]["text"]
+        full = await server.call_tool("get_run", {"id": state["id"], "view": "full"})
+        assert_contract(full.structuredContent, malicious_models)
+        assert json.loads(full.content[0].text.split("\n", 1)[1]) == full.structuredContent
 
     try:
         asyncio.run(scenario())
