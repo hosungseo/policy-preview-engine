@@ -1,0 +1,10 @@
+{
+  "name": "policy-preview",
+  "version": "0.2.0",
+  "description": "백번 미리 묻다: 무료 보관 예시로 시작하고 공개·가상 문안의 비용을 확인한 뒤 현장 질문을 준비합니다.",
+  "author": { "name": "hosungseo" },
+  "repository": "https://github.com/hosungseo/policy-preview-engine",
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

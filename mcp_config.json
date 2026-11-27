@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "policy-preview": {
+      "command": "sh",
+      "args": ["${PLUGIN_ROOT}/scripts/plugin-mcp.sh"]
+    }
+  }
+}

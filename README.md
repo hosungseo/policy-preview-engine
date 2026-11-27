@@ -1,5 +1,24 @@
 # 백번 미리 묻다 (Policy Preview)
 
+## Install
+
+| AI 환경 | 설치 |
+| :--- | :--- |
+| **어떤 AI든** | AI에게 `Install https://github.com/hosungseo/policy-preview-engine`이라고 말하세요. 플러그인 설치를 지원하는 AI가 아래 방법으로 설치합니다. |
+| **Claude Code** | `claude plugin marketplace add hosungseo/policy-preview-engine && claude plugin install policy-preview@policy-preview` |
+| **Codex** | `codex plugin marketplace add hosungseo/policy-preview-engine && codex plugin add policy-preview@policy-preview` |
+| **Antigravity** | `agy plugin install https://github.com/hosungseo/policy-preview-engine` |
+
+설치 뒤 새 대화를 열어 **“무료 예시 보여 줘”**라고 하세요. MCP 도구와 사용 안내 스킬이 함께 연결됩니다. 사용자가 pip 설치나 경로 설정을 할 필요가 없습니다. 첫 실행에는 의존성을 받는 인터넷 연결과 **uv(권장) 또는 Python 3.12 이상**이 필요합니다. 이후 무료 예시·재집계는 인터넷과 API 키 없이 됩니다. 호스트별 연결 방식과 검증 범위는 [설치 환경 안내](docs/harnesses.md)에 있습니다.
+
+### 설치 후 첫 3분
+
+1. **“무료 예시 보여 줘”** — 준비 상태를 확인하고 도시철도 무임승차 기준 연령 예시의 보관 결과를 읽습니다. API 키·패널 준비가 없어도 0원입니다.
+2. **숫자 카드 읽기** — 합성 인물의 찬성·반대·모름 분포, 먼저 만날 집단과 물어볼 질문을 봅니다. 실제 사람 응답은 0명이며 실제 여론이 아닙니다.
+3. **“60대만 보면?”** — 같은 보관 결과를 다시 잘라 봅니다. 새 모델 호출과 비용은 0입니다. 내 문안은 **“이 문안 비용부터 알려 줘”**로 시작하고, 예상 비용·시간·상한에 동의한 뒤 실행합니다.
+
+키는 선택입니다. 무료 예시를 보려고 발급할 필요가 없습니다. 내 문안을 실제 모델로 실행할 때만 아래 [선택 설정](#선택-설정-내-문안으로-실제-실행)을 준비하세요. 별도 경량판의 사용법은 [policy-preview-lite v1.0.0](https://github.com/hosungseo/policy-preview-lite/tree/v1.0.0)을 참고하세요.
+
 공개·가상 정책 문안으로 합성 인물에게 먼저 묻고, **실제로 누구를 찾아가 무엇을 물을지** 정하는 도구입니다.
 
 > 실제 사람 응답 0명이며 합성 인물의 답은 실제 여론이 아닙니다. 이 도구는 여론조사나 공청회를 대신하지 않습니다. 발표 전 비공개 문안이나 개인정보는 입력하지 말고, 공개·가상 문안으로 먼저 만날 집단과 물어볼 질문을 고르는 데 쓰세요.
@@ -22,7 +41,7 @@ REPO_URL=https://github.com/hosungseo/policy-preview-engine
 판단 모델은 기본 합성 인물 3,000명(상한 5,000명)의 분포를 추정하고, 문장 모델은 기본 200명의 이유를 따로 수집합니다. `decision_sample`은 분포 판단 수, `sample`은 이유 수집 수(1~5,000)입니다. 판단 모델 키가 없으면 문장 모델 소표본 분포로 대체하며 그 한계를 표시합니다. 실제 사람 응답 수가 아닙니다.
 기존 심층 분석·웹 서비스 명령은 아래 사용법대로 유지합니다.
 
-Python 3.12 이상에서 저장소 루트에 설치합니다.
+위 플러그인 설치에는 이 절의 수동 설치가 필요 없습니다. 개발하거나 CLI·HTTP API를 직접 쓸 때만 Python 3.12 이상에서 저장소 루트에 설치합니다.
 
 ```sh
 python3 -m venv .venv
@@ -67,11 +86,13 @@ curl -s http://127.0.0.1:8765/runs -H 'Content-Type: application/json' \
 JSON 본문의 키와 정의되지 않은 인자는 거절하며 제출값을 오류에 되비추지 않습니다.
 서버는 **localhost 전용**입니다. 공개 호스팅·인증 서버로 사용하지 마세요.
 
-### MCP로 쓰기 (Claude Code·Claude 데스크톱)
+### MCP로 쓰기 (플러그인 또는 데스크톱 수동 연결)
 
 AI 비서에게 말로 묻는 방법입니다. 도구 이름은 몰라도 되고, 돈이 드는 단계 전에는 AI가 예상 금액을 보여 주고 먼저 묻습니다.
 
-**1단계. 설치(한 번)**: Python 3.12 이상(`python3 --version`으로 확인)이 필요합니다.
+Claude Code·Codex·Antigravity는 맨 위 Install 표로 설치하면 됩니다. 아래 1~2단계는 **플러그인을 지원하지 않는 Claude 데스크톱 등에서 직접 연결할 때만** 사용합니다.
+
+**1단계. 수동 설치(한 번)**: Python 3.12 이상(`python3 --version`으로 확인)이 필요합니다.
 
 ```sh
 git clone "$REPO_URL" policy-preview-engine && cd policy-preview-engine
@@ -143,12 +164,32 @@ Claude 데스크톱은 설정 → 개발자 → 설정 편집으로 `claude_desk
 숫자 표현 문구와 쓰면 안 되는 표현 목록은 `engine/pp/numbers_copy.py`에 있습니다(정리: [docs/numbers-copy.md](docs/numbers-copy.md)).
 숫자는 "합성 인물 5,000명 중 찬성 쪽 47%(흔들림 3.8%p: 문장·순서를 바꿔 다시 물었을 때 달라진 정도)"처럼 누구의 몇 명인지와 흔들림 폭을 함께 씁니다. "국민의 47%가 찬성"처럼 실제 사람의 비율로 옮기지 않습니다.
 
-**유료 실행(내 문안으로 AI 반응 만들기)에 필요한 것**
+### 선택 설정: 내 문안으로 실제 실행
 
 - Anthropic API 키: Claude 구독과 별도이며 console.anthropic.com에서 만듭니다. 위 BYOK 안내대로 숨김 입력해 환경변수로만 두고,
   그 터미널에서 `claude`를 켭니다. 키를 설정 파일이나 대화, 도구 인자에 적지 마세요. Claude 데스크톱은 터미널의 환경변수를 물려받지 않으므로
   데스크톱에서는 무료 예시·비용 미리 보기까지 쓰고, 유료 실행은 키를 넣은 터미널의 Claude Code에서 하세요.
 - 합성 인물 자료: 아래 **4-3. 합성 인물 패널 만들기**(약 2GB, 한 번만)를 따릅니다.
+
+플러그인에서도 키는 서버가 물려받는 환경변수로만 설정합니다. macOS 기본 zsh 예시는 다음과 같습니다(입력한 키는 화면에 보이지 않습니다).
+
+```sh
+read -rs 'ANTHROPIC_API_KEY?Anthropic API 키: '
+export ANTHROPIC_API_KEY
+echo
+# 이 터미널에서 사용하는 AI를 실행하세요: claude / codex / agy
+```
+
+선택적 명료성 점검은 같은 방식으로 `TYPESAFE_API_KEY`를 입력·export합니다. 키를 대화·도구 인자·Git 파일에 넣지 마세요. GUI 앱은 터미널 환경변수를 물려받지 않을 수 있으므로 무료 예시부터 쓰거나 키를 설정한 터미널에서 AI를 실행하세요. `check_setup`으로 키의 존재 여부만 확인할 수 있습니다.
+
+### 설치 문제 해결
+
+- **uv·Python이 없음**: [uv 설치 안내](https://docs.astral.sh/uv/getting-started/installation/)에 따라 uv를 설치하고 AI 앱을 다시 켜세요. uv가 있으면 필요한 Python도 자동 준비합니다. uv 없이 Python 3.12 이상이 있다면 플러그인이 `venv`·`pip`로 전용 환경을 만듭니다. 일부 Linux의 Python은 OS 패키지 `python3-venv`가 추가로 필요합니다.
+- **첫 실행 다운로드 실패**: 인터넷 연결과 홈 폴더의 여유 공간·쓰기 권한을 확인한 뒤 다시 켜세요. 설치 메시지는 MCP 통신을 방해하지 않도록 진단 출력(stderr)에만 나옵니다. 회사 네트워크의 패키지 저장소 접근이 막혀 있다면 관리자에게 PyPI 접근을 요청하세요.
+- **중단된 설치가 계속 대기**: 다른 AI 창의 설치가 끝났는지 확인하세요. 모두 종료한 뒤 `~/.cache/policy-preview/plugins/`(또는 `XDG_CACHE_HOME` 아래 같은 폴더)의 해당 실행 폴더에 남은 빈 `install.lock` 폴더만 지우면 다음 실행에 다시 준비합니다. 가상환경·키를 직접 편집할 필요는 없습니다.
+- **도구가 안 보임**: 전체 플러그인이 활성화됐는지 확인하고 새 대화를 여세요. Claude Code 스킬 명령은 `/policy-preview:policy-preview`입니다. 스킬 파일만 복사하는 설치는 MCP를 연결하지 않습니다.
+
+자동 설치 경로는 사용자 캐시의 `policy-preview/plugins/<설치별 번호>/venv`이며 시스템 Python과 다른 플러그인을 바꾸지 않습니다. 운영자가 캐시 위치를 바꾸려면 `PP_PLUGIN_CACHE_DIR`을 지정할 수 있지만 일반 설치에서는 필요 없습니다. Windows 네이티브 실행은 검증하지 않았으며 현재 실행기는 POSIX 셸이 있는 macOS·Linux·WSL용입니다.
 
 **더 알아 둘 것**
 

@@ -1,0 +1,13 @@
+{
+  "name": "policy-preview",
+  "metadata": { "description": "백번 미리 묻다 MCP와 사용 안내 스킬" },
+  "description": "백번 미리 묻다 엔진·MCP·사용 안내 스킬",
+  "owner": { "name": "hosungseo" },
+  "plugins": [
+    {
+      "name": "policy-preview",
+      "source": "./",
+      "description": "백번 미리 묻다: 키 없이 무료 예시와 집단별 숫자를 보는 정책 문안 사전 점검 도구."
+    }
+  ]
+}
