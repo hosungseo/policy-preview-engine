@@ -1,0 +1,104 @@
+{
+  "suite": "공고문-근거대조 v0 — 조례 근거 공고",
+  "checked_on": "2026-11-28",
+  "note": "Synthetic notice sentences for testing (Busan city-run public parking). Not legal advice. Scope: parking lots installed by 부산광역시장 only; district (구·군) lots follow their own ordinances.",
+  "ordinance": {
+    "name": "부산광역시 주차장 설치 및 관리 조례",
+    "ordinance_serial": "2120413",
+    "effective": "20260408",
+    "department": "부산광역시 교통정책과 051-888-3891",
+    "source": "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2120413"
+  },
+  "upper_law": {
+    "name": "주차장법",
+    "effective": "20260828",
+    "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsId=001814"
+  },
+  "lookup_recipe": [
+    "search_ordinances(query='부산광역시 주차장') -> ordinance_serial",
+    "compare_ordinance_with_law(mst=2120413) -> article pairs (no notice text sent)",
+    "compare_ordinance_with_law(mst=2120413, no='3,3의2') -> ordinance text + 주차장법 제9조·제14조 current text + ordinance 별표 list",
+    "get_delegated_ordinances(law_name='주차장법', region='부산광역시') -> which articles delegate to this ordinance"
+  ],
+  "cases": [
+    {
+      "id": "busan-parking-01",
+      "claim": "긴급자동차는 공영주차장 주차요금을 면제합니다.",
+      "expected": "correct",
+      "basis": [
+        { "source": "ordinance", "article": "제3조의2제1항제1호가목", "quote": "1. 다음 각 목의 어느 하나에 해당하는 경우: 면제가. 「도로교통법」 제2조제22호에 따른 긴급자동차" },
+        { "source": "law", "article": "주차장법 제9조제1항 단서", "quote": "「도로교통법」 제2조제22호에 따른 긴급자동차에 대하여는 주차요금을 받지 아니하고" }
+      ]
+    },
+    {
+      "id": "busan-parking-02",
+      "claim": "경형자동차는 주차요금을 30% 할인합니다.",
+      "expected": "wrong",
+      "correct_value": "100분의 50 경감 (법은 100분의 50 이상 감면)",
+      "basis": [
+        { "source": "ordinance", "article": "제3조의2제1항제10호가목", "quote": "10. 다음 각 목의 어느 하나에 해당하는 경우: 100분의 50 경감(다만, 전기자동차가 충전을 위하여 주차하는 경우에는 1시간의 범위에서 주차요금 면제)가. 「자동차관리법」에 따른 배기량 1천시시 미만의 경형자동차" },
+        { "source": "law", "article": "주차장법 제14조제2항 단서", "quote": "경형자동차 및 환경친화적 자동차에 대하여는 주차요금의 100분의 50 이상을 감면한다." }
+      ],
+      "tests": "upper-law floor (이상) plus ordinance value"
+    },
+    {
+      "id": "busan-parking-03",
+      "claim": "등록 장애인이 직접 운전하는 자기 차량은 1시간 무료이고, 1시간 초과와 월 정기권은 50% 경감합니다.",
+      "expected": "correct",
+      "basis": [
+        { "source": "ordinance", "article": "제3조의2제1항제7호가목", "quote": "1시간의 범위에서 주차요금 면제, 1시간을 초과하는 경우와 1일 주차 또는 월 주차의 경우 주차요금의 100분의 50 경감가. 「장애인복지법」에 따라 등록된 장애인" }
+      ]
+    },
+    {
+      "id": "busan-parking-04",
+      "claim": "승용차부제 참여 차량은 월 정기권도 50% 경감합니다.",
+      "expected": "wrong",
+      "correct_value": "월 주차는 100분의 20 경감",
+      "basis": [
+        { "source": "ordinance", "article": "제3조의2제1항제8호 단서", "quote": "100분의 50 경감. 다만, 월 주차의 경우에는 100분의 20을 경감한다." }
+      ],
+      "tests": "proviso (단서) trap, same as 별표 비고 in the proposal suite"
+    },
+    {
+      "id": "busan-parking-05",
+      "claim": "다자녀가정과 경형자동차 감면에 모두 해당하면 두 감면율을 합산해 적용합니다.",
+      "expected": "wrong",
+      "correct_value": "감면율이 높은 하나만 적용",
+      "basis": [
+        { "source": "ordinance", "article": "제3조의2제1항 각 호 외의 부분 단서", "quote": "다만, 둘 이상의 감면사유에 해당하면 그 중 감면율이 높은 어느 하나를 적용한다." }
+      ]
+    },
+    {
+      "id": "busan-parking-06",
+      "claim": "노상주차장 요금을 내지 않고 주차하면 주차요금의 4배를 가산금으로 받습니다.",
+      "expected": "wrong",
+      "correct_value": "부산광역시는 주차요금의 2배 (법은 4배 이내에서 조례로)",
+      "basis": [
+        { "source": "law", "article": "주차장법 제9조제3항", "quote": "해당 지방자치단체의 조례로 정하는 바에 따라 그 주차요금의 4배 이내의 금액에 해당하는 가산금을 받을 수 있다." },
+        { "source": "ordinance", "article": "제3조제2항", "quote": "법 제9조제3항에 따라 노상주차장관리자가 받을 수 있는 가산금은 별표 1에 따른 주차요금의 2배에 해당하는 금액으로 한다." }
+      ],
+      "tests": "law sets a ceiling, ordinance sets the actual value; checking only the law would pass a wrong notice"
+    },
+    {
+      "id": "busan-parking-07",
+      "claim": "공영주차장 월 정기권 요금은 1급지 기준 월 15만원입니다.",
+      "expected": "needs_check",
+      "reason": "별표 1(공영주차장의 주차요금)은 법제처가 글을 주지 않고 hwp 파일만 있음. 금액을 지어내지 말고 별표 파일 확인을 안내해야 함.",
+      "basis": [
+        { "source": "ordinance", "article": "제3조제1항", "quote": "공영주차장”이라 한다)의 주차요금은 별표 1과 같다." }
+      ],
+      "tests": "must return needs_check, never correct/wrong, when the table text is unavailable"
+    },
+    {
+      "id": "building-split-01",
+      "claim": "(부산 ○○구 위반건축물 안내) 영리 목적 위반은 이행강제금을 조례에 따라 30% 가중합니다. 안내 기간: 2027. 1. 1. ~ 2027. 3. 31.",
+      "expected": "split_by_date",
+      "split": [
+        { "until": "2027-02-11", "verdict": "correct_range", "basis": "건축법 제80조제2항(현행) '100분의 100의 범위에서 … 조례로 정하는 바에 따라 가중하여야 한다.'" },
+        { "from": "2027-02-12", "verdict": "wrong", "basis": "건축법 제80조제2항(2027. 2. 12. 시행) '100분의 50 이상 100분의 100 이하의 범위에서 … 가중하여야 한다.'" }
+      ],
+      "source": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=288701&efYd=20270212",
+      "tests": "notice period straddles an effective date; output must show both dates side by side"
+    }
+  ]
+}
