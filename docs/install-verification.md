@@ -1,6 +1,39 @@
-# 플러그인 설치 검증 — 2026-11-28
+# 설치 검증 기록
 
-macOS arm64에서 EGM과 같은 전체 저장소 플러그인 포장을 검증했습니다. 아래 첫 기록은 로컬 설치 시험이며, 공개 main `d3c1792`의 원격 주소 설치 시험은 뒤의 별도 절에 기록합니다. 이번 재시도 수정은 로컬 브랜치에서만 검증하며 push하지 않았습니다.
+## 2026-11-28 — 공개 main `ae3bcc3`
+
+GitHub HTTPS URL로 새로 복제한 저장소의 HEAD와 origin/main은 모두 `ae3bcc38a2898089cb4cfc078a1453ffa9101449`였습니다. macOS arm64, Claude Code 2.1.330, Codex CLI 0.171.0에서 실제 사용자 설정·인증을 복사하지 않고 임시 HOME·클라이언트 설정·캐시를 사용했습니다. API 키·패널·유료 모델 호출 없이 설치·등록·무료 흐름을 확인했습니다.
+
+| 환경 | 설치·등록 | 키 없는 무료 예시와 재집계 | 남은 확인 |
+| --- | --- | --- | --- |
+| Claude Code | 원격 marketplace add·plugin install 성공, 스킬 1개·MCP 1개, native `claude mcp list` Connected | 설치된 설정 그대로 initialize·도구 9개, 무료 예시 completed·0원, 60대 재집계 model_calls=0·cost_usd=0 | 로그인한 자연어 새 대화 |
+| Codex | 원격 marketplace add·plugin add 성공, installed/enabled=true, native `codex mcp list --json`에 stdio 등록 | 설치된 설정 그대로 initialize·도구 9개, 무료 예시 completed·0원, 60대 재집계 model_calls=0·cost_usd=0 | 로그인한 자연어 새 대화 |
+| Claude Desktop 수동 설정 | 문서의 수동 Python 설치 후 실행 경로를 채운 임시 JSON의 command/args 검증 | initialize·도구 9개, 무료 예시 completed·0원, 60대 재집계 model_calls=0·cost_usd=0 | Desktop GUI·로그인한 자연어 새 대화 |
+
+초기 의존성 준비 뒤 위 세 설정의 무료 흐름은 macOS sandbox로 모든 네트워크를 차단하고 실행했습니다. Python 소켓 감사 로그에서도 네트워크 연결 시도는 0회였습니다. `check_setup`의 `ready=false`는 유료 실행 준비 상태이며 `free_trial_available=true`와 함께 무료 흐름이 통과했습니다. 설치 성공과 호스트 AI의 로그인·이용 요건을 구분합니다.
+
+### 같은 날 추가 검증 — Desktop GitHub URL 설치
+
+README에 새로 안내한 다음 command/args를 별도의 빈 HOME과 빈 uv 캐시에서 그대로 실행했습니다. 환경변수는 PATH·언어·임시 경로만 허용해 API 키와 기존 설정을 상속하지 않았고, 실제 Desktop 설정은 열거나 수정하지 않았습니다.
+
+```sh
+uvx --python 3.12 --from git+https://github.com/hosungseo/policy-preview-engine@ae3bcc38a2898089cb4cfc078a1453ffa9101449 pp mcp
+```
+
+uv가 GitHub에서 받은 커밋도 `ae3bcc38a2898089cb4cfc078a1453ffa9101449`였습니다. 저장소 수동 복제·venv·pip·절대 경로 입력 없이 Python 3.12와 패키지를 준비했고 JSON-RPC stdio의 `initialize`(2025-11-25) → `tools/list`(9개) → `check_setup` → `try_example(example="subway-free-ride")` → `slice_results(filters={"age_band":"60대"})`가 통과했습니다. 키·패널 없음, 무료 예시 completed·cost_usd=0, 재집계 model_calls=0·cost_usd=0을 확인했습니다. 첫 다운로드에는 네트워크를 허용하고, 이후 같은 설정을 모든 네트워크가 차단된 macOS sandbox에서 다시 시작해 같은 무료 흐름을 확인했습니다. 검증한 커밋에 고정해 설치와 오프라인 재시작을 재현할 수 있게 했습니다.
+
+패키지 진입점과 예시 자료는 해당 공개 커밋에 이미 있어 엔진 변경 없이 URL 설치가 됩니다. Desktop GUI의 PATH 탐색·도구 표시, 로그인한 자연어 대화, Windows·Linux 네이티브 실행은 아직 시험하지 않았습니다. 다른 MCP 클라이언트도 stdio 설정으로 연결할 수 있지만 시험하지 않았습니다.
+
+## 과거 기록
+
+아래는 이전 SHA와 당시 로컬 수정의 검증 기록입니다. 현재 공개 커밋의 결과와 미검증 범위는 위 기록을 기준으로 읽으세요.
+
+<details>
+<summary>이전 설치·재시도 수정과 d3c1792 검증 기록 펼치기</summary>
+
+### 2026-11-28 — 이전 플러그인 포장
+
+macOS arm64에서 전체 저장소 플러그인 포장을 검증했습니다. 아래 첫 기록은 당시 로컬 설치 시험이며, 공개 main `d3c1792`의 원격 주소 설치 시험은 뒤의 별도 절에 기록합니다. 아래의 미공개·로컬 수정 설명은 이 기록 당시의 상태입니다.
 
 | 환경 | 결과 | 확인한 범위 | 남은 한계 |
 | --- | --- | --- | --- |
@@ -87,3 +120,5 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
 cd engine
 sandbox-exec -f ../scripts/offline-tests.sb "$TEST_PYTHON" -m pytest -q -o addopts=
 ```
+
+</details>

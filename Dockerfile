@@ -14,6 +14,7 @@
 #   docker exec -it <container> python -m ppservice user add officer@example.go.kr
 
 FROM node:24-slim AS web
+ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci

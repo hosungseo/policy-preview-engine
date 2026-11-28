@@ -1,29 +1,72 @@
 # 백번 미리 묻다 (Policy Preview)
 
-## Install
+## 처음 3단계
 
-| AI 환경 | 설치 |
-| :--- | :--- |
-| **어떤 AI든** | AI에게 `Install https://github.com/hosungseo/policy-preview-engine`이라고 말하세요. 플러그인 설치를 지원하는 AI가 아래 방법으로 설치합니다. |
-| **Claude Code** | `claude plugin marketplace add hosungseo/policy-preview-engine && claude plugin install policy-preview@policy-preview` |
-| **Codex** | `codex plugin marketplace add hosungseo/policy-preview-engine && codex plugin add policy-preview@policy-preview` |
-| **Antigravity** | `agy plugin install https://github.com/hosungseo/policy-preview-engine` |
+① **내 AI에 설치하세요.**
 
-설치 뒤 새 대화를 열어 **“무료 예시 보여 줘”**라고 하세요. MCP 도구와 사용 안내 스킬이 함께 연결됩니다. 사용자가 pip 설치나 경로 설정을 할 필요가 없습니다. 첫 실행에는 의존성을 받는 인터넷 연결과 **uv(권장) 또는 Python 3.12 이상**이 필요합니다. 이후 무료 예시·재집계는 인터넷과 API 키 없이 됩니다. 호스트별 연결 방식과 검증 범위는 [설치 환경 안내](docs/harnesses.md)에 있습니다.
+- **Claude Code**: `claude plugin marketplace add hosungseo/policy-preview-engine && claude plugin install policy-preview@policy-preview`
+- **Codex**: `codex plugin marketplace add hosungseo/policy-preview-engine && codex plugin add policy-preview@policy-preview`
+- **Claude Desktop**: [아래 설정](#claude-desktop-설치)을 복사하고 앱을 다시 켜세요. uvx가 GitHub에서 바로 설치합니다.
 
-### 설치 후 첫 3분
+② **새 대화에서 “무료 예시 보여 줘”**라고 하세요.
 
-1. **“무료 예시 보여 줘”** — 준비 상태를 확인하고 도시철도 무임승차 기준 연령 예시의 보관 결과를 읽습니다. API 키·패널 준비가 없어도 0원입니다.
-2. **숫자 카드 읽기** — 합성 인물의 찬성·반대·모름 분포, 먼저 만날 집단과 물어볼 질문을 봅니다. 실제 사람 응답은 0명이며 실제 여론이 아닙니다.
-3. **“60대만 보면?”** — 같은 보관 결과를 다시 잘라 봅니다. 새 모델 호출과 비용은 0입니다. 내 문안은 **“이 문안 비용부터 알려 줘”**로 시작하고, 예상 비용·시간·상한에 동의한 뒤 실행합니다.
-
-키는 선택입니다. 무료 예시를 보려고 발급할 필요가 없습니다. 내 문안을 실제 모델로 실행할 때만 아래 [선택 설정](#선택-설정-내-문안으로-실제-실행)을 준비하세요. 별도 경량판의 사용법은 [policy-preview-lite v1.0.0](https://github.com/hosungseo/policy-preview-lite/tree/v1.0.0)을 참고하세요.
-
-공개·가상 정책 문안으로 합성 인물에게 먼저 묻고, **실제로 누구를 찾아가 무엇을 물을지** 정하는 도구입니다.
+③ **“60대만 보면?”**이라고 하세요. 같은 결과를 다시 잘라 봅니다.
 
 > 실제 사람 응답 0명이며 합성 인물의 답은 실제 여론이 아닙니다. 이 도구는 여론조사나 공청회를 대신하지 않습니다. 발표 전 비공개 문안이나 개인정보는 입력하지 말고, 공개·가상 문안으로 먼저 만날 집단과 물어볼 질문을 고르는 데 쓰세요.
 
-**저장소 주소** — README의 다른 곳은 모두 아래 `REPO_URL`을 가리킵니다.
+**무료 예시는 키 없이 0원**입니다. 공개 보관 결과를 읽으며 새 모델 호출도 없습니다.
+AI 앱 자체의 로그인·이용 조건은 별도입니다. 키는 내 문안을 실제 모델로 실행할 때만 준비하세요.
+
+공개·가상 정책 문안으로 합성 인물에게 먼저 묻고, **실제로 누구를 찾아가 무엇을 물을지** 정하는 도구입니다.
+
+## Install 상세
+
+Claude Code·Codex는 위 명령으로 MCP 도구와 사용 안내 스킬을 함께 설치합니다. 첫 실행에는 의존성을 받는 인터넷 연결과 **uv(권장) 또는 Python 3.12 이상**이 필요합니다. 이후 무료 예시·재집계는 인터넷과 API 키 없이 됩니다. 호스트별 연결 방식과 검증 범위는 [설치 환경 안내](docs/harnesses.md), [설치 검증 기록](docs/install-verification.md)에 있습니다.
+
+다른 MCP 클라이언트도 stdio 설정으로 연결할 수 있지만 시험하지 않았습니다.
+
+### Claude Desktop 설치
+
+**uv와 Git이 필요합니다.** 저장소를 직접 복제하거나 Python·pip·절대 경로를 설정할 필요는 없습니다. uv가 필요한 Python과 패키지를 격리해 준비합니다. [uv 공식 설치 안내](https://docs.astral.sh/uv/getting-started/installation/)의 한 줄 명령을 터미널에서 한 번 실행하세요.
+
+macOS:
+
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+새 터미널에서 `uvx --version`과 `git --version`이 되는지 확인하세요. Git이 없다면 [Git 공식 설치 안내](https://git-scm.com/downloads)를 따릅니다. Claude Desktop의 설정 → 개발자 → 설정 편집에서 `claude_desktop_config.json`에 아래를 넣고 앱을 완전히 종료한 뒤 다시 켜세요. 기존 `mcpServers`가 있으면 그 안에 `policy-preview` 항목만 추가합니다. 키를 넣지 마세요.
+
+```json
+{
+  "mcpServers": {
+    "policy-preview": {
+      "command": "uvx",
+      "args": [
+        "--python", "3.12",
+        "--from", "git+https://github.com/hosungseo/policy-preview-engine@ae3bcc38a2898089cb4cfc078a1453ffa9101449",
+        "pp", "mcp"
+      ]
+    }
+  }
+}
+```
+
+첫 실행은 다운로드 때문에 잠시 걸릴 수 있습니다. `uvx`를 찾지 못하면 uv 설치 후 앱과 컴퓨터를 다시 켜서 PATH가 반영되는지 확인하세요. 그래도 안 되면 아래 [고급 수동 연결](#mcp로-쓰기-고급-수동-설치와-연결)을 사용하세요. 검증한 공개 커밋에 고정해 설치합니다. 업데이트할 때는 새 릴리스 안내의 revision으로 설정의 `--from` 주소 끝을 바꾸고 앱을 다시 켜세요.
+
+macOS의 새 HOME에서 위 설정 그대로 stdio 연결·무료 예시·재집계를 검증했습니다. Desktop GUI와 로그인한 자연어 대화, Windows 네이티브 실행은 아직 확인하지 않았습니다. Desktop은 MCP 안내 메뉴와 읽을거리를 제공하며, Claude Code·Codex의 플러그인 스킬 설치와는 다릅니다.
+
+내 문안은 **“이 문안 비용부터 알려 줘”**로 시작하고 예상 비용·시간·상한에 동의한 뒤 실행합니다. [선택 설정](#선택-설정-내-문안으로-실제-실행)은 무료 예시에는 필요 없습니다. 별도 경량판은 [policy-preview-lite v1.0.0](https://github.com/hosungseo/policy-preview-lite/tree/v1.0.0)을 참고하세요.
+
+**문제 신고**: 설치 환경과 오류 내용을 [GitHub Issues](https://github.com/hosungseo/policy-preview-engine/issues)에 남겨 주세요. 키나 개인정보는 빼 주세요.
+
+**저장소 주소** — 아래 개발자 명령에서 쓰는 `REPO_URL`입니다.
 
 ```bash
 REPO_URL=https://github.com/hosungseo/policy-preview-engine
@@ -86,13 +129,11 @@ curl -s http://127.0.0.1:8765/runs -H 'Content-Type: application/json' \
 JSON 본문의 키와 정의되지 않은 인자는 거절하며 제출값을 오류에 되비추지 않습니다.
 서버는 **localhost 전용**입니다. 공개 호스팅·인증 서버로 사용하지 마세요.
 
-### MCP로 쓰기 (플러그인 또는 데스크톱 수동 연결)
+### MCP로 쓰기 (고급 수동 설치와 연결)
 
-AI 비서에게 말로 묻는 방법입니다. 도구 이름은 몰라도 되고, 돈이 드는 단계 전에는 AI가 예상 금액을 보여 주고 먼저 묻습니다.
+Claude Code·Codex는 맨 위 설치 명령을, Claude Desktop은 [uvx 설정](#claude-desktop-설치)을 쓰세요. 아래는 개발자용 대안입니다.
 
-Claude Code·Codex·Antigravity는 맨 위 Install 표로 설치하면 됩니다. 아래 1~2단계는 **플러그인을 지원하지 않는 Claude 데스크톱 등에서 직접 연결할 때만** 사용합니다.
-
-**1단계. 수동 설치(한 번)**: Python 3.12 이상(`python3 --version`으로 확인)이 필요합니다.
+**1단계. 수동 설치(한 번)**: Python 3.12 이상이 필요합니다.
 
 ```sh
 git clone "$REPO_URL" policy-preview-engine && cd policy-preview-engine
@@ -100,17 +141,16 @@ python3 -m venv .venv
 .venv/bin/pip install -r engine/requirements-mcp.txt -e .
 ```
 
-**2단계. 연결**: 같은 폴더에서 실행합니다. `$(pwd)`가 내 컴퓨터의 실제 경로를 채워 줍니다.
-
-```sh
-claude mcp add --transport stdio policy-preview -- "$(pwd)/.venv/bin/pp" mcp
-```
-
-Claude 데스크톱은 설정 → 개발자 → 설정 편집으로 `claude_desktop_config.json`을 열어 아래를 넣고 앱을 다시 켭니다.
-`/절대/경로/...` 자리에는 저장소 폴더에서 `echo "$(pwd)/.venv/bin/pp"`가 보여 주는 값을 넣습니다. 키는 이 파일에 적지 않습니다.
+**2단계. Desktop 수동 연결**: 설정 → 개발자 → 설정 편집으로 `claude_desktop_config.json`을 열어 아래를 넣고 앱을 다시 켭니다. `command`에는 저장소 폴더에서 `echo "$(pwd)/.venv/bin/pp"`가 보여 주는 경로를 넣으세요. Windows 수동 설치는 가상환경의 `Scripts/pp.exe` 경로를 씁니다. 키는 이 파일에 적지 않습니다.
 
 ```json
 {"mcpServers": {"policy-preview": {"command": "/절대/경로/policy-preview-engine/.venv/bin/pp", "args": ["mcp"]}}}
+```
+
+`claude mcp add`는 Claude Code 전용 명령이며 Desktop을 설정하지 않습니다. 플러그인 대신 Claude Code에 수동 연결하려면 같은 저장소 폴더에서 아래를 실행하세요.
+
+```sh
+claude mcp add --transport stdio policy-preview -- "$(pwd)/.venv/bin/pp" mcp
 ```
 
 **3단계. "무료 예시 보여 줘"라고 말하기**: 먼저 현재 설정을 확인하고 키·패널 없이 공개 예시의 보관 결과를 읽습니다. 이미 실행한 자료의 질문·찾아갈 곳·명단 밖 사람을 출처와 함께 보여 줍니다.
@@ -177,7 +217,7 @@ Claude 데스크톱은 설정 → 개발자 → 설정 편집으로 `claude_desk
 read -rs 'ANTHROPIC_API_KEY?Anthropic API 키: '
 export ANTHROPIC_API_KEY
 echo
-# 이 터미널에서 사용하는 AI를 실행하세요: claude / codex / agy
+# 이 터미널에서 사용하는 AI를 실행하세요: claude / codex
 ```
 
 선택적 명료성 점검은 같은 방식으로 `TYPESAFE_API_KEY`를 입력·export합니다. 키를 대화·도구 인자·Git 파일에 넣지 마세요. GUI 앱은 터미널 환경변수를 물려받지 않을 수 있으므로 무료 예시부터 쓰거나 키를 설정한 터미널에서 AI를 실행하세요. `check_setup`으로 키의 존재 여부만 확인할 수 있습니다.
@@ -325,8 +365,11 @@ chmod 600 .env
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -r engine/requirements.txt -r engine/requirements-service.txt
-(cd web && npm ci && npm run build)          # 화면(web/out)을 만듭니다
+(cd web && npm ci && NEXT_TELEMETRY_DISABLED=1 npm run build) # 화면(web/out)을 만듭니다
 ```
+
+웹 개발 서버도 사용 통계 전송을 끄고 실행합니다: `(cd web && NEXT_TELEMETRY_DISABLED=1 npm run dev)`.
+Docker의 웹 빌드 단계에도 같은 설정을 적용합니다.
 
 ### 4-3. 합성 인물 패널 만들기
 
@@ -353,11 +396,11 @@ http://127.0.0.1:8800/review/ 에서 이메일과 접속 코드로 들어갑니�
 
 mock은 외부로 아무것도 보내지 않고, 정해진 규칙으로 자리 채움 답을 만듭니다. 화면 흐름을 확인하는 용도이며 결과 숫자에는 뜻이 없습니다.
 
-엔진 테스트도 키 없이 돌립니다.
+엔진 테스트도 키 없이 돌립니다. 시험별로 모의 전송을 설정하므로 `PP_JEV_PROVIDER`·`PP_LLM_PROVIDER`를 전역으로 지정하지 않은 환경에서 실행하세요.
 
 ```bash
 cd engine
-PP_JEV_PROVIDER=mock PP_LLM_PROVIDER=mock ../.venv/bin/python -m pytest
+../.venv/bin/python -m pytest
 ```
 
 서비스 테스트 일부(`needs_panel` 표시, 21개)는 4-3의 패널 묶음이 있어야 돌아갑니다. 묶음이 없으면 "2만 명 패널 묶음 없음" 사유로 건너뜁니다.
@@ -388,10 +431,14 @@ PP_JEV_PROVIDER=mock PP_LLM_PROVIDER=mock ../.venv/bin/python -m pytest
 
 | 선택 | 설정 |
 |---|---|
-| `cli` (기본) | 내 컴퓨터의 `claude -p` 명령을 부릅니다 |
+| `cli` (기본) | 내 컴퓨터의 `claude -p` 명령을 부릅니다. 로그인한 Claude Code 인증을 쓰므로 `ANTHROPIC_API_KEY`는 필수가 아닙니다 |
 | `openai` | OpenAI 호환 API. `PP_LLM_BASE_URL`, `PP_LLM_MODEL`, 필요하면 `PP_LLM_API_KEY`. 로컬 서버(예: Ollama `http://127.0.0.1:11434/v1`)도 됩니다 |
 | `exaone` | LG EXAONE. `EXAONE_API_KEY`와 `PP_EXAONE_LOCAL_ONLY=1`이 필요하고, 로컬 주소에서만 서버를 엽니다. 이용 조건(비상업)을 직접 확인하세요 |
 | `mock` | 자리 채움 문장(외부 전송 없음) |
+
+`cli` 문장 모델은 심층 분석 경로(`python -m pp run`, `scripts/serve-profile.sh global`)에서 사용합니다. Claude Code가 설치되어 로그인되어 있어야 하며 구독·사용 한도가 적용됩니다. 엔진은 이 경로에서 Anthropic 키를 검사하지 않고 CLI에 인증을 맡깁니다. 금액을 확정할 수 없는 CLI 호출은 `python -m pp run … --unknown-cost`로 호출 수·토큰 한도를 걸어 실행합니다.
+
+반면 빠른 실행 경로 `pp run`·HTTP API·MCP의 실제 실행은 Anthropic API를 직접 사용하므로 `ANTHROPIC_API_KEY`가 필요합니다. 여기에 `PP_LLM_PROVIDER=cli`를 넣어도 구독 인증으로 바뀌지 않습니다. 무료 예시·재집계·비용 미리 보기에는 어느 경로든 키가 필요 없습니다.
 
 자주 쓰는 조합은 `scripts/serve-profile.sh`로 한 번에 켭니다.
 
@@ -416,10 +463,11 @@ scripts/serve-profile.sh mock     # 키 없음, 모델 호출 없음
 | 구성 | 판단 모델 | 문장 모델 | 심층 분석에서 들은 사람 | 걸린 시간(심층 분석) | 비용 |
 |---|---|---|---|---|---|
 | 해외 | TypeSafe Jev | Claude | 400명(대표 300 + 영향권 100) | 13분 | 약 $0.13 |
-| 국산 | Upstage Solar Decide | LG EXAONE k-exaone_v2.5 | 29명 | 38분 | 약 $0.11 |
+| 국산 | Upstage Solar Decide | LG EXAONE k-exaone_v2.5 | 29명 | 38분 | 판단 약 $0.12 + 문장 비용 별도(총액 미확인) |
 | 로컬 | tev1:4b (Ollama) | Gemma 4 26B | 10명 | 25분 | 0원(외부 전송 없음) |
 
 - 구성마다 심층 분석에서 들은 사람 수가 달라 비용·시간을 그대로 견주면 안 됩니다.
+- 국산 구성의 이전 총액 약 $0.11은 현재 판단 단가와 맞지 않아 철회했습니다. 코드의 Solar Decide 입력 단가 $0.10/100만 토큰으로 계산하면 `900 × 1,330 ÷ 1,000,000 × $0.10 = $0.1197`(약 $0.12)입니다. EXAONE의 당시 청구 단가·토큰별 비용을 확인하지 못했으므로 총액은 제시하지 않습니다. 이 900회 기록은 기본 실행 규모의 견적이 아닙니다.
 - 같은 날 Solar Decide는 분당 100건·5만 토큰 한도가 있어 병렬 호출을 16으로 올리자 429 오류가 났습니다. 코드는 업스테이지가 알려 주는 재시도 시각까지 기다립니다.
 
 판단 모델 단가와, 위 기록 중 판단 모델 900회 호출(본 문항·대조 문장·순서 뒤집기 × 300명)의 비용입니다. 새로 호출하지 않고 저장된 답별 입력 토큰 수에 단가를 곱했습니다.
