@@ -7,13 +7,13 @@
 
 ## 근거
 
-- `~/policy-preview/data/vendor/korean-people-persona/.cache/huggingface/download/data/train-0000{0..8}-of-00009.parquet.metadata` 9개 모두 첫 줄에 같은 commit SHA가 있다. 다운로드 시각은 2026-09-23 14:32:55~14:42:47 UTC (23:32:55~23:42:47 KST)다.
-- `~/policy-preview/data/hf/hub/datasets--nvidia--Nemotron-Personas-Korea/refs/main`도 같은 SHA다. 갱신 가능한 ref 하나만으로 판정하지 않고 파일별 다운로드 기록과 함께 확인했다.
+- 저장소 기준 `data/vendor/korean-people-persona/.cache/huggingface/download/data/train-0000{0..8}-of-00009.parquet.metadata` 9개 모두 첫 줄에 같은 commit SHA가 있다. 다운로드 시각은 2026-09-23 14:32:55~14:42:47 UTC (23:32:55~23:42:47 KST)다.
+- 저장소 기준 `data/hf/hub/datasets--nvidia--Nemotron-Personas-Korea/refs/main`도 같은 SHA다. 갱신 가능한 ref 하나만으로 판정하지 않고 파일별 다운로드 기록과 함께 확인했다.
 - 위 vendor 캐시의 `trees/ada0f5b53a38bb5a30cce09358adde883c1ab63a.json`에 저장된 파일 크기·LFS SHA-256, 각 다운로드 메타데이터의 ETag, 현재 보관된 원본 parquet의 실제 SHA-256이 **9개 전부 일치**한다. 약 2GB 원본을 읽기만 했다.
 - 기존 `panel-20k-full.jsonl.xz`의 **20,000명, 26개 원본 필드 전부**를 해당 parquet에서 uuid로 찾아 대조했다. 리스트 필드에는 기존 SQLite 변환기의 JSON 정규화 규칙을 적용했으며 모두 일치했다.
 - 기존 `panel-20k.jsonl.gz`의 uuid·성별·나이·시도 및 20,000개 프로필도 전체 필드 파일에서 기존 `persona_profile` 규칙(이름 추출 포함)으로 계산한 값과 모두 일치했다. 패널 파일은 다시 쓰지 않았다.
 
-기계 판독용 근거와 파일별 체크섬은 [nemotron-source-revision.json](nemotron-source-revision.json)에 있다. 재확인용 읽기 전용 스크립트는 로컬 `~/pp-public-release-notes/2026-11-27-verify-source.py`, 실행 로그는 같은 폴더의 `2026-11-27-source-verification.log`다.
+기계 판독용 근거와 파일별 체크섬은 [nemotron-source-revision.json](nemotron-source-revision.json)에 있다. 원본 파일이 있다면 파일별 SHA-256과 다운로드 메타데이터의 revision을 이 기록과 대조할 수 있다.
 
 ## 적용 범위
 

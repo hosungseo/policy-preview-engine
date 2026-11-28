@@ -25,4 +25,4 @@ pp = ["data/examples/*.json"]
 ppservice = ["data/persona-accuracy/*.json", "data/persona-context/*.json"]
 
 [tool.setuptools]
-license-files = ["LICENSE", "NOTICE"]
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]

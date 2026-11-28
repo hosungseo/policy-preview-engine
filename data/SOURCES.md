@@ -44,7 +44,13 @@
 | `web/public/series/housing-map/people-00.json` ~ `people-19.json` | 지도에서 점을 누를 때 보이는 1만 명의 인물 카드(나이·직업·가구·주거·서술 한 줄)와 대책별 답 | Nemotron-Personas-Korea 인물 서술 + 이 프로젝트 생성(TypeSafe Jev) | 인물 서술: CC BY 4.0 / 생성 결과: Apache-2.0 | `python -m pp peoplemap` |
 | 국토교통부 실거래가 자료 (공공데이터포털 오픈API 8종, 원자료는 저장소에 없음) | 「부동산 거래신고 등에 관한 법률」에 따라 신고된 매매·전월세 거래 | 제공기관 국토교통부, 공공데이터포털: 「국토교통부_아파트 매매 실거래가 자료」 https://www.data.go.kr/data/15126469/openapi.do · 「국토교통부_아파트 전월세 실거래가 자료」 https://www.data.go.kr/data/15126474/openapi.do · 「국토교통부_연립다세대 매매 실거래가 자료」 https://www.data.go.kr/data/15126467/openapi.do · 「국토교통부_연립다세대 전월세 실거래가 자료」 https://www.data.go.kr/data/15126473/openapi.do · 「국토교통부_단독/다가구 매매 실거래가 자료」 https://www.data.go.kr/data/15126465/openapi.do · 「국토교통부_단독/다가구 전월세 실거래가 자료」 https://www.data.go.kr/data/15126472/openapi.do · 「국토교통부_오피스텔 매매 실거래가 자료」 https://www.data.go.kr/data/15126464/openapi.do · 「국토교통부_오피스텔 전월세 실거래가 자료」 https://www.data.go.kr/data/15126475/openapi.do | **이용허락범위 제한 없음**, 무료(8종 모두 포털 표시, 2026-11-27 확인) | `engine/scripts/fetch_rtms.py`(서비스 이름 RTMSDataSvcAptTrade·AptRent·RHTrade·RHRent·SHTrade·SHRent·OffiTrade·OffiRent). 이 자료를 쓰는 공개 파일: `engine/series/official/housing_market.json`, `web/public/series/housing.json` |
 
-테스트가 쓰는 인물·정책은 테스트 코드 안에서 합성으로 만들며, 따로 둔 데이터 파일은 없습니다.
+테스트 코드 안에서 만든 합성 인물·정책 외에 다음 시험 자료도 함께 배포합니다.
+
+| 파일 | 내용·만든 방식과 날짜 | 출처·이용 근거 |
+|---|---|---|
+| `engine/tests/fixtures/lawmaking_search.html` | 제목 검색(`lsNm`)이 있는 공개 입법예고 목록 형태를 재현한 14행 축약 HTML. 중복 항목 제거 시험용 행 포함. 2026-11-28 수록(`655a770`). 자체 작성인지 원문을 변형했는지와 원문 복사 범위는 당시 커밋·파일 주석만으로 확인하지 못함. | 국민참여입법센터 공개 목록 `https://opinion.lawmaking.go.kr/gcom/ogLmPp`의 링크·제목·기관·기간 형태를 시험함. 제목·기관·날짜는 사실정보이며, 별도의 원문 HTML 이용허락은 확인되지 않았으므로 페이지 전체를 Apache-2.0으로 재허락한다고 해석하지 않음. |
+| `engine/tests/fixtures/lawmaking_recent.html` | 검색어 없는 최신 목록 형태를 재현한 14행 축약 HTML. 중복 항목 제거와 마감일 필터 시험용 행 포함. 2026-11-28 수록(`655a770`). 자체 작성/원문 변형 여부와 복사 범위는 확인되지 않음. | 같은 국민참여입법센터 공개 목록의 사실정보·링크 형식. 원문 HTML의 별도 이용허락 미확인; 저장소 코드 라이선스를 외부 페이지 전체에 적용하지 않음. |
+| `engine/tests/fixtures/law_check/` | 법령·조례·별표 원문 발췌와 시험용 가상 공고문. 기준일은 각 파일의 `checked_on`(2026-11-28 검증). | [시험 자료 설명](../engine/tests/fixtures/law_check/README.md)에 원문 출처와 범위를 명시함. 법령·조례·규칙 원문은 「저작권법」 제7조제1호의 보호받지 못하는 저작물이며, 공고문은 실제 공고를 복사한 것이 아닌 가상 문안. 저장소 자체 작성 시험 문안·코드는 Apache-2.0, 법령 원문은 이 라이선스로 재허락하지 않음. |
 
 ## 정책브리핑 원문 출처 표시
 

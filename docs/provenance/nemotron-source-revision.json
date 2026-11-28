@@ -3,8 +3,8 @@
   "source_revision": "ada0f5b53a38bb5a30cce09358adde883c1ab63a",
   "revision_status": "verified_local_download",
   "checked_on": "2026-11-27",
-  "metadata_root": "~/policy-preview/data/vendor/korean-people-persona/.cache/huggingface",
-  "ref_path": "~/policy-preview/data/hf/hub/datasets--nvidia--Nemotron-Personas-Korea/refs/main",
+  "metadata_root": "data/vendor/korean-people-persona/.cache/huggingface",
+  "ref_path": "data/hf/hub/datasets--nvidia--Nemotron-Personas-Korea/refs/main",
   "parquet_files": [
     {
       "file": "train-00000-of-00009.parquet",
