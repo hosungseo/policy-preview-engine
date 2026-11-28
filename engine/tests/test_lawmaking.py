@@ -1,4 +1,6 @@
 """Legislative notice adapter: real API envelopes, web fallback, and service routes."""
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -130,3 +132,34 @@ def test_recent_lists_open_notices_without_a_title_filter(monkeypatch):
     assert found["more"] is True  # 33 open notices, 30 per page
     lawmaking.recent(page=2)
     assert seen[1][1]["pageIndex"] == 2
+
+
+@pytest.mark.parametrize("oc", ["", "refused"])
+@pytest.mark.parametrize("query,fixture,expected_ids", [
+    (None, "lawmaking_recent.html", ["89678", "89674"]),
+    ("행정", "lawmaking_search.html", ["89350", "89312"]),
+])
+def test_public_lists_accept_saved_link_formats(monkeypatch, oc, query, fixture, expected_ids):
+    monkeypatch.setenv("LAWMAKING_OC", oc)
+    raw = (Path(__file__).parent / "fixtures" / fixture).read_text(encoding="utf-8")
+    seen = serve(monkeypatch, [("/rest/ogLmPp.xml", REFUSED), ("/gcom/ogLmPp", raw)])
+
+    found = lawmaking.recent() if query is None else lawmaking.search(query)
+
+    assert found["source"] == "web" and found["total"] is None
+    assert [item["seq"] for item in found["items"]] == expected_ids
+    assert [item["url"] for item in found["items"]] == [lawmaking.notice_url(seq) for seq in expected_ids]
+    assert found["items"][0]["agency"] == "법제처"
+    assert found["items"][0]["kind"] == "대통령령"
+    assert found["items"][0]["period"] == "2026. 11. 6. ~ 2026. 12. 16."
+    assert len(seen) == (2 if oc else 1)
+    assert seen[-1] == (f"{lawmaking.base_url()}/gcom/ogLmPp", None if query is None else {"lsNm": query})
+    if oc:
+        assert seen[0][0] == f"{lawmaking.api_base_url()}/rest/ogLmPp.xml"
+
+
+def test_recent_public_list_applies_limit_after_deduplication(monkeypatch):
+    monkeypatch.delenv("LAWMAKING_OC", raising=False)
+    raw = (Path(__file__).parent / "fixtures" / "lawmaking_recent.html").read_text(encoding="utf-8")
+    serve(monkeypatch, [("/gcom/ogLmPp", raw)])
+    assert [item["seq"] for item in lawmaking.recent(limit=1)["items"]] == ["89678"]

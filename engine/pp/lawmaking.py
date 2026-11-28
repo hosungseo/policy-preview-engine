@@ -105,10 +105,12 @@ def parse_api(xml: str) -> list[dict]:
 def parse_web_list(raw: str) -> list[dict]:
     """Rows of the public list page (same notices, no account needed)."""
     items = []
+    seen = set()
     for row in re.split(r"(?i)<tr\b", raw):
-        link = re.search(r'href="/gcom/ogLmPp/(\d+)\?[^\"]*"\s+title="([^\"]*)"', row)
-        if not link:
+        link = re.search(r'href="/gcom/ogLmPp/(\d+)(?:\?[^\"]*)?"\s+title="([^\"]*)"', row)
+        if not link or link.group(1) in seen:
             continue
+        seen.add(link.group(1))
 
         def cell(label: str) -> list[str]:
             m = re.search(rf'(?s)data-th="{label}[^\"]*"[^>]*>(.*?)</td>', row)
